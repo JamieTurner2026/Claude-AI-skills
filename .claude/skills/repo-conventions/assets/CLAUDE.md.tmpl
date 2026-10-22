@@ -1,0 +1,21 @@
+# {{name}}
+
+{{description}}
+
+## Commands
+{{commands}}
+
+## Structure
+{{structure}}
+
+## Conventions
+- Formatting: Prettier (width 100, double quotes, semicolons, trailing commas) for JS/TS; ruff (line length 100) for Python. Run the formatter before committing.
+- Keep changes small and focused; match the surrounding code's naming and comment density.
+- Secrets: never commit `.env*` (only `.env.example`). API keys and service-role keys are server-side only; never put them in client code, `NEXT_PUBLIC_*` or `VITE_*` variables.
+- AI calls (Anthropic etc.) go through a server route / edge function, never directly from the browser.
+- Commits: imperative present tense, one logical change each ("Add servo alarm lookup").
+- Before opening a PR: lint, typecheck and build/tests all pass.
+
+## Knowledge and visuals
+- Training-video knowledge lives in `tools/video-knowledge/` (if present); search it before answering domain questions.
+- Blender-generated visuals live in `tools/blender-visuals/` (if present); commit scene scripts, not renders larger than 1 MB.

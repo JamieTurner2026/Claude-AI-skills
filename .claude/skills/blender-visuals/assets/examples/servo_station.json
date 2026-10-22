@@ -1,0 +1,6 @@
+{"title": "Servo Station (Line 2)",
+ "nodes": [
+  {"id": "sensor", "label": "Sensor", "kind": "cylinder", "pos": [-4, 0, 0], "size": [0.8, 0.8, 1.2], "color": "#4fb3a5"},
+  {"id": "plc", "label": "PLC", "kind": "cube", "pos": [0, 0, 0], "size": [2, 1.2, 1.6], "color": "#6f8fb5"},
+  {"id": "servo", "label": "Servo", "kind": "cylinder", "pos": [4, 0, 0], "size": [1.4, 1.4, 1.4], "color": "#d9774a"}],
+ "links": [{"from": "sensor", "to": "plc"}, {"from": "plc", "to": "servo"}]}
