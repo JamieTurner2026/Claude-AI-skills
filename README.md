@@ -1,6 +1,6 @@
 # claude-repo-template
 
-Skills for starting projects fast with Claude: **repo-builder**, repo-scaffold, repo-conventions, repo-features, repo-ship, video-knowledge, blender-visuals, claude-skills-api (generate xlsx/pptx/pdf/docx through the Claude API).
+Skills for starting projects fast with Claude: **repo-builder**, repo-scaffold, repo-conventions, repo-features, repo-ship, video-knowledge, blender-visuals, brain (persistent memory from your Claude sessions, stored in a private repo), claude-skills-api (generate xlsx/pptx/pdf/docx through the Claude API).
 
 ## Use it
 - **Per repo:** click "Use this template". The skills in `.claude/skills/` load automatically in Claude Code.

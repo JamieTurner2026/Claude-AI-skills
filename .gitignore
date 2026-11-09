@@ -4,3 +4,8 @@
 node_modules/
 __pycache__/
 *.pyc
+
+# Brain data must never be committed to this public repo
+/brain-data/
+/inbox/
+/memory/
