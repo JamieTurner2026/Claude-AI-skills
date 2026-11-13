@@ -1,0 +1,48 @@
+{
+  "id": "solaris_gt",
+  "display_name": "Solaris GT",
+  "description": "Original fictional starter coupe for Solaris Coast. All dimensions in centimetres. Car faces +X, left side is +Y in Blender (-Y in Unreal).",
+  "wheelbase": 262,
+  "track_half_width": 80,
+  "wheel_radius": 36,
+  "front_wheel_width": 24,
+  "rear_wheel_width": 26,
+  "wheel_design": "five_spoke",
+  "body_stations": [
+    [-221, 70, 34, 60],
+    [-214, 84, 24, 76],
+    [-190, 91, 17, 84],
+    [-131, 93, 14, 86],
+    [-55, 93, 13, 84],
+    [45, 92, 13, 80],
+    [131, 91, 14, 70],
+    [188, 87, 17, 60],
+    [213, 78, 24, 50],
+    [221, 64, 32, 44]
+  ],
+  "cabin_stations": [
+    [-150, 66, 80, 84],
+    [-105, 73, 82, 112],
+    [-45, 76, 82, 123],
+    [10, 75, 80, 120],
+    [55, 73, 78, 100],
+    [88, 70, 76, 80]
+  ],
+  "sockets": {
+    "spoiler": [-196, 0, 86],
+    "front_bumper": [221, 0, 14],
+    "rear_bumper": [-221, 0, 14],
+    "exhaust_left": [-222, 42, 26],
+    "exhaust_right": [-222, -42, 26]
+  },
+  "colors": {
+    "paint": "#FF1493",
+    "glass": "#0A1420",
+    "trim": "#15151A",
+    "tire": "#0B0B0D",
+    "rim": "#C8CCD4",
+    "light_front": "#DFFFFF",
+    "light_rear": "#FF2040",
+    "neon": "#00FFFF"
+  }
+}

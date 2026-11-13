@@ -1,0 +1,101 @@
+{
+  "units": "cm",
+  "parts": [
+    {
+      "name": "SM_Wheel_FiveSpoke",
+      "fbx": "parts/SM_Wheel_FiveSpoke.fbx",
+      "category": "wheel",
+      "attach_socket": "wheel bones",
+      "size_cm": [
+        72.0,
+        24.0,
+        72.0
+      ],
+      "triangles": 726,
+      "materials": [
+        "M_MR_Tire",
+        "M_MR_Rim",
+        "M_MR_Trim"
+      ]
+    },
+    {
+      "name": "SM_Wheel_Turbine",
+      "fbx": "parts/SM_Wheel_Turbine.fbx",
+      "category": "wheel",
+      "attach_socket": "wheel bones",
+      "size_cm": [
+        72.0,
+        24.0,
+        72.0
+      ],
+      "triangles": 785,
+      "materials": [
+        "M_MR_Tire",
+        "M_MR_Rim",
+        "M_MR_Trim"
+      ]
+    },
+    {
+      "name": "SM_Spoiler_Lip",
+      "fbx": "parts/SM_Spoiler_Lip.fbx",
+      "category": "spoiler",
+      "attach_socket": "spoiler",
+      "size_cm": [
+        15.0,
+        140.0,
+        7.0
+      ],
+      "triangles": 12,
+      "materials": [
+        "M_MR_Paint",
+        "M_MR_Trim"
+      ]
+    },
+    {
+      "name": "SM_Spoiler_Wing",
+      "fbx": "parts/SM_Spoiler_Wing.fbx",
+      "category": "spoiler",
+      "attach_socket": "spoiler",
+      "size_cm": [
+        32.0,
+        151.5,
+        34.0
+      ],
+      "triangles": 72,
+      "materials": [
+        "M_MR_Paint",
+        "M_MR_Trim"
+      ]
+    },
+    {
+      "name": "SM_FrontBumper_Splitter",
+      "fbx": "parts/SM_FrontBumper_Splitter.fbx",
+      "category": "front_bumper",
+      "attach_socket": "front_bumper",
+      "size_cm": [
+        46.0,
+        176.0,
+        15.0
+      ],
+      "triangles": 52,
+      "materials": [
+        "M_MR_Trim"
+      ]
+    },
+    {
+      "name": "SM_RearBumper_Diffuser",
+      "fbx": "parts/SM_RearBumper_Diffuser.fbx",
+      "category": "rear_bumper",
+      "attach_socket": "rear_bumper",
+      "size_cm": [
+        40.0,
+        150.0,
+        16.5
+      ],
+      "triangles": 72,
+      "materials": [
+        "M_MR_Trim"
+      ]
+    }
+  ]
+}
