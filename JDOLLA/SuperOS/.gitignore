@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+logs/
+node_modules/
+os/.cache/
+outputs/_work/
+raw/sessions/
+/daily/
+/projects/
+/reports/
+proposals/*
+!proposals/README.md
+.obsidian/workspace*
+.obsidian/plugins/
