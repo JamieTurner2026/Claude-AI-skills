@@ -4,6 +4,8 @@
 #include "GameFramework/HUD.h"
 #include "MRDrivingHUD.generated.h"
 
+class AMRRaceManager;
+
 /**
  * Minimal neon driving HUD drawn on the canvas: speed, gear, nitrous bar and
  * a controls hint (the prototype's HUD line). Presentation only: it reads
@@ -26,4 +28,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MidnightReign|HUD")
 	bool bShowControlsHint = true;
+
+private:
+	void DrawRace(const AMRRaceManager& Race, float Width, float Height, float UIScale);
+	static FString FormatTime(float Seconds);
+
+	TWeakObjectPtr<AMRRaceManager> CachedRace;
 };

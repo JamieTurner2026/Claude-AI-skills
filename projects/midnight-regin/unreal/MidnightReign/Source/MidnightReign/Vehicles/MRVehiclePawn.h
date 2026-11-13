@@ -59,6 +59,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MidnightReign|Vehicle")
 	void ResetVehicle();
 
+	/** While locked (race countdown) the car holds still: no throttle, no nitrous, brakes on. */
+	UFUNCTION(BlueprintCallable, Category = "MidnightReign|Vehicle")
+	void SetInputsLocked(bool bLocked) { bInputsLocked = bLocked; }
+
 	// --- State for HUD / UI (read-only; UI never drives gameplay) ---
 
 	UFUNCTION(BlueprintPure, Category = "MidnightReign|Vehicle")
@@ -123,4 +127,5 @@ private:
 	float SmoothedSteer = 0.f;
 	bool bNitrousHeld = false;
 	bool bHandbrakeHeld = false;
+	bool bInputsLocked = false;
 };

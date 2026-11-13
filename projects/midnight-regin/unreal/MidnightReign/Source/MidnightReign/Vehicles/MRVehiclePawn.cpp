@@ -138,14 +138,14 @@ void AMRVehiclePawn::Tick(float DeltaSeconds)
 		const float Scale = mr::SteeringScaleForSpeed(GetSpeedKmh(), SteeringConfig);
 
 		Movement->SetSteeringInput(SmoothedSteer * Scale);
-		Movement->SetThrottleInput(RawThrottle);
-		Movement->SetBrakeInput(RawBrake);
-		Movement->SetHandbrakeInput(bHandbrakeHeld);
+		Movement->SetThrottleInput(bInputsLocked ? 0.f : RawThrottle);
+		Movement->SetBrakeInput(bInputsLocked ? 1.f : RawBrake);
+		Movement->SetHandbrakeInput(bInputsLocked ? true : bHandbrakeHeld);
 	}
 
 	if (Nitrous)
 	{
-		Nitrous->SetBoostRequested(bNitrousHeld);
+		Nitrous->SetBoostRequested(bNitrousHeld && !bInputsLocked);
 	}
 
 	if (ChaseCamera)

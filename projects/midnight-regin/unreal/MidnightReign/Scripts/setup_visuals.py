@@ -12,7 +12,7 @@ It imports the generated FBX files from <repo>/assets/export and creates, under
   Parts/       wheel, spoiler and bumper static meshes
   Track/       the Solaris Coast test block meshes
   Core/        BP_MRGameMode
-  Maps/        L_SolarisTestBlock (track, checkpoint arches, night lighting, Player Start)
+  Maps/        L_SolarisTestBlock (track, checkpoint arches, race manager, night lighting, Player Start)
 
 Safe to run again: existing assets are reused or re-imported.
 
@@ -278,7 +278,7 @@ def create_game_mode_blueprint(vehicle_blueprint):
 # ---------------------------------------------------------------------- map
 
 @step("Test map", "Create a level, drag the SM_Track_* meshes in at 0,0,0, add a Player Start on the bottom straight.")
-def create_map(track_meshes, game_mode_blueprint):
+def create_map(track_meshes, game_mode_blueprint, vehicle_blueprint=None):
     layout = read_json("track_layout.json")
     levels = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
     actors = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
@@ -316,6 +316,31 @@ def create_map(track_meshes, game_mode_blueprint):
     start = actors.spawn_actor_from_class(unreal.PlayerStart, unreal.Vector(x, y, z + 40.0),
                                           unreal.Rotator(roll=0.0, pitch=0.0, yaw=layout["player_start"]["yaw"]))
     start.set_actor_label("MR_PlayerStart")
+
+    # Race manager: gates, racing line and grid come from track_layout.json; opponents are
+    # spawned from the vehicle Blueprint when the level starts.
+    manager = actors.spawn_actor_from_class(unreal.MRRaceManager, origin, no_rotation)
+    manager.set_actor_label("MR_RaceManager")
+    gates = []
+    for checkpoint in layout["checkpoints"]:
+        gate = unreal.MRGateDef()
+        gate.set_editor_property("location", unreal.Vector2D(checkpoint["location"][0], checkpoint["location"][1]))
+        gate.set_editor_property("yaw_degrees", checkpoint["yaw"])
+        gates.append(gate)
+    slots = []
+    for entry in layout["grid"]:
+        slot = unreal.MRGridSlot()
+        slot.set_editor_property("location", unreal.Vector(*entry["location"]))
+        slot.set_editor_property("yaw_degrees", entry["yaw"])
+        slots.append(slot)
+    manager.set_editor_property("gates", gates)
+    manager.set_editor_property("racing_line", [unreal.Vector2D(p["x"], p["y"]) for p in layout["racing_line"]])
+    manager.set_editor_property("grid", slots)
+    manager.set_editor_property("gate_half_width_cm", layout["checkpoint_half_width_cm"])
+    manager.set_editor_property("lap_length_cm", layout["lap_length_cm"])
+    manager.set_editor_property("total_laps", layout["laps"])
+    if vehicle_blueprint:
+        manager.set_editor_property("ai_vehicle_class", vehicle_blueprint.generated_class())
 
     # Night lighting: faint moonlight, sky, light fog, bloom for the neon.
     moon = actors.spawn_actor_from_class(unreal.DirectionalLight, unreal.Vector(0.0, 0.0, 5000.0),
@@ -357,7 +382,7 @@ def main():
     if not os.path.isdir(EXPORT_DIR):
         unreal.log_error("[MR setup] Cannot find %s. Run this from the project inside the midnight-reign repo." % EXPORT_DIR)
         return
-    for cls in ("MRVehiclePawn", "MRGameMode", "MRVehicleTuningData"):
+    for cls in ("MRVehiclePawn", "MRGameMode", "MRVehicleTuningData", "MRRaceManager"):
         if not hasattr(unreal, cls):
             unreal.log_error("[MR setup] Class %s not found. Compile the MidnightReign C++ module first." % cls)
             return
@@ -369,7 +394,7 @@ def main():
     tuning = create_tuning_asset()
     vehicle_blueprint = create_vehicle_blueprint(skeletal_mesh, tuning)
     game_mode_blueprint = create_game_mode_blueprint(vehicle_blueprint)
-    create_map(track_meshes, game_mode_blueprint)
+    create_map(track_meshes, game_mode_blueprint, vehicle_blueprint)
 
     log("---------------- summary ----------------")
     for name, ok, hint in RESULTS:

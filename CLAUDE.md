@@ -6,4 +6,4 @@ To start a project from it: ask Claude "use repo-builder to start a new <stack> 
 Secrets: never commit `.env*` except `.env.example`.
 
 ## Projects
-- `projects/midnight-regin/` — MIDNIGHT REIGN, UE5 street racer (merged from JamieTurner2026/Midnight-regin, branch `claude/clever-dirac-i4x75k`, Milestone 2 in progress). It has its own `CLAUDE.md` with commands and rules; work inside that folder. Its `blender/` pipeline can use the `blender-visuals` skill. CI: `.github/workflows/midnight-regin.yml`.
+- `projects/midnight-regin/` — MIDNIGHT REIGN, UE5 street racer (merged from JamieTurner2026/Midnight-regin, branch `claude/clever-dirac-i4x75k`, Milestone 2 code complete, needs playing in the editor). It has its own `CLAUDE.md` with commands and rules; work inside that folder. Its `blender/` pipeline can use the `blender-visuals` skill. CI: `.github/workflows/midnight-regin.yml`.

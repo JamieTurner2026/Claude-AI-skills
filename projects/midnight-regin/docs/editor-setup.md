@@ -23,8 +23,8 @@ It creates, under `Content/MidnightReign`:
 - neon materials (`Materials/MI_MR_*`)
 - the Solaris GT skeletal mesh, `DA_SolarisGT` tuning asset and `BP_MRVehicle`
 - the customization part meshes
-- the track meshes and the map `Maps/L_SolarisTestBlock` with checkpoint arches, night lighting
-  and a Player Start
+- the track meshes and the map `Maps/L_SolarisTestBlock` with checkpoint arches, night lighting,
+  a Player Start and an `MR_RaceManager` (gates, racing line and grid from `track_layout.json`)
 - `BP_MRGameMode`, set as the map's game mode
 
 Open *Window* → *Output Log* and look for the `[MR setup] summary`. Each step reports `OK` or
@@ -53,6 +53,12 @@ Open `Maps/L_SolarisTestBlock` and press **Play**.
 - Gamepad: triggers, left stick, A for nitro.
 - The NITRO bar drains in about 4 seconds and refills after you release Space.
 - *Tools* → *Session Frontend* → *Automation* → run the `MidnightReign` tests.
+
+**Racing (Milestone 2).** The map now holds a race: after a 2 second pause a 3-2-1 countdown runs
+(cars are held until GO), then 3 laps against 3 opponents that follow the racing line. The HUD
+shows position, lap, race/lap/last/best times, WRONG WAY, and a results table at the end (20 seconds
+after you finish, or when everyone is done). Tweak laps, opponents (0-5), AI skill and grace time on
+the `MR_RaceManager` actor. To race again, stop and press Play.
 
 Handling changes (too fast, too slippery, twitchy steering) are made in `DA_SolarisGT` and in
 Blueprint subclasses of `MRWheelFront` / `MRWheelRear`, with no code changes.
