@@ -4,6 +4,7 @@ dept: industrial
 type: project
 sources:
   - raw/industrial/dda2-training-app/2026-11-14_repo-snapshot.md
+  - raw/strategy/interview/2026-11-14_jay-answers.md
 updated: 2026-11-14
 last_used: 2026-11-14
 ---
@@ -17,7 +18,7 @@ A single-file operator training app for five production lines: learning modules,
 
 ## Next steps and open questions
 - The setup guide has the API key pasted into the HTML file; move it to a server-side secret instead.
-- Decide whether this app or Assembly Trainer Pro is the one going forward.
+- Jay says this and [[wiki/industrial/assembly-trainer-pro]] "were a merge of two files". Source: [[raw/strategy/interview/2026-11-14_jay-answers]] Still open: which one goes forward.
 
 ## Related
 - Department: [[depts/industrial]] · Charter: [[wiki/industrial/charter]]

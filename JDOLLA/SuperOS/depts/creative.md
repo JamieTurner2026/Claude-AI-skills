@@ -13,5 +13,5 @@ Gives the brain a creative identity: explores imaginative directions, develops v
 
 ## Notes
 - [[wiki/creative/charter]] (concept)
-- [[wiki/creative/creative-dna]] (concept)
+- [[wiki/creative/creative-likes]] (concept)
 - [[wiki/creative/legend-of-doom]] (project)

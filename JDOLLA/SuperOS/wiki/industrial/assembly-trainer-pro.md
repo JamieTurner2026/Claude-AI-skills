@@ -4,12 +4,13 @@ dept: industrial
 type: project
 sources:
   - raw/industrial/assembly-trainer-pro/2026-11-14_repo-snapshot.md
+  - raw/strategy/interview/2026-11-14_jay-answers.md
 updated: 2026-11-14
 last_used: 2026-11-14
 ---
 # Assembly Trainer Pro
 
-A multi-page operator training app with lessons per production line, quizzes, a chat helper and seven training games. It appears to be a rebuild of the DDA2 Training Hub idea on a full framework; that link is an inference, not stated in the repo. Source: [[raw/industrial/assembly-trainer-pro/2026-11-14_repo-snapshot]]
+A multi-page operator training app with lessons per production line, quizzes, a chat helper and seven training games. On how this relates to the DDA2 Training Hub, Jay says: "They were a merge of two files." Source: [[raw/strategy/interview/2026-11-14_jay-answers]] Source: [[raw/industrial/assembly-trainer-pro/2026-11-14_repo-snapshot]]
 
 - **Repo:** `JamieTurner2026/assembly-trainer-pro` (private)
 - **Stack:** TanStack Start, React, Vite, TypeScript, Tailwind, Radix UI, Supabase (auth and edge functions), Cloudflare.
@@ -17,7 +18,7 @@ A multi-page operator training app with lessons per production line, quizzes, a 
 
 ## Next steps and open questions
 - Stop tracking `.env` in git (add it to `.gitignore`, keep a `.env.example`).
-- Confirm with Jay how this relates to the DDA2 Training Hub.
+- Still open: which two files were merged, and which app is the one going forward.
 
 ## Related
 - Department: [[depts/industrial]] · Charter: [[wiki/industrial/charter]]

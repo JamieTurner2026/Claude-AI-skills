@@ -4,6 +4,7 @@ dept: software
 type: project
 sources:
   - raw/software/car-finder-app/2026-11-14_repo-snapshot.md
+  - raw/strategy/interview/2026-11-14_jay-answers.md
 updated: 2026-11-14
 last_used: 2026-11-14
 ---
@@ -16,7 +17,7 @@ A car search app with a React frontend, a Node backend and an Electron desktop b
 - **State:** Last commit read: 2026-07-05. No tests or docs were found.
 
 ## Next steps and open questions
-- Unknown. Ask Jay whether this project is still active.
+- Jay says the project is still active. Source: [[raw/strategy/interview/2026-11-14_jay-answers]] Whether it is deployed live was not checked.
 - If active, a README is the first gap.
 
 ## Related

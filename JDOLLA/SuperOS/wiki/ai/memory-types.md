@@ -17,7 +17,7 @@ The "where it lives" column is a proposed mapping onto this vault, not something
 |---|---|---|
 | Project | What was built and why | `wiki/<dept>/<project>.md`, `type: project` |
 | Technical | Verified code and fixes | `wiki/<dept>/`, `type: howto` |
-| Creative | Approved artistic styles | [[wiki/creative/creative-dna]] |
+| Creative | Approved artistic styles | [[wiki/creative/creative-likes]] |
 | Learning | Concepts and exercises | `wiki/<dept>/`, `type: concept` |
 | Decision | Choices and reasoning | `wiki/<dept>/`, `type: decision` (never marked stale) |
 | Research | Sources and findings | `raw/<dept>/<topic>/`, distilled into `wiki/` |
