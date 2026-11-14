@@ -2,7 +2,7 @@
 Makes sure ideas become completed projects instead of unfinished experiments.
 
 ## Skills
-- None yet. A task done by hand twice becomes a skill; list it here when it exists.
+- `weekly-review` (draft in `skills/weekly-review/`, not installed): weekly progress summary per project
 
 ## References
 - Charter: `wiki/strategy/charter.md`
@@ -10,3 +10,6 @@ Makes sure ideas become completed projects instead of unfinished experiments.
 - Sources: `raw/strategy/`
 - Deliverables: `outputs/**/*_strategy_*`
 - Projects: roadmaps for MIDNIGHT REIGN, Davidson Blessons and JDOLLA$
+
+## Notes
+- [[wiki/strategy/charter]] (concept)

@@ -2,4 +2,4 @@
 
 Generated. Do not hand-edit.
 
-- [[wiki/strategy/charter]]
+- [[wiki/strategy/charter]]: Business Strategy & Project Management charter (concept)

@@ -10,3 +10,7 @@ Builds complete interactive games, MIDNIGHT REIGN first.
 - Sources: `raw/gamedev/`
 - Deliverables: `outputs/**/*_gamedev_*`
 - Projects: MIDNIGHT REIGN
+
+## Notes
+- [[wiki/gamedev/charter]] (concept)
+- [[wiki/gamedev/midnight-reign]] (project)

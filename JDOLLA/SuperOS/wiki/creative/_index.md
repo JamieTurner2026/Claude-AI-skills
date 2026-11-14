@@ -2,4 +2,6 @@
 
 Generated. Do not hand-edit.
 
-- [[wiki/creative/charter]]
+- [[wiki/creative/charter]]: Creative Vision, Art Direction & Imagination charter (concept)
+- [[wiki/creative/creative-dna]]: Creative DNA (concept)
+- [[wiki/creative/legend-of-doom]]: LEGEND OF DOOM (project)

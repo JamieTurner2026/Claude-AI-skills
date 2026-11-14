@@ -10,3 +10,6 @@ Protects Jay's projects and builds his cybersecurity knowledge: defensive securi
 - Sources: `raw/security/`
 - Deliverables: `outputs/**/*_security_*`
 - Projects: Security+ and Network+ study, reviews of the other departments' apps
+
+## Notes
+- [[wiki/security/charter]] (concept)

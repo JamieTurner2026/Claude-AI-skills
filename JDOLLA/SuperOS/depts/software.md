@@ -14,3 +14,9 @@ Turns ideas into working software: design, code, tests, debugging and deployment
 - Sources: `raw/software/`
 - Deliverables: `outputs/**/*_software_*`
 - Projects: Davidson Blessons, car-finder-app, API-bible
+
+## Notes
+- [[wiki/software/api-bible]] (project)
+- [[wiki/software/car-finder-app]] (project)
+- [[wiki/software/charter]] (concept)
+- [[wiki/software/davidson-blessons]] (project)

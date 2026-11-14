@@ -2,4 +2,5 @@
 
 Generated. Do not hand-edit.
 
-- [[wiki/ai/charter]]
+- [[wiki/ai/charter]]: AI Research, Memory & Automation charter (concept)
+- [[wiki/ai/memory-types]]: Memory types (concept)

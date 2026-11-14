@@ -11,3 +11,8 @@ Builds on Jay's manufacturing and equipment troubleshooting experience and conne
 - Sources: `raw/industrial/`
 - Deliverables: `outputs/**/*_industrial_*`
 - Projects: dda2-training-app, assembly-trainer-pro
+
+## Notes
+- [[wiki/industrial/assembly-trainer-pro]] (project)
+- [[wiki/industrial/charter]] (concept)
+- [[wiki/industrial/dda2-training-app]] (project)

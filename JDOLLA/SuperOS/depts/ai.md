@@ -11,3 +11,7 @@ Controls how knowledge is collected, organized, verified, retrieved and reused. 
 - Sources: `raw/ai/`
 - Deliverables: `outputs/**/*_ai_*`
 - Projects: JDOLLA$ (this OS), Claude-AI-skills
+
+## Notes
+- [[wiki/ai/charter]] (concept)
+- [[wiki/ai/memory-types]] (concept)

@@ -10,3 +10,8 @@ Gives the brain a creative identity: explores imaginative directions, develops v
 - Sources: `raw/creative/`
 - Deliverables: `outputs/**/*_creative_*`
 - Projects: LEGEND OF DOOM, MIDNIGHT REIGN art direction
+
+## Notes
+- [[wiki/creative/charter]] (concept)
+- [[wiki/creative/creative-dna]] (concept)
+- [[wiki/creative/legend-of-doom]] (project)
