@@ -18,7 +18,7 @@ Updated 2026-11-14.
 - This vault was drafted in a cloud session inside the `Claude-AI-skills` repo. Copy `JDOLLA/` to its permanent folder on the PC, then `git init` there.
 - Review the department charters; they were distilled from the interview answer.
 - Review the project notes. Each lists what is unknown; the two private repos are described by structure and purpose only.
-- LEGEND OF DOOM has no repo yet; Jay wants one created. Its website files have not been located.
+- LEGEND OF DOOM now has its own repo, but its Vercel project still builds from a `car-finder-app` branch. Repointing it is Jay's call.
 
 ## Known gaps
 - The blueprint assumes a Mac. On Windows the sync hook, log path and sandbox need adapting in Phases 2 and 3.
