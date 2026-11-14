@@ -18,7 +18,7 @@ A single-file operator training app for five production lines: learning modules,
 
 ## Next steps and open questions
 - The setup guide has the API key pasted into the HTML file; move it to a server-side secret instead.
-- Jay says this and [[wiki/industrial/assembly-trainer-pro]] "were a merge of two files". Source: [[raw/strategy/interview/2026-11-14_jay-answers]] Still open: which one goes forward.
+- Jay says this and [[wiki/industrial/assembly-trainer-pro]] "were a merge of two files". Source: [[raw/strategy/interview/2026-11-14_jay-answers]] Assembly Trainer Pro goes forward; this app is the information source for it.
 
 ## Related
 - Department: [[depts/industrial]] · Charter: [[wiki/industrial/charter]]
