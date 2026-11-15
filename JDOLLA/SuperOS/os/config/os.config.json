@@ -1,0 +1,17 @@
+{
+  "owner": "Jay",
+  "brand": "JDOLLA$",
+  "timezones": ["America/New_York"],
+  "engine": {
+    "t2": { "model": "haiku", "effort": "low" },
+    "t3": { "model": "opus", "effort": "high", "permissionMode": "acceptEdits", "maxBudgetUsd": 2 }
+  },
+  "artifactRoots": ["outputs"],
+  "pinnedSkills": [],
+  "layout": [
+    { "widget": "directives", "span": 2 },
+    { "widget": "clock", "span": 1 },
+    { "widget": "departments", "span": 2 },
+    { "widget": "routines", "span": 1 }
+  ]
+}
