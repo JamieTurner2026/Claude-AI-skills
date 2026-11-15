@@ -8,14 +8,17 @@ Updated 2026-11-15.
 - Project notes (2026-11-14): six project notes written from shallow clones of Jay's repos, each with a snapshot in `raw/`: MIDNIGHT REIGN, Davidson Blessons, API Bible, Car Finder app, DDA2 Training Hub, Assembly Trainer Pro. Plus a LEGEND OF DOOM stub.
 - Concept notes: `wiki/ai/memory-types.md`, `wiki/creative/creative-likes.md` (a running list of Jay's likes).
 - Skill draft: `skills/weekly-review/SKILL.md` (inert, not installed).
+- Phase 2 steps (a) to (e), built and tested in the cloud (2026-11-15) in `os/`: skeleton and contract, three-tier router, vault indexer, local bridge server (127.0.0.1 only, signed 24-hour sessions, guarded file access) and the dashboard (command bar with T1/T2/T3 bars, Directives, Clock, Departments and Routines widgets, midnight-and-neon look). 22 tests pass, and the dashboard was loaded in a real browser at desktop and phone width with no console errors.
 
 ## What does not exist yet
-- No bridge, dashboard, scheduler, brain index, routines or learning loop (Phases 2 to 5). `routines.json` and `apps.json` are empty arrays.
+- No run engine (T2/T3 runs through `claude -p`) and no skill policy or sandbox: Phase 2 steps (f) and (g). Typing a T2 or T3 request shows a notice and starts nothing.
+- No scheduler, brain index, routines or learning loop (Phases 3 to 5). `routines.json` and `apps.json` are empty arrays.
+- Not checked on Windows: `npm run open` (uses `rundll32`), the `%LOCALAPPDATA%\JDOLLA\logs` path, opening files with `explorer.exe`, and whether Claude Code's sandbox exists there. Tested on Linux only.
 - No imported Claude Code sessions or project docs. That import needs the PC.
 - `daily/`, `projects/`, `reports/` and `logs/` are created by the bridge and are git-ignored.
 
 ## Needs Jay
-- Phase 2 is ready to start on the PC. The build session should read `docs/PHASE2-HANDOFF.md` first.
+- Phase 2 steps (a) to (e) are done. Steps (f) and (g) need the PC: start a Claude Code session in the vault folder, have it read `docs/PHASE2-HANDOFF.md` (build order, steps f and g), and first run `npm install`, `npm run check` and `npm test` in `os/` on Windows. If the PC copy already has its own work in `os/`, merge instead of overwriting.
 - This vault was drafted in a cloud session inside the `Claude-AI-skills` repo. Copy `JDOLLA/` to its permanent folder on the PC, then `git init` there.
 - Review the department charters; they were distilled from the interview answer.
 - Review the project notes. Each lists what is unknown; the two private repos are described by structure and purpose only.
