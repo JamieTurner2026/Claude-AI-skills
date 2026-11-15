@@ -1,6 +1,6 @@
 # Status
 
-Updated 2026-11-14.
+Updated 2026-11-15.
 
 ## What exists
 - Phase 1 vault: folder layout, router `CLAUDE.md`, seven department routers, `Home.md`, containment settings, `.gitignore`.
@@ -15,6 +15,7 @@ Updated 2026-11-14.
 - `daily/`, `projects/`, `reports/` and `logs/` are created by the bridge and are git-ignored.
 
 ## Needs Jay
+- Phase 2 is ready to start on the PC. The build session should read `docs/PHASE2-HANDOFF.md` first.
 - This vault was drafted in a cloud session inside the `Claude-AI-skills` repo. Copy `JDOLLA/` to its permanent folder on the PC, then `git init` there.
 - Review the department charters; they were distilled from the interview answer.
 - Review the project notes. Each lists what is unknown; the two private repos are described by structure and purpose only.
