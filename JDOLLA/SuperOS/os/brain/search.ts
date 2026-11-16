@@ -39,7 +39,7 @@ export function search(db: DatabaseSync, raw: SearchInput): SearchHit[] {
   const input = SearchInput.parse(raw);
   const sql = `SELECT path, heading, dept, type, title, updated, trusted,
       snippet(docs_fts, 6, '[', ']', ' … ', 24) AS snippet, bm25(docs_fts, 0, 0, 0, 4, 2, 0, 1, 0) AS score
-    FROM docs_fts WHERE docs_fts MATCH ?${input.dept ? " AND dept = ?" : ""}${input.trustedOnly ? " AND trusted = '1'" : ""}
+    FROM docs_fts WHERE docs_fts MATCH ?${input.dept ? " AND dept = ?" : ""}${input.trustedOnly ? " AND CAST(trusted AS INTEGER) = 1" : ""}
     ORDER BY score LIMIT ?`;
   const run = (match: string): SearchHit[] => {
     const args: (string | number)[] = [match];

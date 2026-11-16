@@ -82,6 +82,14 @@ describe("untrusted data", () => {
     assert.ok(h.snippet.startsWith('<untrusted-data source="raw/industrial/vendor.md">') && h.snippet.endsWith("</untrusted-data>"));
     assert.ok(INJECTION.toLowerCase().includes("ignore all previous"));
   });
+  it("positive control: trustedOnly returns the wiki hits and no raw/ hit", () => {
+    const { dbPath } = setup();
+    const all = find(dbPath, "servo alarm");
+    assert.ok(all.some((h) => !h.trusted), "fixture must contain a raw/ hit for this to mean anything");
+    const only = find(dbPath, "servo alarm", { trustedOnly: true });
+    assert.ok(only.length > 0 && only.every((h) => h.trusted && h.path.startsWith("wiki/")));
+    assert.equal(only[0]?.path, "wiki/industrial/servo.md");
+  });
   it("a note cannot close the fence early (get_note)", () => {
     const { ctx } = setup();
     const r = call(ctx, "get_note", { path: "raw/industrial/vendor.md" })!.result as { content: { text: string }[] };
