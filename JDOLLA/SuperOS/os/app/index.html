@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JDOLLA$ Super OS</title>
+  <link rel="stylesheet" href="/app/styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span id="brand">JDOLLA$</span><span class="sub">Super OS</span></div>
+    <div class="counts" id="counts" aria-live="polite"></div>
+    <button type="button" id="edit" class="ghost" aria-pressed="false">Edit layout</button>
+  </header>
+
+  <section class="command" aria-label="Command bar">
+    <label for="cmd" class="sr">Type a request</label>
+    <input id="cmd" type="text" autocomplete="off" spellcheck="false" maxlength="500" placeholder="Type a request: open software, show routines, or describe work">
+    <div class="tiers" id="tiers" aria-hidden="true">
+      <div class="tier" data-tier="T1"><span class="name">T1 instant</span><span class="bar"><i></i></span><span class="pct">0%</span></div>
+      <div class="tier" data-tier="T2"><span class="name">T2 quick answer</span><span class="bar"><i></i></span><span class="pct">0%</span></div>
+      <div class="tier" data-tier="T3"><span class="name">T3 real work</span><span class="bar"><i></i></span><span class="pct">0%</span></div>
+    </div>
+    <p class="reason" id="reason" aria-live="polite">Press Enter to run. Nothing is charged for T1.</p>
+  </section>
+
+  <div class="warnings" id="warnings" hidden></div>
+  <section class="results" id="results" hidden aria-live="polite"></section>
+  <main class="grid" id="grid"></main>
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script type="module" src="/app/main.ts"></script>
+</body>
+</html>

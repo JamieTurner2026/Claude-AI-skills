@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(/os/**)",
+      "Write(/os/**)",
+      "Edit(/CLAUDE.md)",
+      "Write(/CLAUDE.md)",
+      "Edit(/depts/**)",
+      "Write(/depts/**)",
+      "Edit(/routines/**)",
+      "Write(/routines/**)",
+      "Edit(/apps/**)",
+      "Write(/apps/**)",
+      "Edit(/logs/**)",
+      "Write(/logs/**)",
+      "Edit(/evals/**)",
+      "Write(/evals/**)",
+      "Edit(/proposals/**)",
+      "Write(/proposals/**)",
+      "Edit(/skills/**)",
+      "Write(/skills/**)",
+      "Edit(/wiki/_learnings/**)",
+      "Write(/wiki/_learnings/**)",
+      "Edit(/.claude/**)",
+      "Write(/.claude/**)",
+      "Edit(/**/.env*)",
+      "Write(/**/.env*)",
+      "Read(/**/.env*)",
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(curl * | sh)"
+    ]
+  }
+}

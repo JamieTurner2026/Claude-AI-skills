@@ -1,0 +1,24 @@
+{
+  "name": "superos",
+  "version": "0.2.0",
+  "private": true,
+  "description": "JDOLLA$ Super OS: local bridge server and dashboard for the vault.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node bridge/server.ts",
+    "open": "node bridge/open.ts",
+    "check": "tsc --noEmit",
+    "test": "node --test \"shared/*.test.ts\" \"bridge/*.test.ts\" \"brain/*.test.ts\"",
+    "brain": "node brain/cli.ts"
+  },
+  "dependencies": {
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.8.0"
+  }
+}
