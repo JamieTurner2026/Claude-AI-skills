@@ -14,6 +14,9 @@ import { LayoutSchema, loadConfig, loadEnv, logDir, pathsFor, saveConfig } from 
 import type { Paths } from "./config.ts";
 import { GuardError, MAX_READ, OPEN_EXT, READ_EXT, resolveVaultFile } from "./guards.ts";
 import { DIRECTIVE_LINE, buildState, directiveId } from "./indexer.ts";
+import { makeRunLog } from "./run-log.ts";
+import { RunError, RunManager, defaultClaudeBin } from "./runs.ts";
+import type { ClaudeBin, RunEvent } from "./runs.ts";
 
 const MAX_BODY = 64 * 1024;
 const STATIC_TYPES: Record<string, string> = {
@@ -35,15 +38,22 @@ export const systemOpener: Opener = (abs) => {
   spawn(cmd as string, args as string[], { detached: true, stdio: "ignore", shell: false }).on("error", () => undefined).unref();
 };
 
-export type Bridge = { server: http.Server; secret: string; paths: Paths; mint: () => string };
+export type Bridge = { server: http.Server; secret: string; paths: Paths; mint: () => string; runs: RunManager };
 
-export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line: string) => void } = {}): Bridge {
+export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line: string) => void; claudeBin?: ClaudeBin; logDir?: string } = {}): Bridge {
   const paths = pathsFor(osDir);
   const secret = loadOrCreateSecret(paths);
   const opener = opts.opener ?? systemOpener;
   const log = opts.log ?? (() => undefined);
   const appRoot = realpathSync(paths.os);
   const directivesFile = path.join(paths.vault, "wiki", "directives.md");
+  const runLog = makeRunLog(opts.logDir ?? logDir(paths));
+  const runs = new RunManager({
+    paths,
+    config: () => loadConfig(paths),
+    bin: () => opts.claudeBin ?? defaultClaudeBin(loadConfig(paths)),
+    log: runLog,
+  });
 
   function send(res: ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}): void {
     const json = typeof body === "string" ? body : JSON.stringify(body);
@@ -115,6 +125,30 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
       if (req.headers["x-superos"] !== "1") throw new HttpError(403, "Missing x-superos header.");
     }
     const config = loadConfig(paths);
+    const runMatch = /^\/api\/runs\/([a-z0-9]{6,14}-[0-9a-f]{8})\/(stop|events)$/.exec(url.pathname);
+    if (runMatch?.[1] && runMatch[2]) {
+      const id = runMatch[1];
+      if (runMatch[2] === "stop" && req.method === "POST") {
+        if (!runs.get(id)) throw new HttpError(404, "No run with that id.");
+        return send(res, 200, { stopped: runs.stop(id), run: runs.get(id) });
+      }
+      if (runMatch[2] === "events" && req.method === "GET") {
+        if (!runs.get(id)) throw new HttpError(404, "No run with that id.");
+        // Server-sent events: replay what happened so far, then stream until the run ends.
+        res.writeHead(200, { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff", connection: "keep-alive" });
+        res.write(": connected\n\n");
+        let unsubscribe: (() => void) | null = null;
+        const onEvent = (e: RunEvent) => {
+          res.write(`data: ${JSON.stringify(e)}\n\n`);
+          if (e.type === "status") { unsubscribe?.(); res.end(); }
+        };
+        unsubscribe = runs.subscribe(id, onEvent);
+        if (res.writableEnded) unsubscribe?.();
+        req.on("close", () => unsubscribe?.());
+        return;
+      }
+      throw new HttpError(405, "Method not allowed.");
+    }
     switch (key) {
       case "GET /api/state":
         return send(res, 200, buildState(paths, config));
@@ -163,6 +197,27 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
         opener(file);
         return send(res, 200, { opened: true });
       }
+      case "POST /api/run": {
+        const body = z.object({ text: z.string().max(4000), confirm: z.boolean().optional(), budgetUsd: z.number().optional() }).strict().parse(await readJson(req));
+        if (!body.text.trim()) throw new HttpError(400, "Type a request first.");
+        // The bridge decides the tier itself; the page's bars are only a preview.
+        const depts = buildState(paths, config).departments.map((d) => ({ slug: d.slug, name: d.name }));
+        const routed = route(body.text, { depts });
+        runLog({ kind: "route", tier: routed.tier, probs: routed.probs, chars: body.text.length });
+        if (routed.tier === "T1") throw new HttpError(400, "That is an instant (T1) request. Nothing to run, and nothing is charged.");
+        if (routed.tier === "T3" && body.confirm !== true) {
+          return send(res, 409, { error: `This is real work (T3) and can cost up to $${config.engine.t3.maxBudgetUsd}. Confirm to run it.`, needsConfirm: true, capUsd: config.engine.t3.maxBudgetUsd });
+        }
+        try {
+          const run = runs.start({ text: body.text, tier: routed.tier, ...(body.budgetUsd !== undefined ? { budgetUsd: body.budgetUsd } : {}) });
+          return send(res, 202, { run });
+        } catch (e) {
+          if (e instanceof RunError) throw new HttpError(e.status, e.message);
+          throw e;
+        }
+      }
+      case "GET /api/runs":
+        return send(res, 200, { runs: runs.list() });
       default:
         throw new HttpError(404, "Unknown API route.");
     }
@@ -196,7 +251,9 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
   });
   server.requestTimeout = 15_000;
 
-  return { server, secret, paths, mint: () => mintToken(secret) };
+  server.on("close", () => runs.stopAll());
+
+  return { server, secret, paths, mint: () => mintToken(secret), runs };
 }
 
 // Run directly: `npm start`.
@@ -209,6 +266,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     try { mkdirSync(dir, { recursive: true }); appendFileSync(path.join(dir, "server.log"), `${new Date().toISOString()} ${line}\n`); } catch { /* logging must never stop the server */ }
   };
   const bridge = createBridge(osDir, { log });
+  // Stop any running Claude runs when the bridge is closed with Ctrl+C.
+  for (const sig of ["SIGINT", "SIGTERM"] as const) process.on(sig, () => { bridge.runs.stopAll(); setTimeout(() => process.exit(0), 500).unref(); });
   bridge.server.on("error", (err: NodeJS.ErrnoException) => {
     console.error(err.code === "EADDRINUSE" ? `Port ${env.SUPEROS_PORT} is already in use. Is the bridge already running? Change SUPEROS_PORT in os/.env if not.` : `Bridge failed to start: ${err.message}`);
     process.exit(1);

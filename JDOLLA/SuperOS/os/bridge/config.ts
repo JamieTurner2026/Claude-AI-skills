@@ -14,8 +14,10 @@ export const ConfigSchema = z.object({
   brand: z.string().min(1).max(80),
   timezones: z.array(z.string().min(1).max(64)).min(1).max(6),
   engine: z.object({
-    t2: z.object({ model: z.string(), effort: z.string() }),
+    t2: z.object({ model: z.string(), effort: z.string(), maxBudgetUsd: z.number().positive().max(5).default(0.05) }),
     t3: z.object({ model: z.string(), effort: z.string(), permissionMode: z.string(), maxBudgetUsd: z.number().positive().max(100) }),
+    /** Optional path to the Claude Code CLI. Default: "claude" ("claude.exe" on Windows), found on PATH. */
+    claudeBin: z.string().min(1).max(260).optional(),
   }),
   artifactRoots: z.array(z.string().regex(/^[a-z][a-z0-9_-]*$/)).max(10),
   pinnedSkills: z.array(z.string()).max(50),
