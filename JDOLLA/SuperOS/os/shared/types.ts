@@ -66,6 +66,14 @@ export type RunView = {
   routine: string | null;
 };
 
+/** Routine status as the dashboard sees it (mirrors RoutineStatus in bridge/routine-runner.ts). */
+export type RoutinesView = {
+  schedulerOn: boolean; timezone: string; today: string; spentTodayUsd: number; dailyCapUsd: number;
+  routines: Array<{ id: string; name: string; schedule: string; enabled: boolean; tier: "T2" | "T3"; budgetUsd: number; skill: string | null;
+    lastRunAt: string | null; lastResult: { at: string; status: string; costUsd: number | null; runId: string | null; note: string } | null }>;
+  problems: string[];
+};
+
 export type LayoutItem = { widget: string; span: 1 | 2 | 3 };
 
 export type OsState = {

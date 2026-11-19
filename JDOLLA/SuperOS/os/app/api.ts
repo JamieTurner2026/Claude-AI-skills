@@ -1,5 +1,5 @@
 // Calls to the bridge. The session cookie is HttpOnly, so this code never sees the token.
-import type { Directive, LayoutItem, OsState, RunView } from "../shared/types.ts";
+import type { Directive, LayoutItem, OsState, RoutinesView, RunView } from "../shared/types.ts";
 
 export class ApiError extends Error {
   status: number;
@@ -30,6 +30,9 @@ export const api = {
   /** The bridge picks the tier. A T3 without confirm answers 409 with { needsConfirm, capUsd }. */
   startRun: (text: string, confirm: boolean) => call<{ run: RunView }>("/api/run", confirm ? { text, confirm: true } : { text }),
   runs: () => call<{ runs: RunView[] }>("/api/runs"),
+  routines: () => call<RoutinesView>("/api/routines"),
+  setRoutine: (id: string, enabled: boolean) => call<RoutinesView>(`/api/routines/${encodeURIComponent(id)}/toggle`, { enabled }),
+  runRoutine: (id: string) => call<{ run: RunView }>(`/api/routines/${encodeURIComponent(id)}/run`, {}),
   stopRun: (id: string) => call<{ stopped: boolean }>(`/api/runs/${encodeURIComponent(id)}/stop`, {}),
 };
 export type Api = typeof api;
