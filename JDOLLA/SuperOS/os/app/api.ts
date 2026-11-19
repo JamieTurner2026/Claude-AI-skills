@@ -1,9 +1,10 @@
 // Calls to the bridge. The session cookie is HttpOnly, so this code never sees the token.
-import type { Directive, LayoutItem, OsState } from "../shared/types.ts";
+import type { Directive, LayoutItem, OsState, RunView } from "../shared/types.ts";
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) { super(message); this.status = status; }
+  data: unknown;
+  constructor(status: number, message: string, data: unknown = null) { super(message); this.status = status; this.data = data; }
 }
 
 async function call<T>(path: string, body?: unknown): Promise<T> {
@@ -15,7 +16,7 @@ async function call<T>(path: string, body?: unknown): Promise<T> {
   const data: unknown = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = typeof data === "object" && data !== null && "error" in data && typeof data.error === "string" ? data.error : `Request failed (${res.status}).`;
-    throw new ApiError(res.status, msg);
+    throw new ApiError(res.status, msg, data);
   }
   return data as T;
 }
@@ -26,5 +27,9 @@ export const api = {
   toggleDirective: (id: string) => call<{ directives: Directive[] }>("/api/directives/toggle", { id }),
   addDirective: (text: string) => call<{ directives: Directive[] }>("/api/directives/add", { text }),
   open: (path: string) => call<{ opened: boolean }>("/api/open", { path }),
+  /** The bridge picks the tier. A T3 without confirm answers 409 with { needsConfirm, capUsd }. */
+  startRun: (text: string, confirm: boolean) => call<{ run: RunView }>("/api/run", confirm ? { text, confirm: true } : { text }),
+  runs: () => call<{ runs: RunView[] }>("/api/runs"),
+  stopRun: (id: string) => call<{ stopped: boolean }>(`/api/runs/${encodeURIComponent(id)}/stop`, {}),
 };
 export type Api = typeof api;

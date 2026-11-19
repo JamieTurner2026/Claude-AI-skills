@@ -4,5 +4,6 @@ import { clock } from "./clock.ts";
 import { departments } from "./departments.ts";
 import { directives } from "./directives.ts";
 import { routines } from "./routines.ts";
+import { runs } from "./runs.ts";
 
-export const registry: Record<string, Widget> = { directives, departments, routines, clock };
+export const registry: Record<string, Widget> = { directives, departments, routines, clock, runs };
