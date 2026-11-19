@@ -12,7 +12,9 @@ Updated 2026-11-15.
 
 ## What does not exist yet
 - Step (f) runs: built 2026-11-19. T2 and T3 requests run Claude Code headless from the dashboard (Runs widget: live output, cost against cap, Stop). T3 asks for confirmation first and has no Bash until step (g). One real T2 run worked here: right answer from the vault, $0.0012 of a $0.05 cap. 69 tests pass.
-- No skill policy or sandbox yet: Phase 2 step (g).
+- Step (g) containment: built 2026-11-19. Skill policy (`os/config/skills.policy.json`), the vault's own deny rules restated with absolute paths for every run, Bash only inside Claude Code's sandbox (with no unsandboxed fallback), blocked tool calls shown on the dashboard and logged. 76 tests pass.
+- Proven with real capped runs on a throwaway vault copy holding fake `.env` secrets: a direct Read of `os/.env` was **blocked by the CLI** (not just refused by the model) and nothing leaked; an allowed note read fine. A Grep attack also leaked nothing, but only because ripgrep skips hidden files, so the Grep deny path is **not yet proven**.
+- On Jay's Windows PC there is **no Claude Code sandbox** (Claude Code's docs: native Windows runs commands unsandboxed), so runs that need Bash are refused there unless Claude Code runs inside WSL2. Windows deny-rule paths with drive letters (`//C:/...`) are untested.
 - No scheduler, brain index, routines or learning loop (Phases 3 to 5). `routines.json` and `apps.json` are empty arrays.
 - Not checked on Windows: `npm run open` (uses `rundll32`), the `%LOCALAPPDATA%\JDOLLA\logs` path, opening files with `explorer.exe`, and whether Claude Code's sandbox exists there. Tested on Linux only.
 - No imported Claude Code sessions or project docs. That import needs the PC.

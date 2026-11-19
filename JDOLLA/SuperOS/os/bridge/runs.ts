@@ -146,6 +146,7 @@ export class RunManager {
     let buf = "";
     let stderr = "";
     let result: { cost: number | null; isError: boolean; subtype: string; text: string } | null = null;
+    const toolNames = new Map<string, string>(); // tool_use id -> tool name, to label blocked calls
 
     child.stdout?.setEncoding("utf8");
     child.stdout?.on("data", (chunk: string) => {
@@ -161,18 +162,22 @@ export class RunManager {
         const m = msg as { type?: unknown; message?: { content?: unknown }; total_cost_usd?: unknown; is_error?: unknown; subtype?: unknown; result?: unknown };
         if (m.type === "user" && Array.isArray(m.message?.content)) {
           // A blocked tool call comes back as an error tool result. Record it so the block is visible.
-          for (const block of m.message.content as Array<{ type?: unknown; is_error?: unknown; content?: unknown }>) {
+          for (const block of m.message.content as Array<{ type?: unknown; is_error?: unknown; content?: unknown; tool_use_id?: unknown }>) {
             if (block.type !== "tool_result" || block.is_error !== true) continue;
-            const detail = (typeof block.content === "string" ? block.content : JSON.stringify(block.content ?? "")).slice(0, 300);
+            const detail = (typeof block.content === "string" ? block.content : JSON.stringify(block.content ?? "")).replace(/<\/?tool_use_error>/g, "").slice(0, 300);
             if (!/denied|not allowed|permission/i.test(detail)) continue;
-            const tool = /\b(Read|Write|Edit|Grep|Glob|Bash|NotebookEdit|WebFetch)\b/.exec(detail)?.[1] ?? "tool";
+            const tool = (typeof block.tool_use_id === "string" ? toolNames.get(block.tool_use_id) : undefined)
+              ?? /\b(Read|Write|Edit|Grep|Glob|Bash|NotebookEdit|WebFetch)\b/.exec(detail)?.[1] ?? "tool";
             run.denied.push(`${tool}: ${detail}`.slice(0, 200));
             this.emit(run, { type: "denied", tool, detail });
           }
         } else if (m.type === "assistant" && Array.isArray(m.message?.content)) {
-          for (const block of m.message.content as Array<{ type?: unknown; text?: unknown; name?: unknown }>) {
+          for (const block of m.message.content as Array<{ type?: unknown; text?: unknown; name?: unknown; id?: unknown }>) {
             if (block.type === "text" && typeof block.text === "string") this.emit(run, { type: "text", text: block.text + "\n" });
-            if (block.type === "tool_use" && typeof block.name === "string") this.emit(run, { type: "tool", name: block.name.slice(0, 60) });
+            if (block.type === "tool_use" && typeof block.name === "string") {
+              if (typeof block.id === "string" && toolNames.size < 500) toolNames.set(block.id, block.name.slice(0, 60));
+              this.emit(run, { type: "tool", name: block.name.slice(0, 60) });
+            }
           }
         } else if (m.type === "result") {
           result = {

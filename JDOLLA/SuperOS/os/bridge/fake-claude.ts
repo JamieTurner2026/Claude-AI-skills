@@ -16,7 +16,7 @@ if (text.includes("HANG")) {
 } else if (text.includes("TRYENV")) {
   // What the real CLI sends back when a deny rule blocks a tool call.
   out({ type: "assistant", message: { content: [{ type: "tool_use", id: "t1", name: "Read", input: { file_path: "os/.env" } }] } });
-  out({ type: "user", message: { content: [{ type: "tool_result", tool_use_id: "t1", is_error: true, content: "Permission to use Read on os/.env has been denied." }] } });
+  out({ type: "user", message: { content: [{ type: "tool_result", tool_use_id: "t1", is_error: true, content: "<tool_use_error>File is in a directory that is denied by your permission settings.</tool_use_error>" }] } });
   out({ type: "result", subtype: "success", is_error: false, total_cost_usd: 0.002, result: "I could not read that file." });
 } else if (text.includes("FAIL")) {
   out({ type: "result", subtype: "error_max_budget_usd", is_error: true, total_cost_usd: 0.05 });
