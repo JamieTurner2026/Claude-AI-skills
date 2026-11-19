@@ -3,6 +3,7 @@ Gives the brain a creative identity: explores imaginative directions, develops v
 
 ## Skills
 - `/blender-visuals`: renders, title cards and 3D visuals
+- `content-cascade` (draft in `skills/content-cascade/`, not installed): turn one deliverable into draft posts and notes
 
 ## References
 - Charter: `wiki/creative/charter.md`
