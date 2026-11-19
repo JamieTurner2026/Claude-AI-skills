@@ -17,6 +17,7 @@ import { DIRECTIVE_LINE, buildState, directiveId } from "./indexer.ts";
 import { makeRunLog } from "./run-log.ts";
 import { RunError, RunManager, defaultClaudeBin } from "./runs.ts";
 import type { ClaudeBin, RunEvent } from "./runs.ts";
+import type { SandboxStatus } from "./sandbox.ts";
 
 const MAX_BODY = 64 * 1024;
 const STATIC_TYPES: Record<string, string> = {
@@ -40,7 +41,7 @@ export const systemOpener: Opener = (abs) => {
 
 export type Bridge = { server: http.Server; secret: string; paths: Paths; mint: () => string; runs: RunManager };
 
-export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line: string) => void; claudeBin?: ClaudeBin; logDir?: string } = {}): Bridge {
+export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line: string) => void; claudeBin?: ClaudeBin; logDir?: string; sandbox?: () => SandboxStatus } = {}): Bridge {
   const paths = pathsFor(osDir);
   const secret = loadOrCreateSecret(paths);
   const opener = opts.opener ?? systemOpener;
@@ -53,6 +54,7 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
     config: () => loadConfig(paths),
     bin: () => opts.claudeBin ?? defaultClaudeBin(loadConfig(paths)),
     log: runLog,
+    ...(opts.sandbox ? { sandbox: opts.sandbox } : {}),
   });
 
   function send(res: ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}): void {
@@ -198,7 +200,7 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
         return send(res, 200, { opened: true });
       }
       case "POST /api/run": {
-        const body = z.object({ text: z.string().max(4000), confirm: z.boolean().optional(), budgetUsd: z.number().optional() }).strict().parse(await readJson(req));
+        const body = z.object({ text: z.string().max(4000), confirm: z.boolean().optional(), budgetUsd: z.number().optional(), skill: z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/).optional() }).strict().parse(await readJson(req));
         if (!body.text.trim()) throw new HttpError(400, "Type a request first.");
         // The bridge decides the tier itself; the page's bars are only a preview.
         const depts = buildState(paths, config).departments.map((d) => ({ slug: d.slug, name: d.name }));
@@ -209,7 +211,7 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
           return send(res, 409, { error: `This is real work (T3) and can cost up to $${config.engine.t3.maxBudgetUsd}. Confirm to run it.`, needsConfirm: true, capUsd: config.engine.t3.maxBudgetUsd });
         }
         try {
-          const run = runs.start({ text: body.text, tier: routed.tier, ...(body.budgetUsd !== undefined ? { budgetUsd: body.budgetUsd } : {}) });
+          const run = runs.start({ text: body.text, tier: routed.tier, ...(body.budgetUsd !== undefined ? { budgetUsd: body.budgetUsd } : {}), ...(body.skill ? { skill: body.skill } : {}) });
           return send(res, 202, { run });
         } catch (e) {
           if (e instanceof RunError) throw new HttpError(e.status, e.message);

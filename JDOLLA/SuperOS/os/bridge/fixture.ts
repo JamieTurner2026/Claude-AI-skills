@@ -15,6 +15,9 @@ export function makeVault(): string {
   writeFileSync(path.join(vault, "depts/ai.md"), "# AI Research: router\nThinks.\n\n## Skills\n");
   writeFileSync(path.join(vault, "wiki/software/a.md"), "a");
   writeFileSync(path.join(vault, "wiki/software/_index.md"), "generated");
+  mkdirSync(path.join(vault, ".claude"), { recursive: true });
+  writeFileSync(path.join(vault, "os/config/skills.policy.json"), JSON.stringify({ defaultTools: ["Read", "Glob", "Grep", "Write", "Edit"], skills: { builder: { tools: ["Bash"] } } }));
+  writeFileSync(path.join(vault, ".claude/settings.json"), JSON.stringify({ permissions: { deny: ["Edit(/os/**)", "Write(/CLAUDE.md)", "Read(/**/.env*)", "Bash(rm -rf *)"] } }));
   writeFileSync(path.join(vault, "wiki/directives.md"), "# Directives\n\n- [ ] First thing\n- [x] Done thing\nnot a directive\n");
   writeFileSync(path.join(vault, "raw/software/charter/brief.md"), "x");
   writeFileSync(path.join(vault, "routines/routines.json"), "[]");

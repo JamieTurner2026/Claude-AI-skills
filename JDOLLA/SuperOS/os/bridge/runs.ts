@@ -5,7 +5,11 @@ import type { ChildProcess } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { copyFileSync, existsSync, lstatSync, mkdirSync, readdirSync } from "node:fs";
 import path from "node:path";
-import { buildClaudeArgs, capFor } from "./claude-args.ts";
+import { ContainmentError, buildClaudeArgs, capFor } from "./claude-args.ts";
+import { allDenyRules } from "./deny-rules.ts";
+import { PolicyError, loadPolicy, t3Tools } from "./policy.ts";
+import { detectSandbox } from "./sandbox.ts";
+import type { SandboxStatus } from "./sandbox.ts";
 import type { RunTier } from "./claude-args.ts";
 import type { OsConfig, Paths } from "./config.ts";
 import type { LogLine } from "./run-log.ts";
@@ -14,12 +18,15 @@ export type RunStatus = "running" | "done" | "failed" | "stopped";
 export type RunEvent =
   | { type: "text"; text: string }
   | { type: "tool"; name: string }
+  | { type: "denied"; tool: string; detail: string }
   | { type: "status"; status: RunStatus; costUsd: number | null; error: string | null; deliverables: string[] };
 
 export type RunInfo = {
   id: string; tier: RunTier; text: string; dept: string; status: RunStatus;
   startedAt: string; endedAt: string | null; capUsd: number; costUsd: number | null;
   output: string; error: string | null; deliverables: string[];
+  /** Tool calls the CLI blocked (permission deny rules), newest last. */
+  denied: string[];
 };
 
 export class RunError extends Error {
@@ -61,8 +68,11 @@ export class RunManager {
   private bin: () => ClaudeBin;
   private log: (line: LogLine) => void;
 
-  constructor(opts: { paths: Paths; config: () => OsConfig; bin: () => ClaudeBin; log: (line: LogLine) => void }) {
+  private sandbox: () => SandboxStatus;
+
+  constructor(opts: { paths: Paths; config: () => OsConfig; bin: () => ClaudeBin; log: (line: LogLine) => void; sandbox?: () => SandboxStatus }) {
     this.paths = opts.paths; this.config = opts.config; this.bin = opts.bin; this.log = opts.log;
+    this.sandbox = opts.sandbox ?? (() => detectSandbox());
   }
 
   list(): RunInfo[] {
@@ -97,7 +107,7 @@ export class RunManager {
     for (const fn of r.listeners) { try { fn(e); } catch { /* a broken listener must not stop the run */ } }
   }
 
-  start(req: { text: string; tier: RunTier; dept?: string; budgetUsd?: number }): RunInfo {
+  start(req: { text: string; tier: RunTier; dept?: string; budgetUsd?: number; skill?: string }): RunInfo {
     const config = this.config();
     const running = [...this.runs.values()].filter((r) => r.status === "running" && r.tier === req.tier).length;
     if (running >= LIMITS[req.tier]) throw new RunError(429, `Only ${LIMITS[req.tier]} ${req.tier} run${LIMITS[req.tier] === 1 ? "" : "s"} at a time. Wait or stop one first.`);
@@ -106,14 +116,23 @@ export class RunManager {
 
     const id = `${Date.now().toString(36)}-${randomBytes(4).toString("hex")}`;
     const workDir = path.join(this.paths.vault, "outputs", "_work", id);
+    // Containment (step g): policy, deny rules and sandbox are checked before anything starts. Any problem refuses the run.
+    let built: { args: string[]; cwd: string };
+    try {
+      const tools = t3Tools(loadPolicy(this.paths), req.skill);
+      built = buildClaudeArgs({ tier: req.tier, text: req.text, budgetUsd: cap, vault: this.paths.vault, workDir, t3Tools: tools, deny: allDenyRules(this.paths.vault), sandbox: this.sandbox() }, config);
+    } catch (e) {
+      if (e instanceof PolicyError || e instanceof ContainmentError) throw new RunError(400, e.message);
+      throw e;
+    }
     if (req.tier === "T3") mkdirSync(workDir, { recursive: true });
-    const { args, cwd } = buildClaudeArgs({ tier: req.tier, text: req.text, budgetUsd: cap, vault: this.paths.vault, workDir }, config);
+    const { args, cwd } = built;
     const bin = this.bin();
 
     const run: Run = {
       id, tier: req.tier, text: req.text.slice(0, 300), dept: req.dept && /^[a-z][a-z0-9-]{0,39}$/.test(req.dept) ? req.dept : "general",
       status: "running", startedAt: new Date().toISOString(), endedAt: null, capUsd: cap, costUsd: null,
-      output: "", error: null, deliverables: [], child: null, listeners: new Set(), events: [], stopRequested: false, workDir,
+      output: "", error: null, deliverables: [], denied: [], child: null, listeners: new Set(), events: [], stopRequested: false, workDir,
     };
     this.runs.set(id, run);
     this.trim();
@@ -140,7 +159,17 @@ export class RunManager {
         try { msg = JSON.parse(line); } catch { continue; }
         if (typeof msg !== "object" || msg === null) continue;
         const m = msg as { type?: unknown; message?: { content?: unknown }; total_cost_usd?: unknown; is_error?: unknown; subtype?: unknown; result?: unknown };
-        if (m.type === "assistant" && Array.isArray(m.message?.content)) {
+        if (m.type === "user" && Array.isArray(m.message?.content)) {
+          // A blocked tool call comes back as an error tool result. Record it so the block is visible.
+          for (const block of m.message.content as Array<{ type?: unknown; is_error?: unknown; content?: unknown }>) {
+            if (block.type !== "tool_result" || block.is_error !== true) continue;
+            const detail = (typeof block.content === "string" ? block.content : JSON.stringify(block.content ?? "")).slice(0, 300);
+            if (!/denied|not allowed|permission/i.test(detail)) continue;
+            const tool = /\b(Read|Write|Edit|Grep|Glob|Bash|NotebookEdit|WebFetch)\b/.exec(detail)?.[1] ?? "tool";
+            run.denied.push(`${tool}: ${detail}`.slice(0, 200));
+            this.emit(run, { type: "denied", tool, detail });
+          }
+        } else if (m.type === "assistant" && Array.isArray(m.message?.content)) {
           for (const block of m.message.content as Array<{ type?: unknown; text?: unknown; name?: unknown }>) {
             if (block.type === "text" && typeof block.text === "string") this.emit(run, { type: "text", text: block.text + "\n" });
             if (block.type === "tool_use" && typeof block.name === "string") this.emit(run, { type: "tool", name: block.name.slice(0, 60) });
@@ -175,7 +204,7 @@ export class RunManager {
       if (run.status === "done" && run.tier === "T3") run.deliverables = this.copyDeliverables(run);
       run.child = null;
       this.emit(run, { type: "status", status: run.status, costUsd: run.costUsd, error: run.error, deliverables: run.deliverables });
-      this.log({ kind: "result", id, tier: run.tier, status: run.status, costUsd: run.costUsd, capUsd: cap, ms: Date.parse(run.endedAt) - Date.parse(run.startedAt), exit: code ?? -1 });
+      this.log({ kind: "result", id, tier: run.tier, status: run.status, costUsd: run.costUsd, capUsd: cap, ms: Date.parse(run.endedAt) - Date.parse(run.startedAt), exit: code ?? -1, denied: run.denied.length });
       run.listeners.clear();
     };
     child.on("error", (err) => finish(null, err));
