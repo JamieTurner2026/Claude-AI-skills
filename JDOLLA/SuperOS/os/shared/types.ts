@@ -60,6 +60,10 @@ export type RunView = {
   status: "running" | "done" | "failed" | "stopped";
   startedAt: string; endedAt: string | null; capUsd: number; costUsd: number | null;
   output: string; error: string | null; deliverables: string[]; denied: string[];
+  /** The run's final answer, if it finished. */
+  result: string | null;
+  /** Set when a scheduled routine started the run. */
+  routine: string | null;
 };
 
 export type LayoutItem = { widget: string; span: 1 | 2 | 3 };

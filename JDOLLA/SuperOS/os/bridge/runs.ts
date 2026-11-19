@@ -27,6 +27,20 @@ export type RunInfo = {
   output: string; error: string | null; deliverables: string[];
   /** Tool calls the CLI blocked (permission deny rules), newest last. */
   denied: string[];
+  /** The run's final answer, if it finished. */
+  result: string | null;
+  /** Set when a scheduled routine started the run. */
+  routine: string | null;
+};
+
+/** Extra options only the bridge itself uses (never taken from a web request). */
+export type InternalRunOptions = {
+  /** A routine's own budget, checked against engine.routines.maxBudgetUsd instead of the interactive tier cap. */
+  routineBudgetUsd?: number;
+  routine?: string;
+  /** Files copied into a T3 run's work folder under _inputs/ before it starts (never copied back out). */
+  inputs?: string[];
+  onEnd?: (info: RunInfo) => void;
 };
 
 export class RunError extends Error {
@@ -43,7 +57,7 @@ const MAX_KEPT = 50;
 const MAX_DELIVERABLES = 20;
 const MAX_DELIVERABLE_BYTES = 20 * 1024 * 1024;
 
-type Run = RunInfo & { child: ChildProcess | null; listeners: Set<(e: RunEvent) => void>; events: RunEvent[]; stopRequested: boolean; workDir: string };
+type Run = RunInfo & { child: ChildProcess | null; listeners: Set<(e: RunEvent) => void>; events: RunEvent[]; stopRequested: boolean; workDir: string; onEnd: ((info: RunInfo) => void) | null };
 
 export function defaultClaudeBin(config: OsConfig, platform: string = process.platform): ClaudeBin {
   return { cmd: config.engine.claudeBin ?? (platform === "win32" ? "claude.exe" : "claude"), prefixArgs: [] };
@@ -85,7 +99,7 @@ export class RunManager {
   }
 
   private info(r: Run): RunInfo {
-    const { child: _c, listeners: _l, events: _e, stopRequested: _s, workDir: _w, ...info } = r;
+    const { child: _c, listeners: _l, events: _e, stopRequested: _s, workDir: _w, onEnd: _o, ...info } = r;
     return { ...info, output: info.output.slice(-4000) };
   }
 
@@ -107,12 +121,18 @@ export class RunManager {
     for (const fn of r.listeners) { try { fn(e); } catch { /* a broken listener must not stop the run */ } }
   }
 
-  start(req: { text: string; tier: RunTier; dept?: string; budgetUsd?: number; skill?: string }): RunInfo {
+  start(req: { text: string; tier: RunTier; dept?: string; budgetUsd?: number; skill?: string }, internal: InternalRunOptions = {}): RunInfo {
     const config = this.config();
     const running = [...this.runs.values()].filter((r) => r.status === "running" && r.tier === req.tier).length;
     if (running >= LIMITS[req.tier]) throw new RunError(429, `Only ${LIMITS[req.tier]} ${req.tier} run${LIMITS[req.tier] === 1 ? "" : "s"} at a time. Wait or stop one first.`);
     let cap: number;
-    try { cap = capFor(req.tier, config, req.budgetUsd); } catch (e) { throw new RunError(400, e instanceof Error ? e.message : "Bad budget."); }
+    if (internal.routineBudgetUsd !== undefined) {
+      const b = internal.routineBudgetUsd;
+      if (!Number.isFinite(b) || b <= 0 || b > config.engine.routines.maxBudgetUsd) throw new RunError(400, `A routine's budget must be more than $0 and at most $${config.engine.routines.maxBudgetUsd}.`);
+      cap = b;
+    } else {
+      try { cap = capFor(req.tier, config, req.budgetUsd); } catch (e) { throw new RunError(400, e instanceof Error ? e.message : "Bad budget."); }
+    }
 
     const id = `${Date.now().toString(36)}-${randomBytes(4).toString("hex")}`;
     const workDir = path.join(this.paths.vault, "outputs", "_work", id);
@@ -125,14 +145,21 @@ export class RunManager {
       if (e instanceof PolicyError || e instanceof ContainmentError) throw new RunError(400, e.message);
       throw e;
     }
-    if (req.tier === "T3") mkdirSync(workDir, { recursive: true });
+    if (req.tier === "T3") {
+      mkdirSync(workDir, { recursive: true });
+      if (internal.inputs?.length) {
+        const inDir = path.join(workDir, "_inputs");
+        mkdirSync(inDir, { recursive: true });
+        for (const f of internal.inputs.slice(0, 5)) { if (lstatSync(f).isFile()) copyFileSync(f, path.join(inDir, path.basename(f))); }
+      }
+    }
     const { args, cwd } = built;
     const bin = this.bin();
 
     const run: Run = {
       id, tier: req.tier, text: req.text.slice(0, 300), dept: req.dept && /^[a-z][a-z0-9-]{0,39}$/.test(req.dept) ? req.dept : "general",
       status: "running", startedAt: new Date().toISOString(), endedAt: null, capUsd: cap, costUsd: null,
-      output: "", error: null, deliverables: [], denied: [], child: null, listeners: new Set(), events: [], stopRequested: false, workDir,
+      output: "", error: null, deliverables: [], denied: [], result: null, routine: internal.routine ?? null, onEnd: internal.onEnd ?? null, child: null, listeners: new Set(), events: [], stopRequested: false, workDir,
     };
     this.runs.set(id, run);
     this.trim();
@@ -196,6 +223,7 @@ export class RunManager {
       if (run.status !== "running") return;
       const r = result as { cost: number | null; isError: boolean; subtype: string; text: string } | null;
       run.costUsd = r?.cost ?? null;
+      run.result = r && !r.isError ? r.text.slice(0, 100_000) : null;
       run.endedAt = new Date().toISOString();
       if (run.stopRequested) run.status = "stopped";
       else if (spawnError) { run.status = "failed"; run.error = `Could not start Claude Code (${spawnError.message}). Is it installed and on PATH?`; }
@@ -211,6 +239,9 @@ export class RunManager {
       this.emit(run, { type: "status", status: run.status, costUsd: run.costUsd, error: run.error, deliverables: run.deliverables });
       this.log({ kind: "result", id, tier: run.tier, status: run.status, costUsd: run.costUsd, capUsd: cap, ms: Date.parse(run.endedAt) - Date.parse(run.startedAt), exit: code ?? -1, denied: run.denied.length });
       run.listeners.clear();
+      const onEnd = run.onEnd;
+      run.onEnd = null;
+      if (onEnd) { try { onEnd(this.info(run)); } catch { /* a broken callback must not break the run */ } }
     };
     child.on("error", (err) => finish(null, err));
     child.on("close", (code) => finish(code));
