@@ -124,6 +124,10 @@ body.editing .widget .tools { display: flex; }
 .switch[aria-pressed="true"] { color: var(--bg); background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px rgba(39, 240, 255, 0.4); }
 .runnow { border: 1px solid var(--line); background: transparent; color: var(--text); border-radius: 2px; padding: 2px 10px; font-size: 0.76rem; }
 .runnow:hover { border-color: var(--accent); color: var(--accent); }
+.skill-in { flex: 1; min-width: 10em; background: var(--surface-2); border: 1px solid var(--line); border-radius: 2px; color: var(--text); padding: 4px 8px; font-size: 0.8rem; }
+.skill-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.rt .desc { font-size: 0.8rem; color: var(--muted); overflow-wrap: anywhere; }
+.rt .warn { color: var(--warn); }
 .spend { font-family: var(--mono); font-size: 0.74rem; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .spend b { color: var(--text); font-weight: 500; }
 .spend .off { color: var(--warn); }

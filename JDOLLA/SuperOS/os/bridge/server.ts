@@ -23,6 +23,7 @@ import { RunError, RunManager, defaultClaudeBin } from "./runs.ts";
 import type { ClaudeBin, RunEvent } from "./runs.ts";
 import type { SandboxStatus } from "./sandbox.ts";
 import { buildAll } from "../vault/generate.ts";
+import { SKILL_SLUG, findSkill } from "./skills.ts";
 import type { BuildResult } from "../vault/generate.ts";
 
 const MAX_BODY = 64 * 1024;
@@ -78,10 +79,10 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
     try {
       const r = buildAll(paths, (opts.now ?? (() => new Date()))());
       const problems = r.files.filter((f) => f.action === "skipped" && f.reason && !f.reason.startsWith("not generated")).map((f) => `${f.path}: ${f.reason}`).join("; ").slice(0, 500);
-      runLog({ event: "vault-build", trigger, created: r.counts.create, updated: r.counts.update, unchanged: r.counts.unchanged, skipped: r.counts.skipped, problems });
+      runLog({ kind: "vault-build", trigger, created: r.counts.create, updated: r.counts.update, unchanged: r.counts.unchanged, skipped: r.counts.skipped, problems });
       return r;
     } catch (e) {
-      runLog({ event: "vault-build-failed", trigger, error: (e instanceof Error ? e.message : String(e)).slice(0, 300) });
+      runLog({ kind: "vault-build-failed", trigger, error: (e instanceof Error ? e.message : String(e)).slice(0, 300) });
       return null;
     }
   }
@@ -172,6 +173,30 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
       }
     }
     if (url.pathname === "/api/routines" && req.method === "GET") return send(res, 200, routines.status());
+    if (url.pathname === "/api/skills" && req.method === "GET") return send(res, 200, routines.skillsView());
+    // Run a skill: the same path, caps and containment as a routine's Run now. A T3 skill asks for confirmation first.
+    const skillMatch = /^\/api\/skills\/([^/]{1,100})\/run$/.exec(url.pathname);
+    if (skillMatch?.[1] && req.method === "POST") {
+      const name = skillMatch[1];
+      if (!SKILL_SLUG.test(name)) throw new HttpError(400, "Bad skill name.");
+      const body = z.object({ input: z.string().max(500).optional(), confirm: z.boolean().optional() }).strict().parse(await readJson(req));
+      const skill = findSkill(paths, name);
+      if (!skill) throw new HttpError(404, "No skill with that name.");
+      if (!skill.runnable) throw new HttpError(400, skill.problem ?? "That skill cannot run.");
+      const limit = config.engine.routines.maxBudgetUsd;
+      if (skill.budgetUsd > limit) throw new HttpError(400, `Its budget of $${skill.budgetUsd} is above the limit of $${limit} for one run.`);
+      const capNote = routines.dailyCapProblem(skill.budgetUsd); // say so before asking Jay to confirm, not after
+      if (capNote) throw new HttpError(429, capNote);
+      if (skill.tier === "T3" && body.confirm !== true) {
+        return send(res, 409, { error: `Run this? ${name} is real work (T3) and can cost up to $${skill.budgetUsd}. Confirm to run it.`, needsConfirm: true, capUsd: skill.budgetUsd });
+      }
+      try {
+        return send(res, 202, { run: routines.runSkill(name, body.input !== undefined ? { input: body.input } : {}) });
+      } catch (e) {
+        if (e instanceof RunError) throw new HttpError(e.status, e.message);
+        throw e;
+      }
+    }
     if (url.pathname === "/api/proposals" && req.method === "GET") {
       return send(res, 200, { proposals: learning.list(), spentTodayUsd: learning.spentToday(), dailyCapUsd: config.engine.learning.dailyCapUsd, enabled: config.engine.learning.enabled });
     }

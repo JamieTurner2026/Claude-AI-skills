@@ -76,6 +76,13 @@ export type RoutinesView = {
   problems: string[];
 };
 
+/** A skill as the Skills widget sees it (mirrors SkillEntry in bridge/skills.ts, plus its last run). */
+export type SkillView = {
+  name: string; description: string; tier: "T2" | "T3"; tierKnown: boolean; budgetUsd: number; budgetKnown: boolean; runnable: boolean; problem: string | null;
+  lastRunAt: string | null; lastResult: { at: string; status: string; costUsd: number | null; runId: string | null; note: string } | null;
+};
+export type SkillsView = { skills: SkillView[]; spentTodayUsd: number; dailyCapUsd: number; maxBudgetUsd: number };
+
 /** A learning-loop proposal as the dashboard sees it (mirrors Proposal in bridge/learning.ts). */
 export type ProposalView = {
   id: string; createdAt: string; status: "pending" | "approved" | "rejected"; decidedAt: string | null;

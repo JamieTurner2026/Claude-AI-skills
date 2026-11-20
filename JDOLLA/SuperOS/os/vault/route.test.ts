@@ -58,10 +58,10 @@ test("a failed rebuild is logged to router.jsonl, answers 500, and the bridge ke
   assert.equal(res.status, 500);
   assert.equal((await fetch(`${base}/api/state`, { headers: { authorization: `Bearer ${token}` } })).status, 200, "still serving");
   const lines = readFileSync(path.join(logs, "router.jsonl"), "utf8").trim().split("\n").map((l) => JSON.parse(l) as Record<string, unknown>);
-  const failed = lines.find((l) => l["event"] === "vault-build-failed");
+  const failed = lines.find((l) => l["kind"] === "vault-build-failed");
   assert.equal(failed?.["trigger"], "api");
   assert.match(String(failed?.["error"]), /clock exploded/);
-  assert.ok(lines.some((l) => l["event"] === "vault-build" && l["trigger"] === "api"), "successful builds are logged too");
+  assert.ok(lines.some((l) => l["kind"] === "vault-build" && l["trigger"] === "api"), "successful builds are logged too");
   // control: it works again afterwards
   assert.equal((await rebuild(good())).status, 200);
 });

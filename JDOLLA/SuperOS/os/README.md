@@ -40,6 +40,13 @@ Needs Node 22.18 or newer (it runs TypeScript directly, no build step).
 - Before each run the index (`%USERPROFILE%\.superos\brain\index.sqlite`, or `~/.superos/brain/`) is rebuilt if it is missing or over 5 minutes old. If that fails the run still goes ahead, without the brain, and `brain-index-failed` is logged.
 - Turn it off with `engine.brain.enabled: false` in `config/os.config.json`.
 
+## Skill runner (Phase 6c)
+- `bridge/skills.ts` lists `skills/<name>/SKILL.md`: name and description from the frontmatter, tier and suggested budget from the "Tier: **T2" and "budget: **$0.25" lines. An unreadable line shows "unknown" and defaults to T2 and $0.05. Links, odd folder names and files over 64 KB are never run.
+- `GET /api/skills` and `POST /api/skills/:name/run` (body `{ input?, confirm? }`, input up to 500 characters) sit behind the same session, origin and `x-superos` checks as the other writes. Names must match the skill slug pattern.
+- The run is `RoutineRunner.runSkill`, the same path as a routine's Run now: the skill's own budget (refused if above `engine.routines.maxBudgetUsd`), the shared daily routine cap, containment, the bridge-written report in `reports/` (T2) and the learning loop. A T3 skill needs `confirm: true` first (the route answers 409 with `needsConfirm` and `capUsd`). A run that would break the daily cap is refused before it asks.
+- Skill runs have no routine id and are booked as `skill:<name>` in the ledger, so they never mark a scheduled routine as done.
+- `config/skills.policy.json` has an entry by name for each of the seven department agents: default tools only, no Bash, default script tools (`today`).
+
 ## Vault generators (Phase 6a)
 ```
 npm run vault -- build --dry-run   # show what would be written, write nothing

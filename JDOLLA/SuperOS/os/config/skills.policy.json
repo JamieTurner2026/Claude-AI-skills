@@ -1,5 +1,13 @@
 {
   "defaultTools": ["Read", "Glob", "Grep", "Write", "Edit"],
   "scriptTools": ["today"],
-  "skills": {}
+  "skills": {
+    "code-quality": { "tools": [] },
+    "security-review": { "tools": [] },
+    "knowledge-improvement": { "tools": [] },
+    "game-testing": { "tools": [] },
+    "industrial-training-sim": { "tools": [] },
+    "project-intelligence": { "tools": [] },
+    "creative-critic": { "tools": [] }
+  }
 }

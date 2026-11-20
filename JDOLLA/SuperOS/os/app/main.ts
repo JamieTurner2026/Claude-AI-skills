@@ -124,7 +124,7 @@ function run(): void {
   if (!a) { toast(r.reason); return; }
   if (a.kind === "open-dept") { selectedDept = a.slug; draw(); flash("departments"); }
   else if (a.kind === "show") flash(a.target === "apps" ? "apps" : a.target);
-  else if (a.kind === "skill") toast(`/${a.name} runs arrive with step (f). Nothing was started.`);
+  else if (a.kind === "skill") { toast(`Use the Skills widget to run /${a.name}. Nothing was started.`); flash("skills"); }
   else search(a.query);
 }
 
