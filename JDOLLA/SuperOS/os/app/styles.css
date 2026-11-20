@@ -135,3 +135,13 @@ body.editing .widget .tools { display: flex; }
   .counts { margin-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.pr { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid var(--line); min-width: 0; }
+.pr:first-of-type { border-top: 0; }
+.pr .prtop { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.pr .nm { font-weight: 600; flex: 1; min-width: 0; overflow-wrap: anywhere; text-align: left; }
+.pr p { margin: 0; overflow-wrap: anywhere; font-size: 0.86rem; }
+.pr .meta { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
+.pr .acts { display: flex; gap: 8px; margin-top: 4px; }
+.pr .approve { border-color: var(--accent); color: var(--accent); }
+.pr .approve:disabled { opacity: 0.5; cursor: not-allowed; }
+.pr.approved, .pr.rejected { opacity: 0.6; }

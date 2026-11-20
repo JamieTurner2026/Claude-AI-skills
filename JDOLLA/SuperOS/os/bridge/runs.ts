@@ -7,7 +7,8 @@ import { copyFileSync, existsSync, lstatSync, mkdirSync, readdirSync } from "nod
 import path from "node:path";
 import { ContainmentError, buildClaudeArgs, capFor } from "./claude-args.ts";
 import { allDenyRules } from "./deny-rules.ts";
-import { PolicyError, loadPolicy, t3Tools } from "./policy.ts";
+import { PolicyError, loadPolicy, scriptToolsFor, t3Tools } from "./policy.ts";
+import { buildRunMcp } from "./mcp-servers.ts";
 import { detectSandbox } from "./sandbox.ts";
 import type { BrainLink } from "./brain-link.ts";
 import type { SandboxStatus } from "./sandbox.ts";
@@ -32,6 +33,10 @@ export type RunInfo = {
   result: string | null;
   /** Set when a scheduled routine started the run. */
   routine: string | null;
+  /** The skill the run followed, if any. */
+  skill: string | null;
+  /** "diagnosis" for the learning loop's own runs, which never trigger another proposal. */
+  purpose: "run" | "diagnosis";
 };
 
 /** Extra options only the bridge itself uses (never taken from a web request). */
@@ -42,6 +47,7 @@ export type InternalRunOptions = {
   /** Files copied into a T3 run's work folder under _inputs/ before it starts (never copied back out). */
   inputs?: string[];
   onEnd?: (info: RunInfo) => void;
+  purpose?: "run" | "diagnosis";
 };
 
 export class RunError extends Error {
@@ -89,6 +95,13 @@ export class RunManager {
 
   private sandbox: () => SandboxStatus;
   private brain: BrainLink | null;
+  private endListeners = new Set<(info: RunInfo) => void>();
+
+  /** Called once for every run that ends (after its own onEnd). Returns an unsubscribe function. */
+  addEndListener(fn: (info: RunInfo) => void): () => void {
+    this.endListeners.add(fn);
+    return () => this.endListeners.delete(fn);
+  }
 
   constructor(opts: { paths: Paths; config: () => OsConfig; bin: () => ClaudeBin; log: (line: LogLine) => void; sandbox?: () => SandboxStatus; brain?: BrainLink | null }) {
     this.paths = opts.paths; this.config = opts.config; this.bin = opts.bin; this.log = opts.log;
@@ -146,9 +159,11 @@ export class RunManager {
     // Containment (step g): policy, deny rules and sandbox are checked before anything starts. Any problem refuses the run.
     let built: { args: string[]; cwd: string };
     try {
-      const tools = t3Tools(loadPolicy(this.paths), req.skill);
-      const brainMcpConfig = config.engine.brain.enabled && this.brain?.ensureFresh() ? this.brain.mcpConfig() : null;
-      built = buildClaudeArgs({ tier: req.tier, text: req.text, budgetUsd: cap, vault: this.paths.vault, workDir, t3Tools: tools, deny: allDenyRules(this.paths.vault), sandbox: this.sandbox(), brainMcpConfig }, config);
+      const policy = loadPolicy(this.paths);
+      const tools = t3Tools(policy, req.skill);
+      const brain = config.engine.brain.enabled && this.brain?.ensureFresh() ? this.brain.server() : null;
+      const mcp = buildRunMcp({ brain, tools: config.engine.tools.enabled ? scriptToolsFor(policy, req.skill) : [], timezone: config.timezones[0] ?? "America/New_York" });
+      built = buildClaudeArgs({ tier: req.tier, text: req.text, budgetUsd: cap, vault: this.paths.vault, workDir, t3Tools: tools, deny: allDenyRules(this.paths.vault), sandbox: this.sandbox(), mcp }, config);
     } catch (e) {
       if (e instanceof PolicyError || e instanceof ContainmentError) throw new RunError(400, e.message);
       throw e;
@@ -167,7 +182,7 @@ export class RunManager {
     const run: Run = {
       id, tier: req.tier, text: req.text.slice(0, 300), dept: req.dept && /^[a-z][a-z0-9-]{0,39}$/.test(req.dept) ? req.dept : "general",
       status: "running", startedAt: new Date().toISOString(), endedAt: null, capUsd: cap, costUsd: null,
-      output: "", error: null, deliverables: [], denied: [], result: null, routine: internal.routine ?? null, onEnd: internal.onEnd ?? null, child: null, listeners: new Set(), events: [], stopRequested: false, workDir,
+      output: "", error: null, deliverables: [], denied: [], result: null, routine: internal.routine ?? null, skill: req.skill && /^[a-z0-9][a-z0-9-]{0,39}$/.test(req.skill) ? req.skill : null, purpose: internal.purpose ?? "run", onEnd: internal.onEnd ?? null, child: null, listeners: new Set(), events: [], stopRequested: false, workDir,
     };
     this.runs.set(id, run);
     this.trim();
@@ -250,6 +265,7 @@ export class RunManager {
       const onEnd = run.onEnd;
       run.onEnd = null;
       if (onEnd) { try { onEnd(this.info(run)); } catch { /* a broken callback must not break the run */ } }
+      for (const fn of this.endListeners) { try { fn(this.info(run)); } catch { /* same */ } }
     };
     child.on("error", (err) => finish(null, err));
     child.on("close", (code) => finish(code));

@@ -163,6 +163,22 @@ Money limits:
 
 To stop everything scheduled at once, set `SUPEROS_SCHEDULER=off` in `os\.env` and restart the bridge.
 
+## 10b. Proposals (the learning loop)
+
+When a run fails, gets tools blocked, or stops at its cap, a card appears in the **Proposals** widget:
+- what broke;
+- a suggested fix and lesson;
+- for a routine, one rule to add to its skill.
+
+Drafting each suggestion is a small read-only run that costs up to $0.05. All of them together stop at $0.25 a day.
+
+- **Approve** saves the lesson to `wiki\_learnings\` and adds the rule at the end of the skill under "Learned rules". Nothing else in the skill changes.
+- **Reject** changes nothing.
+- Nothing is ever applied without your click.
+- To switch the loop off, set `"learning": { "enabled": false, ... }` under `engine` in `os\config\os.config.json` and restart the bridge.
+
+Runs also get one safe tool, `today`, which gives the real date in your time zone. Tools are scripts the bridge runs; no run gets a command line.
+
 ## 11. Windows checks (never tested on Windows; please do these once)
 
 These all passed on Linux in the cloud. Windows is untested. Tell Claude the result of each one.
@@ -191,5 +207,6 @@ These all passed on Linux in the cloud. Windows is untested. Tell Claude the res
 | Dashboard says signed out | The 24-hour session ran out: run `npm run open` again. |
 | Runs don't use the brain | Check `engine.brain.enabled` is `true`. Look in `router.jsonl` for `brain-index-failed`: the run went ahead without the brain. Rerun `npm run brain -- index` and read its error. |
 | A routine didn't run | Is it switched on? Is `SUPEROS_SCHEDULER=on`? Was the bridge running? Is "spent today" near $1? `router.jsonl` says which. |
+| No proposal after a failed run | Was it stopped with Stop? Those never get one. Same failure earlier today? Only the first gets one. Check `engine.learning.enabled`; `router.jsonl` shows `proposal` lines. |
 | A test fails after updating | Don't start the bridge. Send Claude the failing lines. |
 | SQLite "experimental" warning | Harmless: Node's built-in SQLite prints it. |

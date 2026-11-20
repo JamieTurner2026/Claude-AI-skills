@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import type { Paths } from "./config.ts";
+import { SCRIPT_TOOL_NAMES } from "../tools/registry.ts";
+import type { ScriptToolName } from "../tools/registry.ts";
 
 export class PolicyError extends Error {}
 
@@ -14,9 +16,13 @@ export type ToolName = (typeof KNOWN_TOOLS)[number];
 export const T2_TOOLS: readonly ToolName[] = ["Read", "Glob", "Grep"];
 
 const ToolList = z.array(z.enum(KNOWN_TOOLS)).max(10);
+/** Named script tools (os/tools/) by exact name; an unknown name makes the whole policy invalid. */
+const ScriptToolList = z.array(z.enum(SCRIPT_TOOL_NAMES)).max(20);
 export const PolicySchema = z.object({
   defaultTools: ToolList.min(1),
-  skills: z.record(z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/), z.object({ tools: ToolList }).strict()).default({}),
+  /** Script tools every run gets. */
+  scriptTools: ScriptToolList.default(["today"]),
+  skills: z.record(z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/), z.object({ tools: ToolList.default([]), scriptTools: ScriptToolList.optional() }).strict()).default({}),
 }).strict();
 export type Policy = z.infer<typeof PolicySchema>;
 
@@ -34,4 +40,10 @@ export function loadPolicy(p: Paths): Policy {
 export function t3Tools(policy: Policy, skill?: string): ToolName[] {
   const extra = skill ? policy.skills[skill]?.tools ?? [] : [];
   return [...new Set([...policy.defaultTools, ...extra])];
+}
+
+/** Script tools for a run: the defaults plus what a named skill lists. */
+export function scriptToolsFor(policy: Policy, skill?: string): ScriptToolName[] {
+  const extra = skill ? policy.skills[skill]?.scriptTools ?? [] : [];
+  return [...new Set([...policy.scriptTools, ...extra])];
 }
