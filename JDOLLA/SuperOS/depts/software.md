@@ -7,6 +7,7 @@ Turns ideas into working software: design, code, tests, debugging and deployment
 - `/repo-conventions`: CLAUDE.md, PR template, commit rules
 - `/repo-features`: drop-in feature modules
 - `/repo-ship`: secrets preflight, GitHub push, first deploy
+- `code-quality` (draft, inert, `skills/code-quality/`): review a change before it is merged; report only
 
 ## References
 - Charter: `wiki/software/charter.md`

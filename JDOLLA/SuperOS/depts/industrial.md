@@ -4,6 +4,7 @@ Builds on Jay's manufacturing and equipment troubleshooting experience and conne
 ## Skills
 - `/video-knowledge`: learn procedures, warnings and error codes from equipment training videos
 - `/blender-visuals`: 3D diagrams of machines, stations and component layouts
+- `industrial-training-sim` (draft, inert, `skills/industrial-training-sim/`): safe, fictional troubleshooting scenarios; simulation and training only
 
 ## References
 - Charter: `wiki/industrial/charter.md`

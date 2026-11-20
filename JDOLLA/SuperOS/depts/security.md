@@ -3,6 +3,7 @@ Protects Jay's projects and builds his cybersecurity knowledge: defensive securi
 
 ## Skills
 - `/security-review`: security review of pending changes on a branch (built into Claude Code)
+- `security-review` (draft, inert, `skills/security-review/`): vault-aware, report-only review of Jay's own code changes; separate from the built-in `/security-review` above
 
 ## References
 - Charter: `wiki/security/charter.md`
