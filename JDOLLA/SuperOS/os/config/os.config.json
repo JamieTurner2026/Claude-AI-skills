@@ -3,7 +3,7 @@
   "brand": "JDOLLA$",
   "timezones": ["America/New_York"],
   "engine": {
-    "t2": { "model": "haiku", "effort": "low" },
+    "t2": { "model": "haiku", "effort": "low", "maxBudgetUsd": 0.05 },
     "t3": { "model": "opus", "effort": "high", "permissionMode": "acceptEdits", "maxBudgetUsd": 2 }
   },
   "artifactRoots": ["outputs"],
@@ -12,6 +12,7 @@
     { "widget": "directives", "span": 2 },
     { "widget": "clock", "span": 1 },
     { "widget": "departments", "span": 2 },
-    { "widget": "routines", "span": 1 }
+    { "widget": "routines", "span": 1 },
+    { "widget": "runs", "span": 3 }
   ]
 }

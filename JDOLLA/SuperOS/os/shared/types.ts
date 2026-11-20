@@ -54,6 +54,14 @@ export type Directive = {
 export type Routine = { id: string; name: string; schedule: string; enabled: boolean };
 export type MicroApp = { id: string; name: string; url: string };
 
+/** A run as the dashboard sees it (mirrors RunInfo in bridge/runs.ts). */
+export type RunView = {
+  id: string; tier: "T2" | "T3"; text: string; dept: string;
+  status: "running" | "done" | "failed" | "stopped";
+  startedAt: string; endedAt: string | null; capUsd: number; costUsd: number | null;
+  output: string; error: string | null; deliverables: string[];
+};
+
 export type LayoutItem = { widget: string; span: 1 | 2 | 3 };
 
 export type OsState = {

@@ -119,17 +119,37 @@ function run(): void {
   if (!cmd.value.trim()) return;
   const r = classify();
   results.hidden = true;
-  if (r.tier !== "T1") {
-    // Steps (f) and (g) add real runs. Until then nothing is started, so nothing is charged.
-    toast(`${r.tier} runs are not built yet (Phase 2 step f). Nothing was started or charged.`);
-    return;
-  }
+  if (r.tier !== "T1") { void startRun(cmd.value.trim(), false); return; }
   const a = r.action;
   if (!a) { toast(r.reason); return; }
   if (a.kind === "open-dept") { selectedDept = a.slug; draw(); flash("departments"); }
   else if (a.kind === "show") flash(a.target === "apps" ? "apps" : a.target);
   else if (a.kind === "skill") toast(`/${a.name} runs arrive with step (f). Nothing was started.`);
   else search(a.query);
+}
+
+/** Starts a T2 run straight away. A T3 run costs real money, so it first asks, showing the bridge's cap. */
+async function startRun(text: string, confirmed: boolean): Promise<void> {
+  try {
+    const { run } = await api.startRun(text, confirmed);
+    results.hidden = true;
+    toast(`Started a ${run.tier} run (up to $${run.capUsd}).`);
+    await refresh();
+    flash("runs");
+  } catch (e) {
+    const data = e instanceof ApiError ? (e.data as { needsConfirm?: boolean; capUsd?: number } | null) : null;
+    if (e instanceof ApiError && e.status === 409 && data?.needsConfirm) {
+      results.hidden = false;
+      const go = h("button", { type: "button", class: "confirm-go", click: () => { results.hidden = true; void startRun(text, true); } }, `Run it (up to $${data.capUsd ?? "?"})`);
+      const cancel = h("button", { type: "button", class: "ghost", click: () => { results.hidden = true; toast("Cancelled. Nothing was started."); } }, "Cancel");
+      results.replaceChildren(h("h2", {}, "Real work: this costs money"),
+        h("div", {}, `"${text.slice(0, 160)}" will run as T3 (Opus, can write files in its own work folder). It stops at $${data.capUsd ?? "?"}.`),
+        h("div", { class: "confirm-row" }, go, cancel));
+      go.focus();
+      return;
+    }
+    toast(e instanceof Error ? e.message : "Could not start the run.");
+  }
 }
 
 cmd.addEventListener("input", () => showTiers(classify()));

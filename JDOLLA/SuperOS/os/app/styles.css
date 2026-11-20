@@ -72,6 +72,7 @@ body.editing .widget .tools { display: flex; }
 .tools button { background: var(--surface-2); border: 1px solid var(--line); border-radius: 2px; padding: 1px 8px; font-size: 0.8rem; color: var(--muted); }
 .tools button:hover { color: var(--accent); border-color: var(--accent); }
 .empty { color: var(--muted); font-size: 0.86rem; }
+.body-list { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 
 .directive { display: flex; gap: 10px; align-items: flex-start; background: none; border: 0; padding: 3px 0; text-align: left; width: 100%; }
 .directive .box { flex: none; width: 15px; height: 15px; margin-top: 3px; border: 1.5px solid var(--muted); }
@@ -98,6 +99,21 @@ body.editing .widget .tools { display: flex; }
 .row .when { font-family: var(--mono); font-size: 0.74rem; color: var(--muted); }
 
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); max-width: min(560px, calc(100vw - 32px)); background: var(--surface-2); border: 1px solid var(--accent); padding: 10px 16px; font-size: 0.88rem; box-shadow: 0 0 30px rgba(39, 240, 255, 0.2); }
+
+.confirm-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.confirm-go { background: rgba(255, 61, 154, 0.14); border: 1px solid var(--t3); color: var(--t3); border-radius: 2px; padding: 6px 14px; }
+.run { border: 1px solid var(--line); background: var(--surface-2); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.run .head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-family: var(--mono); font-size: 0.74rem; color: var(--muted); }
+.run .q { overflow-wrap: anywhere; }
+.pill { font-family: var(--mono); font-size: 0.68rem; padding: 1px 7px; border: 1px solid var(--line); color: var(--muted); }
+.pill.T2 { color: var(--t2); border-color: var(--t2); }
+.pill.T3 { color: var(--t3); border-color: var(--t3); }
+.pill.running { color: var(--accent); border-color: var(--accent); }
+.pill.done { color: var(--text); }
+.pill.failed, .pill.stopped { color: var(--warn); border-color: var(--warn); }
+.run pre { margin: 0; max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 0.76rem; color: var(--text); background: var(--bg); border: 1px solid var(--line); padding: 8px; }
+.run .err { color: var(--warn); font-size: 0.82rem; }
+.run .stop { margin-left: auto; background: transparent; border: 1px solid var(--warn); color: var(--warn); border-radius: 2px; padding: 1px 10px; font-size: 0.76rem; }
 
 @media (max-width: 820px) {
   .grid { grid-template-columns: minmax(0, 1fr); }

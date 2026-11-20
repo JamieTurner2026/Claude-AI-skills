@@ -11,7 +11,8 @@ Updated 2026-11-15.
 - Phase 2 steps (a) to (e), built and tested in the cloud (2026-11-15) in `os/`: skeleton and contract, three-tier router, vault indexer, local bridge server (127.0.0.1 only, signed 24-hour sessions, guarded file access) and the dashboard (command bar with T1/T2/T3 bars, Directives, Clock, Departments and Routines widgets, midnight-and-neon look). 22 tests pass, and the dashboard was loaded in a real browser at desktop and phone width with no console errors.
 
 ## What does not exist yet
-- No run engine (T2/T3 runs through `claude -p`) and no skill policy or sandbox: Phase 2 steps (f) and (g). Typing a T2 or T3 request shows a notice and starts nothing.
+- Step (f) runs: built 2026-11-19. T2 and T3 requests run Claude Code headless from the dashboard (Runs widget: live output, cost against cap, Stop). T3 asks for confirmation first and has no Bash until step (g). One real T2 run worked here: right answer from the vault, $0.0012 of a $0.05 cap. 69 tests pass.
+- No skill policy or sandbox yet: Phase 2 step (g).
 - No scheduler, brain index, routines or learning loop (Phases 3 to 5). `routines.json` and `apps.json` are empty arrays.
 - Not checked on Windows: `npm run open` (uses `rundll32`), the `%LOCALAPPDATA%\JDOLLA\logs` path, opening files with `explorer.exe`, and whether Claude Code's sandbox exists there. Tested on Linux only.
 - No imported Claude Code sessions or project docs. That import needs the PC.

@@ -8,3 +8,4 @@ One rule each, with its evidence.
 - **Permission rules match text, not effects.** Enforce at the OS level when a command can reach any path. (From the original build.)
 - **Render it; a type check is not a test of the page.** Evidence: 2026-11-15, the dashboard passed `tsc` and 22 tests, but a browser run showed an empty results box because `display: flex` overrode the `hidden` attribute.
 - **Break a guard on purpose to prove its test.** Evidence: 2026-11-15, removing the path check, binding every address, and skipping the token check each made the suite fail, so the passing run meant something.
+- **Read a flag's help before trusting its name.** Evidence: 2026-11-19, `--bare` looked like the way to strip inherited config, but it signs in only with an API key and would have broken every run on Jay's subscription login. `--restricted` plus `--strict-mcp-config` did the job without touching sign-in.
