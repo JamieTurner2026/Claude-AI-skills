@@ -7,14 +7,18 @@ import { defaultIndexPath, rebuildIndex } from "./indexer.ts";
 import { fence } from "./present.ts";
 import { indexCounts, openReadOnly, search } from "./search.ts";
 import { isTrusted } from "./files.ts";
+import { runImportCommand } from "./import-cli.ts";
 
-const USAGE = `usage: brain <index|search|get|stats> [args]
+const USAGE = `usage: brain <index|search|get|stats|import-sessions> [args]
   index                  rebuild the index from wiki/ and raw/
   search <query> [--dept d] [--limit n] [--trusted] [--json]
   get <vault-path>       print one note
+  import-sessions [--claude-code <dir>] [--claude-ai <conversations.json>] [--dry-run]
+                         import past sessions into raw/sessions/ (redacted, never overwritten)
   --vault <dir>  --db <file>   (defaults: this vault, ~/.superos/brain/index.sqlite)`;
 
 function main(argv: string[]): number {
+  if (argv[0] === "import-sessions") return runImportCommand(argv.slice(1));
   const { values, positionals } = parseArgs({
     args: argv, allowPositionals: true,
     options: { vault: { type: "string" }, db: { type: "string" }, dept: { type: "string" }, limit: { type: "string" }, trusted: { type: "boolean" }, json: { type: "boolean" } },

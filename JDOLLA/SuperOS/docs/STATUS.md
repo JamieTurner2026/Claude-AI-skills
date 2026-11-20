@@ -17,9 +17,10 @@ Updated 2026-11-20.
 - On Jay's Windows PC there is **no Claude Code sandbox** (Claude Code's docs: native Windows runs commands unsandboxed), so runs that need Bash are refused there unless Claude Code runs inside WSL2. Windows deny-rule paths with drive letters (`//C:/...`) are untested.
 - Routines (Phase 4 wiring): built 2026-11-19. Switch a routine on in the dashboard's Routines widget and it runs at its time while the bridge runs with `SUPEROS_SCHEDULER=on`. Run now works any time. All routines combined are capped at $1 per day (a routine only starts if its full budget still fits); each slot runs at most once, even across restarts. Read-only routines reply and the bridge writes their report to `reports/`. One real run of plan-today: a sourced plan from the vault for $0.0027. All four routines ship switched off.
 - Second brain in runs: built 2026-11-20. Every T2/T3 run and routine gets the read-only `superos-brain` tools (`search`, `get_note`) and nothing else extra; the index is rebuilt first if it is over 5 minutes old, and a failed rebuild never blocks a run. Off switch: `engine.brain.enabled`. One real run on a vault copy searched the brain twice, opened the right note and answered from it for $0.0008. 138 tests pass.
-- No learning loop yet (Phase 5). Local embeddings and session import for the brain are still open.
+- Session import for the brain: built 2026-11-20 (`npm run brain -- import-sessions`). Reads Claude Code transcripts and a claude.ai `conversations.json`, keeps user and assistant text only, redacts secrets and personal data before writing, and writes one file per session to the git-ignored `raw/sessions/<source>/`. Never overwrites, skips sessions already imported (ledger in `~/.superos/brain/`), `--dry-run` writes nothing. Imported text is searched as untrusted `raw/` data. Tested on invented fixtures only; no real session has been imported yet.
+- No learning loop yet (Phase 5). Local embeddings for the brain are still open.
 - Not checked on Windows: `npm run open` (uses `rundll32`), the `%LOCALAPPDATA%\JDOLLA\logs` path, opening files with `explorer.exe`, and whether Claude Code's sandbox exists there. Tested on Linux only.
-- No imported Claude Code sessions or project docs. That import needs the PC.
+- No imported Claude Code sessions or project docs yet. The import command exists; running it needs the PC (`docs/PC-SETUP.md`, "Import your sessions").
 - `daily/`, `projects/`, `reports/` and `logs/` are created by the bridge and are git-ignored.
 
 ## Needs Jay
