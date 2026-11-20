@@ -15,6 +15,7 @@ import type { Paths } from "./config.ts";
 import { GuardError, MAX_READ, OPEN_EXT, READ_EXT, resolveVaultFile } from "./guards.ts";
 import { DIRECTIVE_LINE, buildState, directiveId } from "./indexer.ts";
 import { makeRunLog } from "./run-log.ts";
+import { RoutineRunner } from "./routine-runner.ts";
 import { RunError, RunManager, defaultClaudeBin } from "./runs.ts";
 import type { ClaudeBin, RunEvent } from "./runs.ts";
 import type { SandboxStatus } from "./sandbox.ts";
@@ -39,9 +40,9 @@ export const systemOpener: Opener = (abs) => {
   spawn(cmd as string, args as string[], { detached: true, stdio: "ignore", shell: false }).on("error", () => undefined).unref();
 };
 
-export type Bridge = { server: http.Server; secret: string; paths: Paths; mint: () => string; runs: RunManager };
+export type Bridge = { server: http.Server; secret: string; paths: Paths; mint: () => string; runs: RunManager; routines: RoutineRunner };
 
-export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line: string) => void; claudeBin?: ClaudeBin; logDir?: string; sandbox?: () => SandboxStatus } = {}): Bridge {
+export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line: string) => void; claudeBin?: ClaudeBin; logDir?: string; sandbox?: () => SandboxStatus; schedulerOn?: boolean } = {}): Bridge {
   const paths = pathsFor(osDir);
   const secret = loadOrCreateSecret(paths);
   const opener = opts.opener ?? systemOpener;
@@ -56,6 +57,7 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
     log: runLog,
     ...(opts.sandbox ? { sandbox: opts.sandbox } : {}),
   });
+  const routines = new RoutineRunner({ paths, config: () => loadConfig(paths), runs, logDir: opts.logDir ?? logDir(paths), log: runLog, schedulerOn: opts.schedulerOn ?? false });
 
   function send(res: ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}): void {
     const json = typeof body === "string" ? body : JSON.stringify(body);
@@ -127,6 +129,22 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
       if (req.headers["x-superos"] !== "1") throw new HttpError(403, "Missing x-superos header.");
     }
     const config = loadConfig(paths);
+    const routineMatch = /^\/api\/routines\/([a-z0-9][a-z0-9-]{0,39})\/(toggle|run)$/.exec(url.pathname);
+    if (routineMatch?.[1] && routineMatch[2] && req.method === "POST") {
+      const id = routineMatch[1];
+      try {
+        if (routineMatch[2] === "toggle") {
+          const { enabled } = z.object({ enabled: z.boolean() }).strict().parse(await readJson(req));
+          routines.setEnabled(id, enabled);
+          return send(res, 200, routines.status());
+        }
+        return send(res, 202, { run: routines.runNow(id) });
+      } catch (e) {
+        if (e instanceof RunError) throw new HttpError(e.status, e.message);
+        throw e;
+      }
+    }
+    if (url.pathname === "/api/routines" && req.method === "GET") return send(res, 200, routines.status());
     const runMatch = /^\/api\/runs\/([a-z0-9]{6,14}-[0-9a-f]{8})\/(stop|events)$/.exec(url.pathname);
     if (runMatch?.[1] && runMatch[2]) {
       const id = runMatch[1];
@@ -253,9 +271,9 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
   });
   server.requestTimeout = 15_000;
 
-  server.on("close", () => runs.stopAll());
+  server.on("close", () => { routines.stopClock(); runs.stopAll(); });
 
-  return { server, secret, paths, mint: () => mintToken(secret), runs };
+  return { server, secret, paths, mint: () => mintToken(secret), runs, routines };
 }
 
 // Run directly: `npm start`.
@@ -267,7 +285,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const log = (line: string) => {
     try { mkdirSync(dir, { recursive: true }); appendFileSync(path.join(dir, "server.log"), `${new Date().toISOString()} ${line}\n`); } catch { /* logging must never stop the server */ }
   };
-  const bridge = createBridge(osDir, { log });
+  const bridge = createBridge(osDir, { log, schedulerOn: env.SUPEROS_SCHEDULER === "on" });
   // Stop any running Claude runs when the bridge is closed with Ctrl+C.
   for (const sig of ["SIGINT", "SIGTERM"] as const) process.on(sig, () => { bridge.runs.stopAll(); setTimeout(() => process.exit(0), 500).unref(); });
   bridge.server.on("error", (err: NodeJS.ErrnoException) => {
@@ -279,5 +297,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     log(`started on 127.0.0.1:${env.SUPEROS_PORT} pid ${process.pid}`);
     console.log(`JDOLLA$ bridge running on http://127.0.0.1:${env.SUPEROS_PORT} (pid ${process.pid})`);
     console.log("Open the dashboard with: npm run open");
+    bridge.routines.startClock();
+    console.log(env.SUPEROS_SCHEDULER === "on" ? "Scheduler on: switched-on routines run at their times." : "Scheduler off (SUPEROS_SCHEDULER=off): no routine runs on its own.");
   });
 }

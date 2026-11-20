@@ -16,6 +16,8 @@ export const ConfigSchema = z.object({
   engine: z.object({
     t2: z.object({ model: z.string(), effort: z.string(), maxBudgetUsd: z.number().positive().max(5).default(0.05) }),
     t3: z.object({ model: z.string(), effort: z.string(), permissionMode: z.string(), maxBudgetUsd: z.number().positive().max(100) }),
+    /** Scheduled routines: total spend per day (owner's time zone) and the most one routine run may cost. */
+    routines: z.object({ dailyCapUsd: z.number().positive().max(100), maxBudgetUsd: z.number().positive().max(100) }).default({ dailyCapUsd: 1, maxBudgetUsd: 1 }),
     /** Optional path to the Claude Code CLI. Default: "claude" ("claude.exe" on Windows), found on PATH. */
     claudeBin: z.string().min(1).max(260).optional(),
   }),
