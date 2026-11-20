@@ -41,3 +41,14 @@ Needs Node 22.18 or newer (it runs TypeScript directly, no build step).
 - Turn it off with `engine.brain.enabled: false` in `config/os.config.json`.
 
 Setting up on the PC: see `../docs/PC-SETUP.md`.
+
+## Learning loop (Phase 5)
+- `bridge/learning.ts`. A run that ends `failed` (including at its budget cap), or with blocked tool calls, gets a proposal in `proposals/`. Stopped runs and the loop's own diagnosis runs never get one. Only one proposal per subject and kind per day.
+- A read-only T2 diagnosis drafts the fix, the lesson and a skill rule as JSON. `engine.learning.diagnosisBudgetUsd` ($0.05) is reserved before it starts, and all diagnoses stop at `engine.learning.dailyCapUsd` ($0.25/day). The ledger is `learning-ledger.json` in the log folder.
+- `GET /api/proposals`, `POST /api/proposals/:id/approve|reject` sit behind the same session, origin and header checks. Approving is append-only: a new `wiki/_learnings/<id>.md` and one bullet under `## Learned rules` in the skill.
+- Switch it off with `engine.learning.enabled: false`.
+
+## Safe tools (WAT "tools")
+- `tools/`: one module per tool (zod input, plain function, no shell, no paths from the caller), listed in `tools/registry.ts`, served by `tools/mcp.ts` as `superos-tools`.
+- Each run gets only the tools its policy names (`scriptTools` in `config/skills.policy.json`; unknown names refuse every run), pre-approved as `mcp__superos-tools__<name>`.
+- To add a tool: write `tools/<name>.ts` and its test, add it to `TOOLS` and `SCRIPT_TOOL_NAMES`, then allow it by name. Switch the layer off with `engine.tools.enabled: false`.
