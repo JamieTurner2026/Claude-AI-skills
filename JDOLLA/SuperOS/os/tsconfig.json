@@ -16,5 +16,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["shared", "bridge", "app", "brain"]
+  "include": ["shared", "bridge", "app", "brain", "tools"]
 }

@@ -16,6 +16,7 @@ import { GuardError, MAX_READ, OPEN_EXT, READ_EXT, resolveVaultFile } from "./gu
 import { DIRECTIVE_LINE, buildState, directiveId } from "./indexer.ts";
 import { makeRunLog } from "./run-log.ts";
 import { RoutineRunner } from "./routine-runner.ts";
+import { LearningLoop } from "./learning.ts";
 import { BrainLink } from "./brain-link.ts";
 import { defaultIndexPath } from "../brain/indexer.ts";
 import { RunError, RunManager, defaultClaudeBin } from "./runs.ts";
@@ -42,9 +43,9 @@ export const systemOpener: Opener = (abs) => {
   spawn(cmd as string, args as string[], { detached: true, stdio: "ignore", shell: false }).on("error", () => undefined).unref();
 };
 
-export type Bridge = { server: http.Server; secret: string; paths: Paths; mint: () => string; runs: RunManager; routines: RoutineRunner };
+export type Bridge = { server: http.Server; secret: string; paths: Paths; mint: () => string; runs: RunManager; routines: RoutineRunner; learning: LearningLoop };
 
-export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line: string) => void; claudeBin?: ClaudeBin; logDir?: string; sandbox?: () => SandboxStatus; schedulerOn?: boolean; brainDbPath?: string } = {}): Bridge {
+export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line: string) => void; claudeBin?: ClaudeBin; logDir?: string; sandbox?: () => SandboxStatus; schedulerOn?: boolean; brainDbPath?: string; now?: () => Date } = {}): Bridge {
   const paths = pathsFor(osDir);
   const secret = loadOrCreateSecret(paths);
   const opener = opts.opener ?? systemOpener;
@@ -63,6 +64,9 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
     ...(opts.sandbox ? { sandbox: opts.sandbox } : {}),
   });
   const routines = new RoutineRunner({ paths, config: () => loadConfig(paths), runs, logDir: opts.logDir ?? logDir(paths), log: runLog, schedulerOn: opts.schedulerOn ?? false });
+  // Learning loop: every run that ends is checked; failures, blocks and cap hits become proposals.
+  const learning = new LearningLoop({ paths, config: () => loadConfig(paths), runs, logDir: opts.logDir ?? logDir(paths), log: runLog, ...(opts.now ? { now: opts.now } : {}) });
+  runs.addEndListener((info) => { learning.onRunEnd(info); });
 
   function send(res: ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}): void {
     const json = typeof body === "string" ? body : JSON.stringify(body);
@@ -150,6 +154,19 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
       }
     }
     if (url.pathname === "/api/routines" && req.method === "GET") return send(res, 200, routines.status());
+    if (url.pathname === "/api/proposals" && req.method === "GET") {
+      return send(res, 200, { proposals: learning.list(), spentTodayUsd: learning.spentToday(), dailyCapUsd: config.engine.learning.dailyCapUsd, enabled: config.engine.learning.enabled });
+    }
+    const proposalMatch = /^\/api\/proposals\/(\d{4}-\d{2}-\d{2}_[a-z0-9-]{1,60})\/(approve|reject)$/.exec(url.pathname);
+    if (proposalMatch?.[1] && proposalMatch[2] && req.method === "POST") {
+      try {
+        const p = proposalMatch[2] === "approve" ? learning.approve(proposalMatch[1]) : learning.reject(proposalMatch[1]);
+        return send(res, 200, { proposal: p });
+      } catch (e) {
+        if (e instanceof RunError) throw new HttpError(e.status, e.message);
+        throw e;
+      }
+    }
     const runMatch = /^\/api\/runs\/([a-z0-9]{6,14}-[0-9a-f]{8})\/(stop|events)$/.exec(url.pathname);
     if (runMatch?.[1] && runMatch[2]) {
       const id = runMatch[1];
@@ -278,7 +295,7 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
 
   server.on("close", () => { routines.stopClock(); runs.stopAll(); });
 
-  return { server, secret, paths, mint: () => mintToken(secret), runs, routines };
+  return { server, secret, paths, learning, mint: () => mintToken(secret), runs, routines };
 }
 
 // Run directly: `npm start`.

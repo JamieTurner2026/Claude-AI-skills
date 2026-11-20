@@ -6,7 +6,9 @@
     "t2": { "model": "haiku", "effort": "low", "maxBudgetUsd": 0.05 },
     "t3": { "model": "opus", "effort": "high", "permissionMode": "acceptEdits", "maxBudgetUsd": 2 },
     "routines": { "dailyCapUsd": 1, "maxBudgetUsd": 1 },
-    "brain": { "enabled": true }
+    "brain": { "enabled": true },
+    "tools": { "enabled": true },
+    "learning": { "enabled": true, "diagnosisBudgetUsd": 0.05, "dailyCapUsd": 0.25 }
   },
   "artifactRoots": ["outputs"],
   "pinnedSkills": [],
@@ -15,6 +17,7 @@
     { "widget": "clock", "span": 1 },
     { "widget": "departments", "span": 2 },
     { "widget": "routines", "span": 1 },
-    { "widget": "runs", "span": 3 }
+    { "widget": "runs", "span": 3 },
+    { "widget": "proposals", "span": 3 }
   ]
 }
