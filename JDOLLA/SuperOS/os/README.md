@@ -32,7 +32,7 @@ Needs Node 22.18 or newer (it runs TypeScript directly, no build step).
 ## Routines (Phase 4)
 - Switch routines on or off in the dashboard's Routines widget (it rewrites `routines/routines.json`). Run now starts one immediately.
 - They run on their own only while the bridge runs with `SUPEROS_SCHEDULER=on` in `os/.env` (set it to `off` to stop all scheduled runs).
-- Money: all routines together stop at `engine.routines.dailyCapUsd` ($1/day); each routine's `budgetUsd` is at most `engine.routines.maxBudgetUsd` ($1).
+- Money: all routines together stop at `engine.routines.dailyCapUsd` ($2/day); each routine's `budgetUsd` is at most `engine.routines.maxBudgetUsd` ($1).
 - The ledger `routine-ledger.json` in the log folder records each attempt before it starts and each day's spend.
 
 ## Second brain in runs

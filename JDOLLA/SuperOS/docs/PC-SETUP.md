@@ -152,11 +152,11 @@ All routines ship **switched off**. In the Routines widget:
 
 - the switch turns a routine on or off (it rewrites `routines\routines.json`)
 - **Run now** runs a routine once, right away
-- each routine shows its last result, and the widget shows "spent today $x of $1"
+- each routine shows its last result, and the widget shows "spent today $x of $2"
 
 Money limits:
 
-- All routines together stop at **$1 per day**. A routine only starts if its full budget still fits under the cap.
+- All routines and skill runs together stop at **$2 per day** (raised from $1 on 2026-11-20 so a $1.00 skill fits beside the routines). A routine only starts if its full budget still fits under the cap.
 - Each routine has its own budget (plan-today $0.25, morning-intel $0.40, vault-cleanup $0.75, content-cascade $1.00).
 - Each time slot runs at most once, even if the PC restarts.
 - Routines only run on their own while the bridge is running. If the PC was off, a missed slot runs once when the bridge comes back.
@@ -185,7 +185,7 @@ The bridge now builds these itself when it starts and every 30 minutes: `wiki\_m
 
 ## 10d. Run a skill by hand
 
-In the dashboard, the **Skills** widget lists every skill with its tier (T2 reads, T3 writes drafts) and suggested budget. Press **Run**; add a short note in the box if you want to steer it. A T3 skill asks "Run this? Up to $X" first. Skills share the routines' $1 a day cap (`engine.routines.dailyCapUsd`), so raise it in `os\config\os.config.json` if a $1.00 T3 skill will not fit next to your routines.
+In the dashboard, the **Skills** widget lists every skill with its tier (T2 reads, T3 writes drafts) and suggested budget. Press **Run**; add a short note in the box if you want to steer it. A T3 skill asks "Run this? Up to $X" first. Skills share the routines' $2 a day cap (`engine.routines.dailyCapUsd` in `os\config\os.config.json`).
 
 ## 11. Windows checks (never tested on Windows; please do these once)
 
