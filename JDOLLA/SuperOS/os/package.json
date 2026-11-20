@@ -11,8 +11,9 @@
     "start": "node bridge/server.ts",
     "open": "node bridge/open.ts",
     "check": "tsc --noEmit",
-    "test": "node --test \"shared/*.test.ts\" \"bridge/*.test.ts\" \"brain/*.test.ts\" \"tools/*.test.ts\"",
-    "brain": "node brain/cli.ts"
+    "test": "node --test \"shared/*.test.ts\" \"bridge/*.test.ts\" \"brain/*.test.ts\" \"tools/*.test.ts\" \"vault/*.test.ts\"",
+    "brain": "node brain/cli.ts",
+    "vault": "node vault/cli.ts"
   },
   "dependencies": {
     "zod": "^3.25.0"

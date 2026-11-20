@@ -22,6 +22,8 @@ import { defaultIndexPath } from "../brain/indexer.ts";
 import { RunError, RunManager, defaultClaudeBin } from "./runs.ts";
 import type { ClaudeBin, RunEvent } from "./runs.ts";
 import type { SandboxStatus } from "./sandbox.ts";
+import { buildAll } from "../vault/generate.ts";
+import type { BuildResult } from "../vault/generate.ts";
 
 const MAX_BODY = 64 * 1024;
 const STATIC_TYPES: Record<string, string> = {
@@ -43,7 +45,9 @@ export const systemOpener: Opener = (abs) => {
   spawn(cmd as string, args as string[], { detached: true, stdio: "ignore", shell: false }).on("error", () => undefined).unref();
 };
 
-export type Bridge = { server: http.Server; secret: string; paths: Paths; mint: () => string; runs: RunManager; routines: RoutineRunner; learning: LearningLoop };
+export type Bridge = { server: http.Server; secret: string; paths: Paths; mint: () => string; runs: RunManager; routines: RoutineRunner; learning: LearningLoop; vault: { rebuild: (trigger: string) => BuildResult | null; startClock: () => void } };
+
+const VAULT_EVERY_MS = 30 * 60_000;
 
 export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line: string) => void; claudeBin?: ClaudeBin; logDir?: string; sandbox?: () => SandboxStatus; schedulerOn?: boolean; brainDbPath?: string; now?: () => Date } = {}): Bridge {
   const paths = pathsFor(osDir);
@@ -67,6 +71,20 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
   // Learning loop: every run that ends is checked; failures, blocks and cap hits become proposals.
   const learning = new LearningLoop({ paths, config: () => loadConfig(paths), runs, logDir: opts.logDir ?? logDir(paths), log: runLog, ...(opts.now ? { now: opts.now } : {}) });
   runs.addEndListener((info) => { learning.onRunEnd(info); });
+
+  // Vault generators (indexes, project hubs, the daily note). A failure is logged and never stops the bridge.
+  let vaultTimer: NodeJS.Timeout | undefined;
+  function rebuildVault(trigger: string): BuildResult | null {
+    try {
+      const r = buildAll(paths, (opts.now ?? (() => new Date()))());
+      const problems = r.files.filter((f) => f.action === "skipped" && f.reason && !f.reason.startsWith("not generated")).map((f) => `${f.path}: ${f.reason}`).join("; ").slice(0, 500);
+      runLog({ event: "vault-build", trigger, created: r.counts.create, updated: r.counts.update, unchanged: r.counts.unchanged, skipped: r.counts.skipped, problems });
+      return r;
+    } catch (e) {
+      runLog({ event: "vault-build-failed", trigger, error: (e instanceof Error ? e.message : String(e)).slice(0, 300) });
+      return null;
+    }
+  }
 
   function send(res: ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}): void {
     const json = typeof body === "string" ? body : JSON.stringify(body);
@@ -233,6 +251,11 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
         if (statSync(file).size > MAX_READ) throw new HttpError(413, "File too large to show.");
         return send(res, 200, { path: path.relative(realpathSync(paths.vault), file).split(path.sep).join("/"), content: readFileSync(file, "utf8") });
       }
+      case "POST /api/vault/rebuild": {
+        const r = rebuildVault("api");
+        if (!r) throw new HttpError(500, "The vault rebuild failed. See router.jsonl.");
+        return send(res, 200, { date: r.date, counts: r.counts, files: r.files });
+      }
       case "POST /api/open": {
         const body = z.object({ path: z.string().max(400) }).parse(await readJson(req));
         const file = resolveVaultFile(paths.vault, body.path, OPEN_EXT);
@@ -293,9 +316,15 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
   });
   server.requestTimeout = 15_000;
 
-  server.on("close", () => { routines.stopClock(); runs.stopAll(); });
+  server.on("close", () => { routines.stopClock(); if (vaultTimer) clearInterval(vaultTimer); runs.stopAll(); });
 
-  return { server, secret, paths, learning, mint: () => mintToken(secret), runs, routines };
+  const vault = {
+    rebuild: rebuildVault,
+    /** Once now, then every 30 minutes. Not started by createBridge, so tests do not write into fixture vaults. */
+    startClock: () => { rebuildVault("start"); vaultTimer = setInterval(() => rebuildVault("interval"), VAULT_EVERY_MS); vaultTimer.unref(); },
+  };
+
+  return { server, secret, paths, learning, mint: () => mintToken(secret), runs, routines, vault };
 }
 
 // Run directly: `npm start`.
@@ -320,6 +349,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.log(`JDOLLA$ bridge running on http://127.0.0.1:${env.SUPEROS_PORT} (pid ${process.pid})`);
     console.log("Open the dashboard with: npm run open");
     bridge.routines.startClock();
+    bridge.vault.startClock();
     console.log(env.SUPEROS_SCHEDULER === "on" ? "Scheduler on: switched-on routines run at their times." : "Scheduler off (SUPEROS_SCHEDULER=off): no routine runs on its own.");
   });
 }

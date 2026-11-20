@@ -179,6 +179,10 @@ Drafting each suggestion is a small read-only run that costs up to $0.05. All of
 
 Runs also get one safe tool, `today`, which gives the real date in your time zone. Tools are scripts the bridge runs; no run gets a command line.
 
+## 10c. Indexes, project hubs and the daily note
+
+The bridge now builds these itself when it starts and every 30 minutes: `wiki\_master-index.md`, each department's `_index.md`, `reports\_index.md`, one hub per project in `projects\`, and today's note in `daily\`. To see what it would do first, run `npm run vault -- build --dry-run` in `os\`. In a daily note, write only under the `## Notes` line: that part is yours and is never changed.
+
 ## 11. Windows checks (never tested on Windows; please do these once)
 
 These all passed on Linux in the cloud. Windows is untested. Tell Claude the result of each one.
