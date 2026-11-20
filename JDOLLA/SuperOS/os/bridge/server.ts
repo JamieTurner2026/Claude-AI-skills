@@ -79,10 +79,10 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
     try {
       const r = buildAll(paths, (opts.now ?? (() => new Date()))());
       const problems = r.files.filter((f) => f.action === "skipped" && f.reason && !f.reason.startsWith("not generated")).map((f) => `${f.path}: ${f.reason}`).join("; ").slice(0, 500);
-      runLog({ event: "vault-build", trigger, created: r.counts.create, updated: r.counts.update, unchanged: r.counts.unchanged, skipped: r.counts.skipped, problems });
+      runLog({ kind: "vault-build", trigger, created: r.counts.create, updated: r.counts.update, unchanged: r.counts.unchanged, skipped: r.counts.skipped, problems });
       return r;
     } catch (e) {
-      runLog({ event: "vault-build-failed", trigger, error: (e instanceof Error ? e.message : String(e)).slice(0, 300) });
+      runLog({ kind: "vault-build-failed", trigger, error: (e instanceof Error ? e.message : String(e)).slice(0, 300) });
       return null;
     }
   }
