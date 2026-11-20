@@ -23,9 +23,10 @@ Updated 2026-11-20.
   - Jay approves or rejects each proposal in the dashboard's Proposals widget. Approving adds a note to `wiki/_learnings/` and appends one rule under `## Learned rules` in the skill. Nothing else in the skill changes.
   - Real test on a vault copy: a plan-today run forced over a $0.0001 cap. The diagnosis found the cause for $0.0008, and approving wrote the note and the rule exactly. 162 tests pass.
 - Safe tools layer: built 2026-11-20. Runs call named, tested scripts in `os/tools/` through the bridge's `superos-tools` server, never a command line. The first tool is `today` (date, weekday, time and ISO week in Jay's time zone). Tools are allowed by name in `os/config/skills.policy.json` (`scriptTools`).
-- Local embeddings and session import for the brain are still open (session import: branch 3, in progress).
+- Session import for the brain: built 2026-11-20 (`npm run brain -- import-sessions`). Reads Claude Code transcripts and a claude.ai `conversations.json`, keeps user and assistant text only, redacts secrets and personal data before writing, and writes one file per session to the git-ignored `raw/sessions/<source>/`. Never overwrites, skips sessions already imported (ledger in `~/.superos/brain/`), `--dry-run` writes nothing. Imported text is searched as untrusted `raw/` data. Tested on invented fixtures only; no real session has been imported yet.
+- Local embeddings for the brain are still open.
 - Not checked on Windows: `npm run open` (uses `rundll32`), the `%LOCALAPPDATA%\JDOLLA\logs` path, opening files with `explorer.exe`, and whether Claude Code's sandbox exists there. Tested on Linux only.
-- No imported Claude Code sessions or project docs. That import needs the PC.
+- No imported Claude Code sessions or project docs yet. The import command exists; running it needs the PC (`docs/PC-SETUP.md`, "Import your sessions").
 - `daily/`, `projects/`, `reports/` and `logs/` are created by the bridge and are git-ignored.
 
 ## Needs Jay
