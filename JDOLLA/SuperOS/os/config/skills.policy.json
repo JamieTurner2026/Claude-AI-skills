@@ -1,4 +1,5 @@
 {
   "defaultTools": ["Read", "Glob", "Grep", "Write", "Edit"],
+  "scriptTools": ["today"],
   "skills": {}
 }

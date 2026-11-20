@@ -17,7 +17,13 @@ Updated 2026-11-20.
 - On Jay's Windows PC there is **no Claude Code sandbox** (Claude Code's docs: native Windows runs commands unsandboxed), so runs that need Bash are refused there unless Claude Code runs inside WSL2. Windows deny-rule paths with drive letters (`//C:/...`) are untested.
 - Routines (Phase 4 wiring): built 2026-11-19. Switch a routine on in the dashboard's Routines widget and it runs at its time while the bridge runs with `SUPEROS_SCHEDULER=on`. Run now works any time. All routines combined are capped at $1 per day (a routine only starts if its full budget still fits); each slot runs at most once, even across restarts. Read-only routines reply and the bridge writes their report to `reports/`. One real run of plan-today: a sourced plan from the vault for $0.0027. All four routines ship switched off.
 - Second brain in runs: built 2026-11-20. Every T2/T3 run and routine gets the read-only `superos-brain` tools (`search`, `get_note`) and nothing else extra; the index is rebuilt first if it is over 5 minutes old, and a failed rebuild never blocks a run. Off switch: `engine.brain.enabled`. One real run on a vault copy searched the brain twice, opened the right note and answered from it for $0.0008. 138 tests pass.
-- No learning loop yet (Phase 5). Local embeddings and session import for the brain are still open.
+- Phase 5 learning loop: built 2026-11-20.
+  - A run that fails, has tools blocked, or stops at its cap gets a proposal in `proposals/`.
+  - A read-only diagnosis run drafts the fix, the lesson and one skill rule. It costs up to $0.05; all diagnoses together stop at $0.25 a day.
+  - Jay approves or rejects each proposal in the dashboard's Proposals widget. Approving adds a note to `wiki/_learnings/` and appends one rule under `## Learned rules` in the skill. Nothing else in the skill changes.
+  - Real test on a vault copy: a plan-today run forced over a $0.0001 cap. The diagnosis found the cause for $0.0008, and approving wrote the note and the rule exactly. 162 tests pass.
+- Safe tools layer: built 2026-11-20. Runs call named, tested scripts in `os/tools/` through the bridge's `superos-tools` server, never a command line. The first tool is `today` (date, weekday, time and ISO week in Jay's time zone). Tools are allowed by name in `os/config/skills.policy.json` (`scriptTools`).
+- Local embeddings and session import for the brain are still open (session import: branch 3, in progress).
 - Not checked on Windows: `npm run open` (uses `rundll32`), the `%LOCALAPPDATA%\JDOLLA\logs` path, opening files with `explorer.exe`, and whether Claude Code's sandbox exists there. Tested on Linux only.
 - No imported Claude Code sessions or project docs. That import needs the PC.
 - `daily/`, `projects/`, `reports/` and `logs/` are created by the bridge and are git-ignored.

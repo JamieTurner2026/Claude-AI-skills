@@ -7,7 +7,7 @@ import { mkdirSync, mkdtempSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { BRAIN_SERVER_SCRIPT, BRAIN_TOOLS, BrainLink } from "./brain-link.ts";
+import { BRAIN_HINT, BRAIN_SERVER_SCRIPT, BRAIN_TOOLS, BrainLink } from "./brain-link.ts";
 import { buildClaudeArgs } from "./claude-args.ts";
 import { loadConfig, pathsFor, saveConfig } from "./config.ts";
 import { builtinDenyRules } from "./deny-rules.ts";
@@ -31,7 +31,7 @@ test("args: the brain adds one server, its two read-only tools and a hint; nothi
   const base = { tier: "T2" as const, text: "hi", budgetUsd: 0.05, vault: p.vault, workDir: "/w", t3Tools: ["Read"] as const, deny: builtinDenyRules(p.vault), sandbox: { available: false, reason: "t" } };
   const off = buildClaudeArgs(base, config).args;
   assert.ok(!off.includes("--mcp-config") && !off.includes("--allowedTools"), "control: no brain, no MCP flags");
-  const on = buildClaudeArgs({ ...base, brainMcpConfig: '{"mcpServers":{}}' }, config).args;
+  const on = buildClaudeArgs({ ...base, mcp: { config: '{"mcpServers":{}}', allowedTools: [...BRAIN_TOOLS], hint: BRAIN_HINT } }, config).args;
   assert.equal(flag(on, "--mcp-config"), '{"mcpServers":{}}');
   assert.equal(flag(on, "--allowedTools"), BRAIN_TOOLS.join(","));
   assert.ok(on.includes("--strict-mcp-config"), "no other MCP server can load");
@@ -49,7 +49,7 @@ test("through the bridge: a run gets the brain config and a freshly built index"
   await new Promise<void>((r) => { b.runs.subscribe(info.id, (e: RunEvent) => { if (e.type === "status") r(); }); });
   const argv = JSON.parse(/ARGV:(.*)/.exec(b.runs.get(info.id)!.output)![1]!) as string[];
   const cfg = JSON.parse(flag(argv, "--mcp-config")!) as { mcpServers: Record<string, { command: string; args: string[]; env: Record<string, string> }> };
-  assert.deepEqual(Object.keys(cfg.mcpServers), ["superos-brain"]);
+  assert.deepEqual(Object.keys(cfg.mcpServers), ["superos-brain", "superos-tools"], "only the bridge's own servers");
   const s = cfg.mcpServers["superos-brain"]!;
   assert.equal(s.command, process.execPath);
   assert.equal(s.args[0], BRAIN_SERVER_SCRIPT);
@@ -67,7 +67,7 @@ test("switched off in config: no brain", async (t) => {
   t.after(() => b.runs.stopAll());
   const info = b.runs.start({ text: "what?", tier: "T2" });
   await new Promise<void>((r) => { b.runs.subscribe(info.id, (e: RunEvent) => { if (e.type === "status") r(); }); });
-  assert.ok(!b.runs.get(info.id)!.output.includes("--mcp-config"));
+  assert.ok(!b.runs.get(info.id)!.output.includes("superos-brain"), "no brain server or brain tools");
 });
 
 test("an index that can't be built never blocks the run", async (t) => {
@@ -79,7 +79,7 @@ test("an index that can't be built never blocks the run", async (t) => {
   const info = b.runs.start({ text: "what?", tier: "T2" });
   const end = await new Promise<RunEvent & { type: "status" }>((r) => { b.runs.subscribe(info.id, (e) => { if (e.type === "status") r(e); }); });
   assert.equal(end.status, "done", "the run still ran");
-  assert.ok(!b.runs.get(info.id)!.output.includes("--mcp-config"), "without the brain");
+  assert.ok(!b.runs.get(info.id)!.output.includes("superos-brain"), "without the brain");
 });
 
 test("the index is rebuilt only when missing or stale", () => {

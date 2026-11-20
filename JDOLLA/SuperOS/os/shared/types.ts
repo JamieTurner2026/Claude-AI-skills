@@ -64,6 +64,8 @@ export type RunView = {
   result: string | null;
   /** Set when a scheduled routine started the run. */
   routine: string | null;
+  skill: string | null;
+  purpose: "run" | "diagnosis";
 };
 
 /** Routine status as the dashboard sees it (mirrors RoutineStatus in bridge/routine-runner.ts). */
@@ -73,6 +75,19 @@ export type RoutinesView = {
     lastRunAt: string | null; lastResult: { at: string; status: string; costUsd: number | null; runId: string | null; note: string } | null }>;
   problems: string[];
 };
+
+/** A learning-loop proposal as the dashboard sees it (mirrors Proposal in bridge/learning.ts). */
+export type ProposalView = {
+  id: string; createdAt: string; status: "pending" | "approved" | "rejected"; decidedAt: string | null;
+  kind: "budget" | "failed" | "blocked";
+  run: { id: string; tier: "T2" | "T3"; dept: string; skill: string | null; routine: string | null; status: string; error: string | null; denied: string[]; costUsd: number | null; capUsd: number; prompt: string };
+  whatBroke: string;
+  diagnosis: { status: "running" | "done" | "failed" | "skipped"; note: string; runId: string | null; costUsd: number | null };
+  fix: string; learning: string;
+  skillChange: { skill: string; rule: string } | null;
+  applied: { learningNote: string | null; skillFile: string | null; note: string } | null;
+};
+export type ProposalsView = { proposals: ProposalView[]; spentTodayUsd: number; dailyCapUsd: number; enabled: boolean };
 
 export type LayoutItem = { widget: string; span: 1 | 2 | 3 };
 

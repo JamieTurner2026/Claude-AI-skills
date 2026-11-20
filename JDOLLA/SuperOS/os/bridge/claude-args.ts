@@ -4,7 +4,6 @@
 import type { OsConfig } from "./config.ts";
 import { T2_TOOLS } from "./policy.ts";
 import type { ToolName } from "./policy.ts";
-import { BRAIN_HINT, BRAIN_TOOLS } from "./brain-link.ts";
 import { sandboxSettings } from "./sandbox.ts";
 import type { SandboxStatus } from "./sandbox.ts";
 
@@ -34,9 +33,15 @@ export type ArgsInput = {
   t3Tools: readonly ToolName[];
   deny: string[];
   sandbox: SandboxStatus;
-  /** --mcp-config JSON for the second brain, or null to run without it. */
-  brainMcpConfig?: string | null;
+  /** The bridge's own MCP servers (second brain, script tools): config JSON, the exact MCP tool names
+   *  pre-approved, and a hint for the system prompt. Null runs without any. */
+  mcp?: { config: string; allowedTools: string[]; hint: string } | null;
 };
+
+function mcpArgs(m: { config: string; allowedTools: string[]; hint: string }): string[] {
+  if (m.allowedTools.some((t) => !/^mcp__superos-[a-z]+__[a-z_]{1,40}$/.test(t))) throw new ContainmentError("Only the bridge's own MCP tools may be pre-approved.");
+  return ["--mcp-config", m.config, "--allowedTools", m.allowedTools.join(","), "--append-system-prompt", m.hint];
+}
 
 export function buildClaudeArgs(input: ArgsInput, config: OsConfig): { args: string[]; cwd: string } {
   if (typeof input.text !== "string" || !input.text.trim()) throw new Error("Empty request.");
@@ -54,9 +59,9 @@ export function buildClaudeArgs(input: ArgsInput, config: OsConfig): { args: str
     "--restricted", "--strict-mcp-config",
     "--settings", runSettings(input.vault, input.deny, wantsBash),
     "--tools", tools.join(","),
-    // The second brain: only its server (--strict-mcp-config ignores every other MCP config), only its two
+    // The bridge's own servers only (--strict-mcp-config ignores every other MCP config), and only their named
     // read-only tools pre-approved. --allowedTools never holds a file tool; file access stays under --tools and the deny rules.
-    ...(input.brainMcpConfig ? ["--mcp-config", input.brainMcpConfig, "--allowedTools", BRAIN_TOOLS.join(","), "--append-system-prompt", BRAIN_HINT] : []),
+    ...(input.mcp ? mcpArgs(input.mcp) : []),
   ];
   if (input.tier === "T2") {
     const t2 = config.engine.t2;

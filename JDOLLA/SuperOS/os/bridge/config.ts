@@ -20,6 +20,14 @@ export const ConfigSchema = z.object({
     routines: z.object({ dailyCapUsd: z.number().positive().max(100), maxBudgetUsd: z.number().positive().max(100) }).default({ dailyCapUsd: 1, maxBudgetUsd: 1 }),
     /** Give runs read-only search over the vault through the second brain (superos-brain MCP server). */
     brain: z.object({ enabled: z.boolean() }).default({ enabled: true }),
+    /** Give runs the safe script tools in os/tools/ (allowed by name in skills.policy.json). */
+    tools: z.object({ enabled: z.boolean() }).default({ enabled: true }),
+    /** Learning loop: a run that fails, is blocked or hits its cap gets a proposal, drafted by a small read-only diagnosis run. */
+    learning: z.object({
+      enabled: z.boolean(),
+      diagnosisBudgetUsd: z.number().positive().max(1),
+      dailyCapUsd: z.number().positive().max(10),
+    }).default({ enabled: true, diagnosisBudgetUsd: 0.05, dailyCapUsd: 0.25 }),
     /** Optional path to the Claude Code CLI. Default: "claude" ("claude.exe" on Windows), found on PATH. */
     claudeBin: z.string().min(1).max(260).optional(),
   }),
