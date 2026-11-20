@@ -23,9 +23,9 @@ Make the vault keep itself current and let Jay use every skill from the dashboar
 
 | Step | What | Builder | Folders |
 |---|---|---|---|
-| 6a | **Vault generators:** `_master-index`, department `_index` files, `reports/_index`, project hubs, the generated top half of each daily note | Branch 2 (started) | `os/vault/`, small hook in `server.ts` |
-| 6b | **Session import:** Claude Code transcripts and the claude.ai export go into `raw/sessions/`, redacted, then indexed as untrusted | Branch 3 (started) | `os/brain/` |
-| 6c | **Skill runner:** a Skills widget lists every skill in `skills/`, with tier, budget and a Run button. It is the same run path as Run now on routines, so all caps and containment apply. Each department agent gets a policy entry by name | Branch 2, after 6a | `os/bridge`, `os/app`, `os/config/skills.policy.json` |
+| 6a | **Vault generators:** `_master-index`, department `_index` files, `reports/_index`, project hubs, the generated top half of each daily note | Branch 2: **done** (PR #15) | `os/vault/`, small hook in `server.ts` |
+| 6b | **Session import:** Claude Code transcripts and the claude.ai export go into `raw/sessions/`, redacted, then indexed as untrusted | Branch 3: **done** (PR #13) | `os/brain/` |
+| 6c | **Skill runner:** a Skills widget lists every skill in `skills/`, with tier, budget and a Run button. It is the same run path as Run now on routines, so all caps and containment apply. Each department agent gets a policy entry by name | Branch 2 (started) | `os/bridge`, `os/app`, `os/config/skills.policy.json` |
 | 6d | **More safe tools**, each read-only with tests: `recent_changes` (notes changed in N days), `link_check` (broken `[[links]]`), `vault_stats` (counts, notes without sources), `list_reports` | Whichever builder is free first | `os/tools/` only |
 | 6e | **Inbox triage:** a T2 run proposes where each `inbox/` file belongs. The proposals use the Phase 5 widget with a new "move" kind, and the bridge moves files only on Approve | Branch 2, after 6c | `os/bridge/learning.ts`, `os/app` |
 
@@ -54,7 +54,7 @@ Blocked on the PC session.
 - `router.jsonl` analysis: which tiers cost the most and which runs fail most, plus suggested routing and budget changes. These arrive as proposals and are never applied on their own.
 
 ## Queue
-- **Branch 2:** 6a → 6c → 6e
-- **Branch 3:** 6b → 7a + 7b → 7c
+- **Branch 2:** ~~6a~~ → 6c (now) → 6e
+- **Branch 3:** ~~6b~~ → 7a + 7b (waiting for Jay's OK in its chat) → 7c
 - **Free slot:** 6d, then 7d
 - **Waiting on Jay:** Phase 8 (Gmail label, Calendar), Phase 9 (PC session), the private Brain repo name, PR #1
