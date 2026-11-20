@@ -1,6 +1,6 @@
 # Status
 
-Updated 2026-11-15.
+Updated 2026-11-20.
 
 ## What exists
 - Phase 1 vault: folder layout, router `CLAUDE.md`, seven department routers, `Home.md`, containment settings, `.gitignore`.
@@ -16,13 +16,14 @@ Updated 2026-11-15.
 - Proven with real capped runs on a throwaway vault copy holding fake `.env` secrets: a direct Read of `os/.env` was **blocked by the CLI** (not just refused by the model) and nothing leaked; an allowed note read fine. A Grep attack also leaked nothing, but only because ripgrep skips hidden files, so the Grep deny path is **not yet proven**.
 - On Jay's Windows PC there is **no Claude Code sandbox** (Claude Code's docs: native Windows runs commands unsandboxed), so runs that need Bash are refused there unless Claude Code runs inside WSL2. Windows deny-rule paths with drive letters (`//C:/...`) are untested.
 - Routines (Phase 4 wiring): built 2026-11-19. Switch a routine on in the dashboard's Routines widget and it runs at its time while the bridge runs with `SUPEROS_SCHEDULER=on`. Run now works any time. All routines combined are capped at $1 per day (a routine only starts if its full budget still fits); each slot runs at most once, even across restarts. Read-only routines reply and the bridge writes their report to `reports/`. One real run of plan-today: a sourced plan from the vault for $0.0027. All four routines ship switched off.
+- Second brain in runs: built 2026-11-20. Every T2/T3 run and routine gets the read-only `superos-brain` tools (`search`, `get_note`) and nothing else extra; the index is rebuilt first if it is over 5 minutes old, and a failed rebuild never blocks a run. Off switch: `engine.brain.enabled`. One real run on a vault copy searched the brain twice, opened the right note and answered from it for $0.0008. 138 tests pass.
 - No learning loop yet (Phase 5). Local embeddings and session import for the brain are still open.
 - Not checked on Windows: `npm run open` (uses `rundll32`), the `%LOCALAPPDATA%\JDOLLA\logs` path, opening files with `explorer.exe`, and whether Claude Code's sandbox exists there. Tested on Linux only.
 - No imported Claude Code sessions or project docs. That import needs the PC.
 - `daily/`, `projects/`, `reports/` and `logs/` are created by the bridge and are git-ignored.
 
 ## Needs Jay
-- Phase 2 steps (a) to (e) are done. Steps (f) and (g) need the PC: start a Claude Code session in the vault folder, have it read `docs/PHASE2-HANDOFF.md` (build order, steps f and g), and first run `npm install`, `npm run check` and `npm test` in `os/` on Windows. If the PC copy already has its own work in `os/`, merge instead of overwriting.
+- Set the OS up on the PC with `docs/PC-SETUP.md`, including its Windows checks (section 11), and report what each one shows. If the PC copy already has its own work in `os/`, merge instead of overwriting (section 2).
 - This vault was drafted in a cloud session inside the `Claude-AI-skills` repo. Copy `JDOLLA/` to its permanent folder on the PC, then `git init` there.
 - Review the department charters; they were distilled from the interview answer.
 - Review the project notes. Each lists what is unknown; the two private repos are described by structure and purpose only.

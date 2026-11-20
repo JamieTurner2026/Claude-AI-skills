@@ -34,3 +34,10 @@ Needs Node 22.18 or newer (it runs TypeScript directly, no build step).
 - They run on their own only while the bridge runs with `SUPEROS_SCHEDULER=on` in `os/.env` (set it to `off` to stop all scheduled runs).
 - Money: all routines together stop at `engine.routines.dailyCapUsd` ($1/day); each routine's `budgetUsd` is at most `engine.routines.maxBudgetUsd` ($1).
 - The ledger `routine-ledger.json` in the log folder records each attempt before it starts and each day's spend.
+
+## Second brain in runs
+- Every run gets one MCP server, `superos-brain` (`brain/mcp.ts`, shipped with the bridge), with only its two read-only tools pre-approved: `search` and `get_note`. `--strict-mcp-config` keeps every other server out; file tools are never pre-approved.
+- Before each run the index (`%USERPROFILE%\.superos\brain\index.sqlite`, or `~/.superos/brain/`) is rebuilt if it is missing or over 5 minutes old. If that fails the run still goes ahead, without the brain, and `brain-index-failed` is logged.
+- Turn it off with `engine.brain.enabled: false` in `config/os.config.json`.
+
+Setting up on the PC: see `../docs/PC-SETUP.md`.

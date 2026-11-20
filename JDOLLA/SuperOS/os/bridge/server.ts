@@ -16,6 +16,8 @@ import { GuardError, MAX_READ, OPEN_EXT, READ_EXT, resolveVaultFile } from "./gu
 import { DIRECTIVE_LINE, buildState, directiveId } from "./indexer.ts";
 import { makeRunLog } from "./run-log.ts";
 import { RoutineRunner } from "./routine-runner.ts";
+import { BrainLink } from "./brain-link.ts";
+import { defaultIndexPath } from "../brain/indexer.ts";
 import { RunError, RunManager, defaultClaudeBin } from "./runs.ts";
 import type { ClaudeBin, RunEvent } from "./runs.ts";
 import type { SandboxStatus } from "./sandbox.ts";
@@ -42,7 +44,7 @@ export const systemOpener: Opener = (abs) => {
 
 export type Bridge = { server: http.Server; secret: string; paths: Paths; mint: () => string; runs: RunManager; routines: RoutineRunner };
 
-export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line: string) => void; claudeBin?: ClaudeBin; logDir?: string; sandbox?: () => SandboxStatus; schedulerOn?: boolean } = {}): Bridge {
+export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line: string) => void; claudeBin?: ClaudeBin; logDir?: string; sandbox?: () => SandboxStatus; schedulerOn?: boolean; brainDbPath?: string } = {}): Bridge {
   const paths = pathsFor(osDir);
   const secret = loadOrCreateSecret(paths);
   const opener = opts.opener ?? systemOpener;
@@ -50,7 +52,10 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
   const appRoot = realpathSync(paths.os);
   const directivesFile = path.join(paths.vault, "wiki", "directives.md");
   const runLog = makeRunLog(opts.logDir ?? logDir(paths));
+  // The brain index lives with the CLI's default (~/.superos/brain) unless a log folder or path is given (tests).
+  const brain = new BrainLink({ paths, dbPath: opts.brainDbPath ?? (opts.logDir ? path.join(opts.logDir, "brain-index.sqlite") : defaultIndexPath()), log: runLog });
   const runs = new RunManager({
+    brain,
     paths,
     config: () => loadConfig(paths),
     bin: () => opts.claudeBin ?? defaultClaudeBin(loadConfig(paths)),

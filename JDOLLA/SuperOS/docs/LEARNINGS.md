@@ -13,3 +13,4 @@ One rule each, with its evidence.
 - **A clean attack result is not proof until you know why it was clean.** Evidence: 2026-11-19, the Grep attack leaked nothing only because ripgrep skips hidden files, not because a rule blocked it.
 - **Record the attempt before the action.** Evidence: 2026-11-19, the routine ledger is written before a run starts; a test that skipped this ran the same slot twice after a restart.
 - **Count the worst case against a budget, then settle.** Evidence: 2026-11-19, a routine reserves its full budget before starting and swaps it for the real cost after, so the daily cap can't be crossed by runs that are still going.
+- **Run code that ships with the program, not a copy the data folder could hold.** Evidence: 2026-11-20, the brain server path was built from the vault folder; a test vault with no code in it made the server silently never start. It now points at the bridge's own `brain/mcp.ts`.

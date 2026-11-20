@@ -18,6 +18,8 @@ export const ConfigSchema = z.object({
     t3: z.object({ model: z.string(), effort: z.string(), permissionMode: z.string(), maxBudgetUsd: z.number().positive().max(100) }),
     /** Scheduled routines: total spend per day (owner's time zone) and the most one routine run may cost. */
     routines: z.object({ dailyCapUsd: z.number().positive().max(100), maxBudgetUsd: z.number().positive().max(100) }).default({ dailyCapUsd: 1, maxBudgetUsd: 1 }),
+    /** Give runs read-only search over the vault through the second brain (superos-brain MCP server). */
+    brain: z.object({ enabled: z.boolean() }).default({ enabled: true }),
     /** Optional path to the Claude Code CLI. Default: "claude" ("claude.exe" on Windows), found on PATH. */
     claudeBin: z.string().min(1).max(260).optional(),
   }),

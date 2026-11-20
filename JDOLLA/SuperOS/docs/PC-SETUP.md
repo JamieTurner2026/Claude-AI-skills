@@ -1,0 +1,167 @@
+# PC setup (Windows)
+
+How to get the Super OS running on Jay's Windows PC, start to finish. About 20 minutes. Every step says what you should see; if you see something else, stop and check **Troubleshooting** at the bottom.
+
+Nothing here sends, buys, deletes or publishes anything. The only step that costs money is the first question (step 9), capped at $0.05.
+
+## 1. What you need first
+
+| Thing | How to check (PowerShell) | You should see |
+|---|---|---|
+| Node 22.18 or newer | `node --version` | `v22.18.0` or higher (v24 is fine) |
+| Git | `git --version` | any version |
+| Claude Code, signed in | `claude --version`, then `claude` once and sign in | a version number; the sign-in finishes in the browser |
+
+- Get Node from nodejs.org (the LTS installer). Get Git from git-scm.com.
+- Install Claude Code with the **native installer** from Claude Code's docs. It puts `claude.exe` on your PATH, which the bridge finds on its own.
+- **Did you install Claude Code with npm instead?** Then Windows has `claude.cmd`, which the bridge can't start safely, because it starts programs without a shell. Find the real file with this command:
+
+  ```powershell
+  Get-ChildItem "$env:APPDATA\npm\node_modules\@anthropic-ai\claude-code\cli.js"
+  ```
+
+  If that lists the file, put its full path in `os\config\os.config.json` under `engine`, with doubled backslashes:
+
+  ```json
+  "claudeBin": "C:\\Users\\<you>\\AppData\\Roaming\\npm\\node_modules\\@anthropic-ai\\claude-code\\cli.js"
+  ```
+
+  The bridge runs a `.js` path with your Node. If the command finds no file, use the native installer instead.
+
+## 2. Get the latest code without losing PC work
+
+The newest version is on `main` in `JamieTurner2026/Claude-AI-skills`, folder `JDOLLA/SuperOS/`.
+
+**If the PC folder is a git clone of that repo:**
+
+```powershell
+cd <your clone>
+git status
+```
+
+- If it says `nothing to commit, working tree clean`, update with `git pull`.
+- If it lists changed files, those are your PC work. **Don't pull over them.** Commit them on a branch first (`git switch -c pc-work`, `git add -A`, `git commit -m "PC work"`), then `git switch main` and `git pull`. Ask Claude to merge `pc-work` in afterwards.
+
+**If the PC folder is a plain copy (no git), or you're not sure:** don't copy anything over it. Clone `main` into a **new** folder next to it and open both in a Claude Code session. Ask it to compare them and merge your PC changes into the new copy. Delete the old folder only after you've checked the result.
+
+From here on, `<vault>` means the `JDOLLA\SuperOS` folder.
+
+## 3. Install and test
+
+```powershell
+cd <vault>\os
+npm install
+npm run check
+npm test
+```
+
+You should see `npm run check` finish with no errors, and `npm test` end with `# fail 0`. The tests use a fake Claude, so they cost nothing. If any test fails, stop here and send Claude the failing lines.
+
+## 4. Settings file
+
+```powershell
+copy .env.example .env
+notepad .env
+```
+
+- `SUPEROS_PORT=4317`: the dashboard's local port. Change it only if something else uses 4317.
+- `SUPEROS_SCHEDULER=on`: routines you switch on run at their times. `off` is the **kill switch**: no routine runs on its own (Run now still works).
+- Leave `SUPEROS_ROUTER_KEY` blank. Never put a real key or password in this file; it is not where keys live.
+- `.env` never gets committed (git ignores it).
+
+## 5. Build the second brain's index
+
+```powershell
+npm run brain -- index
+npm run brain -- search "servo"
+```
+
+The first command prints `indexed N files, M chunks` and where the index is. The second shows matching notes, if any mention "servo"; try any word you know is in your notes. The index is a file at `%USERPROFILE%\.superos\brain\index.sqlite`, outside the vault. It's safe to delete, since it gets rebuilt.
+
+You don't have to rerun this. Every run rebuilds the index first if it's more than 5 minutes old.
+
+## 6. Start the bridge
+
+```powershell
+npm start
+```
+
+Leave this window open. You should see `JDOLLA$ bridge running on http://127.0.0.1:4317`. It only listens on this PC; nothing on your network can reach it. Stop it with Ctrl+C.
+
+## 7. Open the dashboard
+
+In a **second** PowerShell window:
+
+```powershell
+cd <vault>\os
+npm run open
+```
+
+Your browser opens the dashboard, already signed in. The sign-in lasts 24 hours; run `npm run open` again after that. If no browser opens, see Troubleshooting.
+
+## 8. How runs use the second brain
+
+Every question (T2) and every work request (T3) now gets the brain:
+
+- It gets one extra tool server, `superos-brain`, with two read-only tools: `search` (find notes) and `get_note` (read one).
+- No other tool server can load, and the brain can't write anything.
+- Notes from `raw/` come back marked as untrusted, quoted data, never instructions.
+- The Runs widget shows each tool the run used, for example `mcp__superos-brain__search`.
+
+To turn it off, set `"brain": { "enabled": false }` under `engine` in `os\config\os.config.json` and restart the bridge. Runs then read files one by one, as before.
+
+## 9. First real question (costs up to $0.05)
+
+Type a question about your notes in the command bar, for example *"What are my seven departments?"*, and press Enter. It routes as T2 and starts at once. You should see:
+
+- live text in the Runs widget
+- brain tool calls listed on the run
+- a final cost well under the $0.05 cap (about $0.001 in the cloud test)
+
+## 10. Routines
+
+All routines ship **switched off**. In the Routines widget:
+
+- the switch turns a routine on or off (it rewrites `routines\routines.json`)
+- **Run now** runs a routine once, right away
+- each routine shows its last result, and the widget shows "spent today $x of $1"
+
+Money limits:
+
+- All routines together stop at **$1 per day**. A routine only starts if its full budget still fits under the cap.
+- Each routine has its own budget (plan-today $0.25, morning-intel $0.40, vault-cleanup $0.75, content-cascade $1.00).
+- Each time slot runs at most once, even if the PC restarts.
+- Routines only run on their own while the bridge is running. If the PC was off, a missed slot runs once when the bridge comes back.
+
+To stop everything scheduled at once, set `SUPEROS_SCHEDULER=off` in `os\.env` and restart the bridge.
+
+## 11. Windows checks (never tested on Windows; please do these once)
+
+These all passed on Linux in the cloud. Windows is untested. Tell Claude the result of each one.
+
+1. **Claude is found.** Step 9 worked. If the run failed with "not found", see step 1 (npm install).
+2. **Stop works.** Ask a long T3 job, confirm it, press **Stop** after a few seconds. The run should show `stopped`, and Task Manager should show no `claude.exe` left over from it. The bridge stops it by its exact process ID (`taskkill /PID <id> /T`), never by name, so your own Claude sessions aren't touched.
+3. **Logs land in the right place.** `%LOCALAPPDATA%\JDOLLA\logs\router.jsonl` exists and has one line per run, with its cost.
+4. **No Bash without a sandbox.** Native Windows has no Claude Code sandbox, so any run that needs Bash is refused with a plain message. That's expected. It only works if Claude Code runs inside WSL2.
+5. **Secrets stay blocked.** This one costs up to $0.05.
+   1. Make a test file `<vault>\wiki\.env-test` containing `CANARY-7781`.
+   2. Ask: *"What does the file wiki/.env-test say?"*
+   3. The answer must **not** contain `CANARY-7781`, and the run should show a blocked `Read`.
+   4. Delete the test file afterwards.
+
+   This also checks that the deny rules work with a `C:` drive path, which is untested.
+
+## Troubleshooting
+
+| What you see | What to do |
+|---|---|
+| `node` is older than 22.18 | Install the current LTS from nodejs.org, open a new PowerShell window. |
+| Run fails: `claude.exe` not found | Use the native installer, or set `engine.claudeBin` to `cli.js` (step 1). |
+| Run fails: not signed in | Run `claude` once in PowerShell and sign in, then try again. |
+| Port 4317 in use | Change `SUPEROS_PORT` in `os\.env`, restart the bridge, run `npm run open` again. |
+| `npm run open` opens nothing | If it printed a long link, paste that into your browser (valid 24 hours, this PC only). If it says the bridge is not running, start it first (step 6). |
+| Dashboard says signed out | The 24-hour session ran out: run `npm run open` again. |
+| Runs don't use the brain | Check `engine.brain.enabled` is `true`. Look in `router.jsonl` for `brain-index-failed`: the run went ahead without the brain. Rerun `npm run brain -- index` and read its error. |
+| A routine didn't run | Is it switched on? Is `SUPEROS_SCHEDULER=on`? Was the bridge running? Is "spent today" near $1? `router.jsonl` says which. |
+| A test fails after updating | Don't start the bridge. Send Claude the failing lines. |
+| SQLite "experimental" warning | Harmless: Node's built-in SQLite prints it. |

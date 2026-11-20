@@ -4,6 +4,7 @@
 import type { OsConfig } from "./config.ts";
 import { T2_TOOLS } from "./policy.ts";
 import type { ToolName } from "./policy.ts";
+import { BRAIN_HINT, BRAIN_TOOLS } from "./brain-link.ts";
 import { sandboxSettings } from "./sandbox.ts";
 import type { SandboxStatus } from "./sandbox.ts";
 
@@ -33,6 +34,8 @@ export type ArgsInput = {
   t3Tools: readonly ToolName[];
   deny: string[];
   sandbox: SandboxStatus;
+  /** --mcp-config JSON for the second brain, or null to run without it. */
+  brainMcpConfig?: string | null;
 };
 
 export function buildClaudeArgs(input: ArgsInput, config: OsConfig): { args: string[]; cwd: string } {
@@ -51,6 +54,9 @@ export function buildClaudeArgs(input: ArgsInput, config: OsConfig): { args: str
     "--restricted", "--strict-mcp-config",
     "--settings", runSettings(input.vault, input.deny, wantsBash),
     "--tools", tools.join(","),
+    // The second brain: only its server (--strict-mcp-config ignores every other MCP config), only its two
+    // read-only tools pre-approved. --allowedTools never holds a file tool; file access stays under --tools and the deny rules.
+    ...(input.brainMcpConfig ? ["--mcp-config", input.brainMcpConfig, "--allowedTools", BRAIN_TOOLS.join(","), "--append-system-prompt", BRAIN_HINT] : []),
   ];
   if (input.tier === "T2") {
     const t2 = config.engine.t2;
