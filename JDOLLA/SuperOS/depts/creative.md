@@ -4,6 +4,7 @@ Gives the brain a creative identity: explores imaginative directions, develops v
 ## Skills
 - `/blender-visuals`: renders, title cards and 3D visuals
 - `content-cascade` (draft in `skills/content-cascade/`, not installed): turn one deliverable into draft posts and notes
+- `creative-critic` (draft, inert, `skills/creative-critic/`): check a design against Jay's approved preferences; critique only
 
 ## References
 - Charter: `wiki/creative/charter.md`

@@ -3,6 +3,7 @@ Builds complete interactive games, MIDNIGHT REIGN first.
 
 ## Skills
 - `/blender-visuals`: headless Blender renders, turntables, 3D models and diagrams
+- `game-testing` (draft, inert, `skills/game-testing/`): analyze gameplay test results; does not run the game
 
 ## References
 - Charter: `wiki/gamedev/charter.md`
