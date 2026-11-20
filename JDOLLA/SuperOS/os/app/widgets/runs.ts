@@ -28,6 +28,7 @@ export const runs: Widget = {
           const e = JSON.parse(String(ev.data)) as { type: string; text?: string; name?: string };
           if (e.type === "text" && e.text) out.textContent = ((out.textContent ?? "") + e.text).slice(-6000);
           if (e.type === "tool" && e.name) out.textContent = ((out.textContent ?? "") + `[${e.name}]\n`).slice(-6000);
+          if (e.type === "denied") out.textContent = ((out.textContent ?? "") + `[blocked: ${(e as { tool?: string }).tool ?? "tool"}]\n`).slice(-6000);
           if (e.type === "status") { es.close(); if (alive) void ctx.refresh(); }
           out.scrollTop = out.scrollHeight;
         };
@@ -35,6 +36,7 @@ export const runs: Widget = {
       } else out.textContent = r.output.slice(-3000) || "(no output)";
       const el = h("div", { class: "run" }, head, h("div", { class: "q" }, r.text), out);
       if (r.error) el.append(h("div", { class: "err" }, r.error));
+      if (r.denied.length) el.append(h("div", { class: "err" }, `Blocked ${r.denied.length} tool call${r.denied.length === 1 ? "" : "s"}: ${r.denied.map((d) => d.split(":")[0]).join(", ")}`));
       for (const d of r.deliverables) {
         el.append(h("button", { type: "button", class: "ghost", click: () => void ctx.api.open(d).then(() => ctx.toast(`Opened ${d}`), (e: unknown) => ctx.toast(e instanceof Error ? e.message : "Could not open it.")) }, `Open ${d}`));
       }

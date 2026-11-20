@@ -59,7 +59,7 @@ export type RunView = {
   id: string; tier: "T2" | "T3"; text: string; dept: string;
   status: "running" | "done" | "failed" | "stopped";
   startedAt: string; endedAt: string | null; capUsd: number; costUsd: number | null;
-  output: string; error: string | null; deliverables: string[];
+  output: string; error: string | null; deliverables: string[]; denied: string[];
 };
 
 export type LayoutItem = { widget: string; span: 1 | 2 | 3 };

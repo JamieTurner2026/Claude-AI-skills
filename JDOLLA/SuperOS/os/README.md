@@ -21,4 +21,10 @@ Press Enter on a question (T2) or a work request (T3). T2 starts at once; T3 ask
 - Every run: `--restricted --strict-mcp-config`, a spend cap, deny rules for `.env`, `os/`, `.claude/`, `logs/`, `.git/`. T2 can only read. T3 can write only in `outputs/_work/<id>/`, and its files are copied to `outputs/YYYY-MM/`.
 - Costs and decisions are logged to `router.jsonl` in the log folder.
 
+## Containment (step g)
+- `config/skills.policy.json` lists the tools a T3 run may use (`defaultTools`) and extra tools per skill, by exact name. T2 is always read-only. A missing or broken policy refuses every run.
+- The vault's `.claude/settings.json` deny rules are restated with absolute paths for every run; a missing or broken file refuses the run.
+- Bash is only offered inside Claude Code's sandbox (macOS; Linux or WSL2 with bubblewrap and socat). Native Windows has no sandbox, so Bash runs are refused there. The run settings also set `failIfUnavailable` and turn off unsandboxed retries.
+- Blocked tool calls show on the run in the Runs widget and in `router.jsonl`.
+
 Needs Node 22.18 or newer (it runs TypeScript directly, no build step).

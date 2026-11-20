@@ -7,7 +7,8 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } fro
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildClaudeArgs, capFor, denySettings, T3_TOOLS } from "./claude-args.ts";
+import { buildClaudeArgs, capFor } from "./claude-args.ts";
+import { builtinDenyRules } from "./deny-rules.ts";
 import { loadConfig, pathsFor } from "./config.ts";
 import { makeVault } from "./fixture.ts";
 import { deliverableName, slugify } from "./runs.ts";
@@ -50,24 +51,25 @@ const argvOf = (output: string): string[] => JSON.parse(/ARGV:(.*)/.exec(output)
 test("exact command line per tier", () => {
   const p = pathsFor(path.join(vault, "os"));
   const config = loadConfig(p);
-  const t2 = buildClaudeArgs({ tier: "T2", text: "hi", budgetUsd: 0.05, vault: p.vault, workDir: "/w" }, config);
+  const base = { vault: p.vault, workDir: "/w", t3Tools: ["Read", "Glob", "Grep", "Write", "Edit"] as const, deny: builtinDenyRules(p.vault), sandbox: { available: false, reason: "test" } };
+  const t2 = buildClaudeArgs({ ...base, tier: "T2", text: "hi", budgetUsd: 0.05 }, config);
   assert.equal(t2.cwd, p.vault);
   for (const flag of ["-p", "--restricted", "--strict-mcp-config", "--no-session-persistence", "--settings"]) assert.ok(t2.args.includes(flag), flag);
   assert.equal(t2.args[t2.args.indexOf("--tools") + 1], "Read,Glob,Grep");
   assert.equal(t2.args[t2.args.indexOf("--model") + 1], "haiku");
   assert.equal(t2.args[t2.args.indexOf("--max-budget-usd") + 1], "0.05");
   assert.ok(!t2.args.includes("acceptEdits") && !t2.args.includes("--bare") && !t2.args.join(" ").includes("Bash"));
-  const t3 = buildClaudeArgs({ tier: "T3", text: "hi", budgetUsd: 2, vault: p.vault, workDir: "/w" }, config);
+  const t3 = buildClaudeArgs({ ...base, tier: "T3", text: "hi", budgetUsd: 2 }, config);
   assert.equal(t3.cwd, "/w");
   assert.equal(t3.args[t3.args.indexOf("--permission-mode") + 1], "acceptEdits");
-  assert.equal(t3.args[t3.args.indexOf("--tools") + 1], T3_TOOLS.join(","));
+  assert.equal(t3.args[t3.args.indexOf("--tools") + 1], "Read,Glob,Grep,Write,Edit");
   assert.ok(!t3.args[t3.args.indexOf("--tools") + 1]?.includes("Bash"), "T3 never gets Bash before step (g)");
-  assert.throws(() => buildClaudeArgs({ tier: "T3", text: "hi", budgetUsd: 2, vault: p.vault, workDir: "/w" },
+  assert.throws(() => buildClaudeArgs({ ...base, tier: "T3", text: "hi", budgetUsd: 2 },
     { ...config, engine: { ...config.engine, t3: { ...config.engine.t3, permissionMode: "bypassPermissions" } } }), /not allowed/);
 });
 
 test("deny rules cover .env, os/ and logs with absolute paths", () => {
-  const deny = (JSON.parse(denySettings("/v/ault")) as { permissions: { deny: string[] } }).permissions.deny;
+  const deny = builtinDenyRules("/v/ault");
   for (const r of ["Read(//v/ault/**/.env*)", "Read(//v/ault/os/**)", "Write(//v/ault/os/**)", "Read(//v/ault/logs/**)", "Edit(//v/ault/.claude/**)"]) assert.ok(deny.includes(r), r);
 });
 
