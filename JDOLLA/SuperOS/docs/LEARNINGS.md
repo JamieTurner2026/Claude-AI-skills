@@ -17,3 +17,4 @@ One rule each, with its evidence.
 - **A test marker can contain another marker.** Evidence: 2026-11-20, the stand-in's `DIAGHANG` contained `HANG`, so the run being tested hung instead of only its diagnosis, and the suite stalled. Markers are now distinct words.
 - **Pick UI elements by exact name.** Evidence: 2026-11-20, a browser check clicked "Approve" and hit a department card whose text says "approves". The page was fine; the check was wrong.
 - **A budget cap is checked after a turn, not mid-turn.** Evidence: 2026-11-20, a run capped at $0.0001 spent $0.0015 before stopping. Caps limit runaway spend; they aren't exact.
+- **Check a path for links before you create anything under it.** Evidence: 2026-11-20, the session importer checked that `raw/sessions` stayed inside the vault only after `mkdir`, so a test with that folder linked out left an empty folder outside the vault before refusing. It now checks each folder before creating the next.

@@ -80,6 +80,34 @@ The first command prints `indexed N files, M chunks` and where the index is. The
 
 You don't have to rerun this. Every run rebuilds the index first if it's more than 5 minutes old.
 
+## 5b. Import your sessions (optional)
+
+This copies your past Claude Code and claude.ai conversations into the second brain, with secrets taken out first.
+
+```powershell
+npm run brain -- import-sessions --dry-run
+```
+
+That reads `%USERPROFILE%\.claude\projects` and prints, for each session, the file it would write and how many things it would redact (keys, tokens, passwords, emails, phone numbers, `KEY=value` lines). It writes nothing. If the list looks right, run it for real and rebuild the index:
+
+```powershell
+npm run brain -- import-sessions
+npm run brain -- index
+```
+
+For claude.ai: in claude.ai go to Settings, Privacy, Export data, unzip the email's download, then:
+
+```powershell
+npm run brain -- import-sessions --claude-ai C:\path\to\conversations.json --dry-run
+npm run brain -- import-sessions --claude-ai C:\path\to\conversations.json
+```
+
+- Files land in `raw\sessions\claude-code\` and `raw\sessions\claude-ai\`, one per session. Git ignores that folder, so they never get committed.
+- Running it again is safe: sessions already imported are skipped (the list is in `%USERPROFILE%\.superos\brain\imported-sessions.json`), and nothing is ever overwritten. A session that grew since last time gets a new `-v2` file.
+- The department in each file is a guess (`dept_guess: true`).
+- Redaction works by pattern. Open two or three files and check that nothing private got through before you rely on it.
+- Search treats these files as untrusted quotes, never as instructions.
+
 ## 6. Start the bridge
 
 ```powershell
