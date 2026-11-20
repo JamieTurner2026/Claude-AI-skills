@@ -9,6 +9,7 @@ import { ContainmentError, buildClaudeArgs, capFor } from "./claude-args.ts";
 import { allDenyRules } from "./deny-rules.ts";
 import { PolicyError, loadPolicy, t3Tools } from "./policy.ts";
 import { detectSandbox } from "./sandbox.ts";
+import type { BrainLink } from "./brain-link.ts";
 import type { SandboxStatus } from "./sandbox.ts";
 import type { RunTier } from "./claude-args.ts";
 import type { OsConfig, Paths } from "./config.ts";
@@ -60,7 +61,11 @@ const MAX_DELIVERABLE_BYTES = 20 * 1024 * 1024;
 type Run = RunInfo & { child: ChildProcess | null; listeners: Set<(e: RunEvent) => void>; events: RunEvent[]; stopRequested: boolean; workDir: string; onEnd: ((info: RunInfo) => void) | null };
 
 export function defaultClaudeBin(config: OsConfig, platform: string = process.platform): ClaudeBin {
-  return { cmd: config.engine.claudeBin ?? (platform === "win32" ? "claude.exe" : "claude"), prefixArgs: [] };
+  const bin = config.engine.claudeBin;
+  // An npm-installed CLI on Windows is a .cmd file, which can't be started without a shell. Point
+  // claudeBin at its .js entry instead and it runs with this Node, still with no shell.
+  if (bin && /\.(c|m)?js$/i.test(bin)) return { cmd: process.execPath, prefixArgs: [bin] };
+  return { cmd: bin ?? (platform === "win32" ? "claude.exe" : "claude"), prefixArgs: [] };
 }
 
 /** YYYY-MM-DD_<dept>_<slug>.<ext>, adding -v2, -v3 ... instead of overwriting. */
@@ -83,10 +88,12 @@ export class RunManager {
   private log: (line: LogLine) => void;
 
   private sandbox: () => SandboxStatus;
+  private brain: BrainLink | null;
 
-  constructor(opts: { paths: Paths; config: () => OsConfig; bin: () => ClaudeBin; log: (line: LogLine) => void; sandbox?: () => SandboxStatus }) {
+  constructor(opts: { paths: Paths; config: () => OsConfig; bin: () => ClaudeBin; log: (line: LogLine) => void; sandbox?: () => SandboxStatus; brain?: BrainLink | null }) {
     this.paths = opts.paths; this.config = opts.config; this.bin = opts.bin; this.log = opts.log;
     this.sandbox = opts.sandbox ?? (() => detectSandbox());
+    this.brain = opts.brain ?? null;
   }
 
   list(): RunInfo[] {
@@ -140,7 +147,8 @@ export class RunManager {
     let built: { args: string[]; cwd: string };
     try {
       const tools = t3Tools(loadPolicy(this.paths), req.skill);
-      built = buildClaudeArgs({ tier: req.tier, text: req.text, budgetUsd: cap, vault: this.paths.vault, workDir, t3Tools: tools, deny: allDenyRules(this.paths.vault), sandbox: this.sandbox() }, config);
+      const brainMcpConfig = config.engine.brain.enabled && this.brain?.ensureFresh() ? this.brain.mcpConfig() : null;
+      built = buildClaudeArgs({ tier: req.tier, text: req.text, budgetUsd: cap, vault: this.paths.vault, workDir, t3Tools: tools, deny: allDenyRules(this.paths.vault), sandbox: this.sandbox(), brainMcpConfig }, config);
     } catch (e) {
       if (e instanceof PolicyError || e instanceof ContainmentError) throw new RunError(400, e.message);
       throw e;
