@@ -34,7 +34,7 @@ export const runs: Widget = {
         };
         es.onerror = () => es.close();
       } else out.textContent = r.output.slice(-3000) || "(no output)";
-      const el = h("div", { class: "run" }, head, h("div", { class: "q" }, r.routine ? `Routine: ${r.routine}` : r.text), out);
+      const el = h("div", { class: "run" }, head, h("div", { class: "q" }, r.routine ? `Routine: ${r.routine}` : r.skill ? `Skill: ${r.skill}` : r.text), out);
       if (r.error) el.append(h("div", { class: "err" }, r.error));
       if (r.denied.length) el.append(h("div", { class: "err" }, `Blocked ${r.denied.length} tool call${r.denied.length === 1 ? "" : "s"}: ${r.denied.map((d) => d.split(":")[0]).join(", ")}`));
       for (const d of r.deliverables) {

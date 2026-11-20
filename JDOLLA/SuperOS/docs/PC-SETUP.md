@@ -183,6 +183,10 @@ Runs also get one safe tool, `today`, which gives the real date in your time zon
 
 The bridge now builds these itself when it starts and every 30 minutes: `wiki\_master-index.md`, each department's `_index.md`, `reports\_index.md`, one hub per project in `projects\`, and today's note in `daily\`. To see what it would do first, run `npm run vault -- build --dry-run` in `os\`. In a daily note, write only under the `## Notes` line: that part is yours and is never changed.
 
+## 10d. Run a skill by hand
+
+In the dashboard, the **Skills** widget lists every skill with its tier (T2 reads, T3 writes drafts) and suggested budget. Press **Run**; add a short note in the box if you want to steer it. A T3 skill asks "Run this? Up to $X" first. Skills share the routines' $1 a day cap (`engine.routines.dailyCapUsd`), so raise it in `os\config\os.config.json` if a $1.00 T3 skill will not fit next to your routines.
+
 ## 11. Windows checks (never tested on Windows; please do these once)
 
 These all passed on Linux in the cloud. Windows is untested. Tell Claude the result of each one.
