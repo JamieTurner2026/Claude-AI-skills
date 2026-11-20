@@ -14,7 +14,7 @@ How the build continues after Phase 5, and who builds what. The main session pla
 | 1 | Vault layout, routers, seed content | vault |
 | 2 | Bridge, dashboard, runs, containment | `os/bridge`, `os/app` |
 | 3 (part) | Search index and the `superos-brain` MCP server, wired into every run | `os/brain` |
-| 4 | Scheduler, routines, $1/day cap | `os/bridge/routine-runner.ts` |
+| 4 | Scheduler, routines, daily cap (now $2/day) | `os/bridge/routine-runner.ts` |
 | 5 | Learning loop (proposals Jay approves) and the safe tools layer (`today`) | `os/bridge/learning.ts`, `os/tools` |
 | — | Seven department agents as inert skill drafts | `skills/` |
 
@@ -25,17 +25,23 @@ Make the vault keep itself current and let Jay use every skill from the dashboar
 |---|---|---|---|
 | 6a | **Vault generators:** `_master-index`, department `_index` files, `reports/_index`, project hubs, the generated top half of each daily note | Branch 2: **done** (PR #15) | `os/vault/`, small hook in `server.ts` |
 | 6b | **Session import:** Claude Code transcripts and the claude.ai export go into `raw/sessions/`, redacted, then indexed as untrusted | Branch 3: **done** (PR #13) | `os/brain/` |
-| 6c | **Skill runner:** a Skills widget lists every skill in `skills/`, with tier, budget and a Run button. It is the same run path as Run now on routines, so all caps and containment apply. Each department agent gets a policy entry by name | Branch 2 (started) | `os/bridge`, `os/app`, `os/config/skills.policy.json` |
-| 6d | **More safe tools**, each read-only with tests: `recent_changes` (notes changed in N days), `link_check` (broken `[[links]]`), `vault_stats` (counts, notes without sources), `list_reports` | Whichever builder is free first | `os/tools/` only |
-| 6e | **Inbox triage:** a T2 run proposes where each `inbox/` file belongs. The proposals use the Phase 5 widget with a new "move" kind, and the bridge moves files only on Approve | Branch 2, after 6c | `os/bridge/learning.ts`, `os/app` |
+| 6c | **Skill runner:** a Skills widget lists every skill in `skills/`, with tier, budget and a Run button. It is the same run path as Run now on routines, so all caps and containment apply. Each department agent gets a policy entry by name | Branch 2: **done** (PR #17) | `os/bridge`, `os/app`, `os/config/skills.policy.json` |
+| 6d | **More safe tools**, each read-only with tests: `recent_changes` (notes changed in N days), `link_check` (broken `[[links]]`), `vault_stats` (counts, notes without sources), `list_reports` | Branch 2, after 6e | `os/tools/` only |
+| 6e | **Inbox triage:** a T2 run proposes where each `inbox/` file belongs. The proposals use the Phase 5 widget with a new "move" kind, and the bridge moves files only on Approve | Branch 2 (started) | `os/bridge/learning.ts`, `os/app` |
 
-## Phase 7: a sharper second brain
-| Step | What | Builder |
-|---|---|---|
-| 7a | **Local embeddings:** hybrid search (FTS5 plus vectors) with a small local model, no cloud calls. If the model can't load, search falls back to keywords alone | Branch 3, after 6b |
-| 7b | **Brain evals:** a question set in `evals/` with expected notes; `npm run brain -- eval` reports hit rate. Run before and after 7a to prove it helped | Branch 3, with 7a |
-| 7c | **Freshness:** `last_used` updated when a run opens a note; vault-cleanup flags stale and never-used notes | Branch 3 |
-| 7d | **Router evals:** a labelled set of requests checked against the three-tier router, so routing changes are measured | Whichever builder is free first |
+## Phase 7: a sharper second brain (next; planned 2026-11-20)
+**Goal:** the brain finds the right note, shows a source under every claim, and proves with numbers that it is getting better.
+
+| Step | What | Builder | Done when |
+|---|---|---|---|
+| 7b | **Brain evals, first:** 25 to 30 invented questions in `evals/brain/questions.json`, each naming the notes that should come back. `npm run brain -- eval [--k 5]` prints hit@k and MRR. | Branch 3 | The keyword-only baseline is recorded in the PR and in STATUS |
+| 7a | **Local embeddings:** hybrid search (FTS5 plus vectors from a small CPU model, merged by reciprocal rank fusion), stored in the same sqlite index. The model download is opt-in only (`npm run brain -- index --embeddings`, Jay approved 2026-11-20) and never happens during a run. Files live outside the vault. If the model can't load, search falls back to keywords and logs a note | Branch 3 | 7b shows hybrid beats the baseline; otherwise keyword stays the default and the PR says so |
+| 7c | **Freshness:** the brain server records which notes runs open (a usage file next to the index, never a rewrite of Jay's notes). Department indexes and vault-cleanup show stale (over 60 days) and never-used notes | Branch 3 | The cleanup report lists both, from real usage lines |
+| 6d | **More safe tools:** `recent_changes`, `link_check`, `vault_stats`, `list_reports` | Branch 2 | Each tool tested, allowed by name |
+| 7d | **Router evals:** about 60 labelled requests (T1 quick, T2 question, T3 work); `npm run eval:router` prints per-tier accuracy and every wrong pick | Branch 2 | The scores are recorded; misroutes listed for tuning |
+| 7e | **Sources under every claim:** after a T2 run that used the brain, the bridge checks that the answer names at least one vault path. If it doesn't, a learning-loop proposal of kind `uncited` is written (no diagnosis run, no cost) | Branch 2 | Tested; an uncited answer makes a card, a cited one doesn't |
+
+The vault has only 26 notes today, so 7a's gain in the cloud will be small. The real test comes after session import on the PC (Phase 9), so the eval set must be re-run there.
 
 ## Phase 8: outside sources (each needs Jay's yes to connect)
 - **8a Gmail, read-only:** only the "Brain" label, imported as untrusted `raw/` notes. Drafts only; nothing is sent.
@@ -54,7 +60,7 @@ Blocked on the PC session.
 - `router.jsonl` analysis: which tiers cost the most and which runs fail most, plus suggested routing and budget changes. These arrive as proposals and are never applied on their own.
 
 ## Queue
-- **Branch 2:** ~~6a~~ → 6c (now) → 6e
-- **Branch 3:** ~~6b~~ → 7a + 7b (waiting for Jay's OK in its chat) → 7c
-- **Free slot:** 6d, then 7d
+- **Branch 2:** ~~6a~~ → ~~6c~~ → 6e (now) → 6d → 7d → 7e
+- **Branch 3:** ~~6b~~ → 7b → 7a → 7c (waiting for Jay's OK in its chat)
+- **Main session:** review and merge each PR, keep this file and the Brain page current
 - **Waiting on Jay:** Phase 8 (Gmail label, Calendar), Phase 9 (PC session), the private Brain repo name, PR #1
