@@ -6,6 +6,11 @@ description: One-page morning brief in a fixed order: facts that came in, guesse
 
 Department: Business Strategy & Project Management. Tier: **T2, read-only** (reads the vault, writes one file). Suggested budget: **$0.40 per run** (guess).
 
+## Tools to use first
+- For any date or "last N days", call the `today` tool from `superos-tools`. Do not guess the date.
+- Call `recent_changes` (use the days since the last brief, at most 60) for what came in or was drafted, and `list_reports` (for example `{"limit": 5}`) to find the last brief and other reports. They return paths, titles and dates only; open a note with the `superos-brain` `get_note` to read it.
+- If a tool is not available in this run, say so at the top of the report and use file dates only.
+
 ## Steps
 1. Find what changed since the last brief: read the newest `reports/*_morning-intel.md` for its date (if none, use the last 24 hours). Look at files in `inbox/`, `raw/`, `wiki/`, `outputs/` and `proposals/` dated after that.
 2. If nothing is new anywhere, write **no file** and end with the single line `Nothing new since <date>.` Do not pad.

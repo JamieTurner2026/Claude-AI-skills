@@ -118,10 +118,11 @@ test("policy: each department agent has its own entry, default tools only, no Ba
     const entry = policy.skills[name];
     assert.ok(entry, `${name} has a policy entry`);
     assert.deepEqual(entry.tools, [], `${name} adds no tools`);
-    assert.equal(entry.scriptTools, undefined, `${name} keeps the default script tools`);
+    // The default is today; 6d gave two agents extra read-only vault tools by name (tools/vault-tools.test.ts checks exactly which).
+    assert.ok(!entry.scriptTools || entry.scriptTools.every((t) => t !== "today"), `${name} adds script tools by name only`);
     assert.ok(!t3Tools(policy, name).includes("Bash"), `${name} gets no Bash`);
     assert.deepEqual(t3Tools(policy, name), policy.defaultTools, name);
-    assert.deepEqual(scriptToolsFor(policy, name), ["today"], name);
+    assert.equal(scriptToolsFor(policy, name)[0], "today", name);
   }
   assert.equal(JSON.stringify(policy).includes("Bash"), false, "the real policy grants Bash to nothing");
 });

@@ -6,6 +6,11 @@ description: Write today's short plan from the day's directives, the project not
 
 Department: Business Strategy & Project Management. Tier: **T2, read-only** (reads the vault, writes one file). Suggested budget: **$0.25 per run** (guess).
 
+## Tools to use first
+- For any date or "last N days", call the `today` tool from `superos-tools`. Do not guess the date.
+- Call `recent_changes` (for example `{"days": 7}`) for notes and outputs that changed lately, and `list_reports` (for example `{"limit": 5}`) for the newest reports. They return paths, titles and dates only; open a note with the `superos-brain` `get_note` to read it.
+- If a tool is not available in this run, say so at the top of the report and use file dates only.
+
 ## Steps
 1. Read `wiki/directives.md`. Open items are the lines that start `- [ ]`; `- [x]` are done.
 2. List project notes: every `wiki/<dept>/*.md` with `type: project`. Read each note's "Next steps and open questions".

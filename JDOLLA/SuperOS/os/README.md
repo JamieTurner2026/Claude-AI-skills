@@ -72,6 +72,11 @@ Setting up on the PC: see `../docs/PC-SETUP.md`.
 - `GET /api/proposals`, `POST /api/proposals/:id/approve|reject` sit behind the same session, origin and header checks. Approving is append-only: a new `wiki/_learnings/<id>.md` and one bullet under `## Learned rules` in the skill.
 - Switch it off with `engine.learning.enabled: false`.
 
+## Vault tools (Phase 6d)
+- Four read-only tools beside `today`, one module and test each in `tools/`: `recent_changes`, `link_check`, `vault_stats`, `list_reports`. Inputs are zod `.strict()`; results are names, titles, dates and counts, capped, never a note body.
+- `tools/vault.ts` is the one place that touches the vault: known top-level folders only, links never followed, dot entries and `.env*` skipped, `os/`, `logs/`, `raw/sessions/` and `outputs/_work/` never scanned. A `dept` argument must match a real `depts/<slug>.md`; no tool takes a path. `link_check` looks targets up in the scanned file set, never on disk. It is self-contained (node and zod only), so the tools server starts light.
+- The bridge passes `SUPEROS_VAULT` to the tools server (`ToolContext.vault`). The default script tools stay `["today"]`; `config/skills.policy.json` grants the others to the skills that need them, by name (`scriptTools` per skill).
+
 ## Safe tools (WAT "tools")
 - `tools/`: one module per tool (zod input, plain function, no shell, no paths from the caller), listed in `tools/registry.ts`, served by `tools/mcp.ts` as `superos-tools`.
 - Each run gets only the tools its policy names (`scriptTools` in `config/skills.policy.json`; unknown names refuse every run), pre-approved as `mcp__superos-tools__<name>`.
