@@ -1,0 +1,9 @@
+{
+  "name": "superos-embed-runtime",
+  "private": true,
+  "description": "Opt-in local embedding runtime for the brain. Installed by `npm run brain -- index --embeddings` into ~/.superos/brain/embeddings/runtime, never into the vault.",
+  "type": "module",
+  "dependencies": {
+    "@huggingface/transformers": "3.8.1"
+  }
+}
