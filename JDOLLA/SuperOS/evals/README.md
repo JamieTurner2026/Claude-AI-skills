@@ -9,6 +9,7 @@ Routing and brain eval sets. Hand-run only.
 npm run brain -- index
 npm run brain -- eval            # k = 5
 npm run brain -- eval --k 1 --json
+npm run brain -- eval --compare  # keyword vs hybrid (needs: npm run brain -- index --embeddings)
 ```
 
 - A question scores a hit when any of its `relevant` notes is in the top k distinct notes. MRR uses the rank of the first relevant note in the top 20.
