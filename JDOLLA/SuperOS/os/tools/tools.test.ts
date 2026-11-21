@@ -17,7 +17,7 @@ import { createBridge } from "../bridge/server.ts";
 import type { RunEvent } from "../bridge/runs.ts";
 
 const NY = "America/New_York";
-const at = (iso: string) => ({ timezone: NY, now: () => new Date(iso) });
+const at = (iso: string) => ({ timezone: NY, now: () => new Date(iso), vault: "" });
 const fake = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "bridge", "fake-claude.ts");
 const flag = (argv: string[], f: string) => argv[argv.indexOf(f) + 1];
 
@@ -62,11 +62,11 @@ test("every registered tool has a description, a strict input and a read-only re
 });
 
 test("run MCP: brain + today pre-approved, nothing else; empty when both are off", () => {
-  const m = buildRunMcp({ brain: { command: "node", args: ["b.ts"], env: {} }, tools: ["today"], timezone: NY })!;
+  const m = buildRunMcp({ brain: { command: "node", args: ["b.ts"], env: {} }, tools: ["today"], timezone: NY, vault: "/v" })!;
   assert.deepEqual(m.allowedTools, ["mcp__superos-brain__search", "mcp__superos-brain__get_note", mcpToolName("today")]);
   assert.deepEqual(Object.keys(JSON.parse(m.config).mcpServers), ["superos-brain", "superos-tools"]);
-  assert.equal(buildRunMcp({ brain: null, tools: [], timezone: NY }), null);
-  assert.deepEqual(buildRunMcp({ brain: null, tools: ["today"], timezone: NY })!.allowedTools, ["mcp__superos-tools__today"]);
+  assert.equal(buildRunMcp({ brain: null, tools: [], timezone: NY, vault: "/v" }), null);
+  assert.deepEqual(buildRunMcp({ brain: null, tools: ["today"], timezone: NY, vault: "/v" })!.allowedTools, ["mcp__superos-tools__today"]);
 });
 
 async function runOnce(vault: string): Promise<string[]> {
@@ -87,6 +87,7 @@ test("through the bridge: a run gets the tools server with exactly the policy's 
   const s = JSON.parse(flag(argv, "--mcp-config")!).mcpServers["superos-tools"];
   assert.equal(s.env.SUPEROS_TOOLS, "today");
   assert.equal(s.env.SUPEROS_TZ, NY);
+  assert.equal(s.env.SUPEROS_VAULT, vault, "the tools server is told which vault to read");
   assert.equal(s.args[0], path.join(path.dirname(fileURLToPath(import.meta.url)), "mcp.ts"), "the bridge's own copy, never the vault's");
 });
 
@@ -106,7 +107,7 @@ test("a policy naming an unknown script tool refuses every run", () => {
 });
 
 test("the exact tools server a run would get starts and answers today", async () => {
-  const s = toolsServer(["today"], NY);
+  const s = toolsServer(["today"], NY, "/v");
   const child = spawn(s.command, s.args, { env: { ...process.env, ...s.env }, stdio: ["pipe", "pipe", "ignore"] });
   const lines: Array<{ id?: number; result?: any }> = [];
   let buf = "";
