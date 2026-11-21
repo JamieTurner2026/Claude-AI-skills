@@ -23,6 +23,7 @@ import { RunError, RunManager, defaultClaudeBin } from "./runs.ts";
 import type { ClaudeBin, RunEvent } from "./runs.ts";
 import type { SandboxStatus } from "./sandbox.ts";
 import { buildAll } from "../vault/generate.ts";
+import { usagePathFor } from "../brain/usage.ts";
 import { SKILL_SLUG, findSkill } from "./skills.ts";
 import { InboxTriage } from "./inbox.ts";
 import type { BuildResult } from "../vault/generate.ts";
@@ -80,7 +81,7 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
   let vaultTimer: NodeJS.Timeout | undefined;
   function rebuildVault(trigger: string): BuildResult | null {
     try {
-      const r = buildAll(paths, (opts.now ?? (() => new Date()))());
+      const r = buildAll(paths, (opts.now ?? (() => new Date()))(), { usageFile: usagePathFor(brain.dbPath) }); // 7c: same folder as the brain index
       const problems = r.files.filter((f) => f.action === "skipped" && f.reason && !f.reason.startsWith("not generated")).map((f) => `${f.path}: ${f.reason}`).join("; ").slice(0, 500);
       runLog({ kind: "vault-build", trigger, created: r.counts.create, updated: r.counts.update, unchanged: r.counts.unchanged, skipped: r.counts.skipped, problems });
       return r;

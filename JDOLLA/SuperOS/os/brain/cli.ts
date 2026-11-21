@@ -10,14 +10,16 @@ import { isTrusted } from "./files.ts";
 import { runImportCommand } from "./import-cli.ts";
 import { compareEval, formatComparison, hybridSearchCli, indexWithEmbeddings } from "./embed-cli.ts";
 import { formatReport, indexedPaths, keywordRanker, loadEvalFile, runEval } from "./eval.ts";
+import { formatUsage, readUsage, summarizeUsage, usagePathFor } from "./usage.ts";
 
-const USAGE = `usage: brain <index|search|get|stats|eval|import-sessions> [args]
+const USAGE = `usage: brain <index|search|get|stats|eval|usage|import-sessions> [args]
   index [--embeddings]   rebuild the index from wiki/ and raw/; --embeddings also sets up local meaning
                          search (one-time download, files in ~/.superos/brain/embeddings)
   search <query> [--dept d] [--limit n] [--trusted] [--json] [--hybrid]
   get <vault-path>       print one note
   eval [--k 5] [--questions <file>] [--json] [--compare]   (--compare: keyword vs hybrid)
                          retrieval eval: hit@k and MRR (default questions: <vault>/evals/brain/questions.json)
+  usage [--json]         which notes runs opened (get_note), and wiki notes never opened; reads only
   import-sessions [--claude-code <dir>] [--claude-ai <conversations.json>] [--dry-run]
                          import past sessions into raw/sessions/ (redacted, never overwritten)
   --vault <dir>  --db <file>   (defaults: this vault, ~/.superos/brain/index.sqlite)`;
@@ -71,6 +73,13 @@ async function main(argv: string[]): Promise<number> {
         console.log(values.json ? JSON.stringify({ ranker: "keyword", ...report }, null, 2) : formatReport(report, "keyword"));
         return report.unknownPaths.length ? 1 : 0;
       } finally { db.close(); }
+    }
+    if (cmd === "usage") {
+      let known: string[] = [];
+      try { const db = openReadOnly(dbPath); try { known = [...indexedPaths(db)]; } finally { db.close(); } } catch { /* no index: list used notes only */ }
+      const s = summarizeUsage(readUsage(usagePathFor(dbPath)), known);
+      console.log(values.json ? JSON.stringify(s, null, 2) : formatUsage(s));
+      return 0;
     }
     if (cmd === "stats") {
       const db = openReadOnly(dbPath);
