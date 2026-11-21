@@ -26,10 +26,13 @@ function hasVectorTable(db: DatabaseSync): boolean {
   return !!db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'vectors'").get();
 }
 
-export interface EmbedStats { chunks: number; embedded: number; cached: number; pruned: number }
+export interface EmbedStats { chunks: number; embedded: number; cached: number; pruned: number; /** chunks left for next time (deadline reached) */ remaining?: number }
+export interface EmbedOptions { batch?: number; /** stop starting new batches after this time (ms since epoch); leftovers wait for the next call */ deadline?: number; now?: () => number }
 
 /** Embeds every chunk that has no vector for this model yet, and drops vectors no chunk uses any more. */
-export async function embedIndex(db: DatabaseSync, embedder: Embedder, batch = 32): Promise<EmbedStats> {
+export async function embedIndex(db: DatabaseSync, embedder: Embedder, opts: EmbedOptions = {}): Promise<EmbedStats> {
+  const batch = opts.batch ?? 32;
+  const now = opts.now ?? Date.now;
   db.exec(VECTORS_SQL);
   const rows = db.prepare("SELECT id, title, heading, text FROM documents ORDER BY id").all() as unknown as DocRow[];
   const have = new Set((db.prepare("SELECT key FROM vectors WHERE model = ?").all(embedder.id) as { key: string }[]).map((r) => r.key));
@@ -37,7 +40,9 @@ export async function embedIndex(db: DatabaseSync, embedder: Embedder, batch = 3
   for (const r of rows) { const t = embedText(r); wanted.set(vectorKey(embedder.id, t), t); }
   const missing = [...wanted].filter(([k]) => !have.has(k));
   const ins = db.prepare("INSERT OR REPLACE INTO vectors(key, model, dim, vec) VALUES (?,?,?,?)");
+  let done = 0;
   for (let i = 0; i < missing.length; i += batch) {
+    if (opts.deadline !== undefined && now() >= opts.deadline) break;
     const part = missing.slice(i, i + batch);
     const vecs = await embedder.embed(part.map(([, t]) => t));
     if (vecs.length !== part.length) throw new Error("embedder returned the wrong number of vectors");
@@ -50,12 +55,14 @@ export async function embedIndex(db: DatabaseSync, embedder: Embedder, batch = 3
       });
       db.exec("COMMIT");
     } catch (e) { db.exec("ROLLBACK"); throw e; }
+    done += part.length;
   }
   let pruned = 0;
   const del = db.prepare("DELETE FROM vectors WHERE key = ?");
   for (const k of have) if (!wanted.has(k)) { del.run(k); pruned++; }
   const other = db.prepare("DELETE FROM vectors WHERE model != ?").run(embedder.id);
-  return { chunks: rows.length, embedded: missing.length, cached: wanted.size - missing.length, pruned: pruned + Number(other.changes) };
+  const left = missing.length - done;
+  return { chunks: rows.length, embedded: done, cached: wanted.size - missing.length, pruned: pruned + Number(other.changes), ...(left ? { remaining: left } : {}) };
 }
 
 /** Share of chunks that have a vector for this model (0 when the table is missing). */
