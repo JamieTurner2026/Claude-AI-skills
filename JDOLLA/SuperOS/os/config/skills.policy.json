@@ -11,6 +11,7 @@
     "creative-critic": { "tools": [] },
     "vault-cleanup": { "tools": [], "scriptTools": ["link_check", "vault_stats"] },
     "plan-today": { "tools": [], "scriptTools": ["recent_changes", "list_reports"] },
-    "morning-intel": { "tools": [], "scriptTools": ["recent_changes", "list_reports"] }
+    "morning-intel": { "tools": [], "scriptTools": ["recent_changes", "list_reports"] },
+    "proposals-review": { "tools": [], "scriptTools": ["proposals_summary", "list_reports"] }
   }
 }

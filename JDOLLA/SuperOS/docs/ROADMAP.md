@@ -56,7 +56,7 @@ Blocked until Jay names the label and connects Calendar.
 Blocked on the PC session.
 
 ## Phase 10: learning loop v2
-- A weekly review of approved and rejected proposals, written as a report.
+- ~~10a~~ A weekly review of approved and rejected proposals, written as a report. Built 2026-11-21: skill draft `skills/proposals-review`, routine `proposals-review` (Sundays 17:00, ships off), read-only tool `proposals_summary`.
 - `router.jsonl` analysis: which tiers cost the most and which runs fail most, plus suggested routing and budget changes. These arrive as proposals and are never applied on their own.
 
 ## Queue

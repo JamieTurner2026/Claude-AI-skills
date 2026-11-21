@@ -23,7 +23,7 @@ const fake = path.join(realOs, "bridge", "fake-claude.ts");
 
 test("registry: every tool is named once, read-only in shape, strict about arguments, and in the policy's name list", () => {
   assert.deepEqual(TOOLS.map((t) => t.name), [...SCRIPT_TOOL_NAMES]);
-  assert.deepEqual([...SCRIPT_TOOL_NAMES], ["today", "recent_changes", "link_check", "vault_stats", "list_reports"]);
+  assert.deepEqual([...SCRIPT_TOOL_NAMES], ["today", "recent_changes", "link_check", "vault_stats", "list_reports", "proposals_summary"]);
   for (const t of TOOLS) {
     assert.equal((t.inputSchema as { additionalProperties?: boolean }).additionalProperties, false, `${t.name} schema forbids extra arguments`);
     assert.equal(t.input.safeParse({ unexpected: 1, days: 1, limit: 1 }).success, false, t.name);
