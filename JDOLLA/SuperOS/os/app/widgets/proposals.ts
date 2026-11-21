@@ -7,7 +7,9 @@ import type { Widget } from "./_template.ts";
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const when = (iso: string) => new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-const KIND = { budget: "Hit budget cap", failed: "Failed", blocked: "Tools blocked", move: "Inbox move" } as const;
+// Same words as TUNE_NOTICE in bridge/learning.ts (a test keeps them equal; the browser cannot import the bridge).
+const TUNE_NOTICE = "Approving only records your decision. It never changes config; you edit config yourself.";
+const KIND = { budget: "Hit budget cap", failed: "Failed", blocked: "Tools blocked", move: "Inbox move", tune: "Suggested change" } as const;
 
 export const proposals: Widget = {
   id: "proposals",
@@ -19,10 +21,15 @@ export const proposals: Widget = {
     const sort = () => void ctx.api.sortInbox().then(
       () => { ctx.toast("Sorting the inbox (up to $0.05). Suggested moves will appear here."); void load(); },
       (e: unknown) => { ctx.toast(e instanceof Error ? e.message : "Could not start it."); void load(); });
+    const suggest = () => void ctx.api.suggestTunes().then(
+      (r) => { ctx.toast(r.created ? `Added ${r.created} suggested change${r.created === 1 ? "" : "s"}. Nothing changes until you edit config yourself.` : r.found === 0 ? "No suggestions: the last 30 days look fine." : r.skippedWeekly ? "Already 3 suggestions this week; more next week." : "Those were already suggested recently."); void load(); },
+      (e: unknown) => { ctx.toast(e instanceof Error ? e.message : "Could not do that."); void load(); });
     const decide = (p: ProposalView, d: "approve" | "reject") => void ctx.api.decideProposal(p.id, d).then(
       (r) => {
         const a = r.proposal.applied;
-        ctx.toast(r.proposal.kind === "move"
+        ctx.toast(r.proposal.kind === "tune"
+          ? (d === "approve" ? "Recorded. Nothing was changed; edit the config yourself." : "Rejected. Nothing was changed.")
+          : r.proposal.kind === "move"
           ? (d === "approve" ? `Approved. ${a?.note ?? "Moved the file."}` : "Rejected. The file stays in the inbox.")
           : d === "approve" ? `Approved. Saved ${a?.learningNote ?? "the lesson"}${a?.skillFile ? ` and updated ${a.skillFile}` : ""}.` : "Rejected. Nothing was changed.");
         void load();
@@ -42,6 +49,9 @@ export const proposals: Widget = {
         if (inbox.last) body.append(h("p", { class: "meta" }, `Last sort ${when(inbox.last.at)}: ${inbox.last.note}`));
       }
       body.append(h("div", { class: "spend" },
+        h("span", {}, "Run analysis (last 30 days)"),
+        h("button", { type: "button", class: "runnow", click: suggest }, "Suggest changes")));
+      body.append(h("div", { class: "spend" },
         h("span", {}, "Diagnoses today ", h("b", {}, money(v.spentTodayUsd)), ` of ${money(v.dailyCapUsd)}`),
         v.enabled ? h("span", {}, "Learning on") : h("span", { class: "off" }, "Learning off (engine.learning.enabled)")));
       // A diagnosis or an inbox sort takes a few seconds: check back while one is running (also when there is nothing to list yet).
@@ -56,6 +66,7 @@ export const proposals: Widget = {
         const item = h("div", { class: `pr ${p.status}` },
           h("div", { class: "prtop" }, h("span", { class: "nm" }, `${KIND[p.kind]}: ${subject}`), h("span", { class: "meta" }, when(p.createdAt))),
           h("p", { class: "what" }, p.move ? `Move inbox/${p.move.file} to ${p.move.movedTo ?? p.move.to}${p.move.reason ? `. ${p.move.reason}` : ""}` : p.whatBroke));
+        if (p.kind === "tune") item.append(h("p", { class: "meta" }, TUNE_NOTICE));
         if (p.diagnosis.status === "running") item.append(h("p", { class: "meta" }, "Drafting a fix..."));
         if (p.fix) item.append(h("p", {}, h("b", {}, "Fix: "), p.fix));
         if (p.learning) item.append(h("p", {}, h("b", {}, "Lesson: "), p.learning));

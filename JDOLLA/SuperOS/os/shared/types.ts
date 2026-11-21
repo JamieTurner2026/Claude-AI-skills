@@ -86,7 +86,7 @@ export type SkillsView = { skills: SkillView[]; spentTodayUsd: number; dailyCapU
 /** A learning-loop proposal as the dashboard sees it (mirrors Proposal in bridge/learning.ts). */
 export type ProposalView = {
   id: string; createdAt: string; status: "pending" | "approved" | "rejected"; decidedAt: string | null;
-  kind: "budget" | "failed" | "blocked" | "move";
+  kind: "budget" | "failed" | "blocked" | "move" | "tune";
   run: { id: string; tier: "T2" | "T3"; dept: string; skill: string | null; routine: string | null; status: string; error: string | null; denied: string[]; costUsd: number | null; capUsd: number; prompt: string };
   whatBroke: string;
   diagnosis: { status: "running" | "done" | "failed" | "skipped"; note: string; runId: string | null; costUsd: number | null };
@@ -95,7 +95,10 @@ export type ProposalView = {
   applied: { learningNote: string | null; skillFile: string | null; note: string } | null;
   /** Only for kind "move" (inbox triage). */
   move: { file: string; to: string; reason: string; movedTo?: string } | null;
+  /** Only for kind "tune" (run analysis). Approving records the decision and changes no config. */
+  tune: { key: string; kind: string; subject: string } | null;
 };
+export type SuggestResult = { days: number; found: number; created: number; skippedWeekly: number; skippedDuplicate: number };
 /** The inbox as the Proposals widget sees it (mirrors InboxStatus in bridge/inbox.ts). */
 export type InboxView = { count: number; skipped: number; max: number; running: boolean; last: { at: string; status: string; suggested: number; note: string } | null };
 export type ProposalsView = { proposals: ProposalView[]; spentTodayUsd: number; dailyCapUsd: number; enabled: boolean };

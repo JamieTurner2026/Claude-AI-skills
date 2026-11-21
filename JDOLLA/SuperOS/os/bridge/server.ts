@@ -24,6 +24,7 @@ import type { ClaudeBin, RunEvent } from "./runs.ts";
 import type { SandboxStatus } from "./sandbox.ts";
 import { buildAll } from "../vault/generate.ts";
 import { SKILL_SLUG, findSkill } from "./skills.ts";
+import { statsFromLogDir, suggestChanges } from "../analysis/run-stats.ts";
 import { InboxTriage } from "./inbox.ts";
 import type { BuildResult } from "../vault/generate.ts";
 
@@ -67,6 +68,7 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
     config: () => loadConfig(paths),
     bin: () => opts.claudeBin ?? defaultClaudeBin(loadConfig(paths)),
     log: runLog,
+    logDir: opts.logDir ?? logDir(paths),
     ...(opts.sandbox ? { sandbox: opts.sandbox } : {}),
   });
   const routines = new RoutineRunner({ paths, config: () => loadConfig(paths), runs, logDir: opts.logDir ?? logDir(paths), log: runLog, schedulerOn: opts.schedulerOn ?? false });
@@ -174,6 +176,15 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
         if (e instanceof RunError) throw new HttpError(e.status, e.message);
         throw e;
       }
+    }
+    // Run analysis (10b): read router.jsonl, apply the fixed rules, write up to 3 "tune" proposals a week. No run, no cost, no config change.
+    if (url.pathname === "/api/analysis/suggest" && req.method === "POST") {
+      const body = z.object({ days: z.number().int().min(1).max(365).optional() }).strict().parse(await readJson(req));
+      const days = body.days ?? 30;
+      const cfg = config;
+      const stats = statsFromLogDir(opts.logDir ?? logDir(paths), (opts.now ?? (() => new Date()))(), days);
+      const found = suggestChanges(stats, { routineMaxBudgetUsd: cfg.engine.routines.maxBudgetUsd, dailyCapUsd: cfg.engine.routines.dailyCapUsd, t2CapUsd: cfg.engine.t2.maxBudgetUsd });
+      return send(res, 200, { days, found: found.length, ...learning.proposeTunes(found, days) });
     }
     if (url.pathname === "/api/routines" && req.method === "GET") return send(res, 200, routines.status());
     if (url.pathname === "/api/inbox" && req.method === "GET") return send(res, 200, inbox.status());

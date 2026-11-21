@@ -178,6 +178,11 @@ Money limits:
 
 To stop everything scheduled at once, set `SUPEROS_SCHEDULER=off` in `os\.env` and restart the bridge.
 
+## 10b-analysis. Run analysis
+- `cd os` then `npm run analyse:runs -- --days 30` prints where the money went and what keeps failing, from `%LOCALAPPDATA%\JDOLLA\logs\router.jsonl`. Nothing is changed.
+- On the Proposals card, **Suggest changes** adds up to 3 "Suggested change" cards a week. Approve only records your decision; **you edit `os\config\os.config.json` or the routine yourself**.
+- New typed requests are logged as their first 80 characters in `router.jsonl` (on this PC only).
+
 ## 10b. Proposals (the learning loop)
 
 When a run fails, gets tools blocked, or stops at its cap, a card appears in the **Proposals** widget:

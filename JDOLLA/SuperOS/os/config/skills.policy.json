@@ -4,7 +4,7 @@
   "skills": {
     "code-quality": { "tools": [] },
     "security-review": { "tools": [] },
-    "knowledge-improvement": { "tools": [], "scriptTools": ["recent_changes"] },
+    "knowledge-improvement": { "tools": [], "scriptTools": ["recent_changes", "run_stats"] },
     "game-testing": { "tools": [] },
     "industrial-training-sim": { "tools": [] },
     "project-intelligence": { "tools": [], "scriptTools": ["recent_changes", "vault_stats"] },

@@ -43,7 +43,7 @@ export function offeredTools(list: string | undefined): ScriptTool[] {
 
 if (import.meta.main) {
   const offered = offeredTools(process.env["SUPEROS_TOOLS"]);
-  const ctx: ToolContext = { timezone: process.env["SUPEROS_TZ"] || "America/New_York", now: () => new Date(), vault: process.env["SUPEROS_VAULT"] ?? "" };
+  const ctx: ToolContext = { timezone: process.env["SUPEROS_TZ"] || "America/New_York", now: () => new Date(), vault: process.env["SUPEROS_VAULT"] ?? "", logDir: process.env["SUPEROS_LOGS"] ?? "" };
   const rl = createInterface({ input: process.stdin });
   rl.on("line", (l) => {
     if (!l.trim()) return;
