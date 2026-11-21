@@ -1,5 +1,5 @@
 // Calls to the bridge. The session cookie is HttpOnly, so this code never sees the token.
-import type { Directive, LayoutItem, OsState, ProposalView, ProposalsView, RoutinesView, RunView, SkillsView } from "../shared/types.ts";
+import type { Directive, InboxView, LayoutItem, OsState, ProposalView, ProposalsView, RoutinesView, RunView, SkillsView } from "../shared/types.ts";
 
 export class ApiError extends Error {
   status: number;
@@ -37,6 +37,8 @@ export const api = {
   /** A T3 skill without confirm answers 409 with { needsConfirm, capUsd }. */
   runSkill: (name: string, input: string | undefined, confirm: boolean) =>
     call<{ run: RunView }>(`/api/skills/${encodeURIComponent(name)}/run`, { ...(input?.trim() ? { input: input.trim() } : {}), ...(confirm ? { confirm: true } : {}) }),
+  inbox: () => call<InboxView>("/api/inbox"),
+  sortInbox: () => call<{ run: RunView }>("/api/inbox/sort", {}),
   proposals: () => call<ProposalsView>("/api/proposals"),
   decideProposal: (id: string, decision: "approve" | "reject") => call<{ proposal: ProposalView }>(`/api/proposals/${encodeURIComponent(id)}/${decision}`, {}),
   stopRun: (id: string) => call<{ stopped: boolean }>(`/api/runs/${encodeURIComponent(id)}/stop`, {}),

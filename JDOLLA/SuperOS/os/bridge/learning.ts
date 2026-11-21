@@ -14,6 +14,9 @@ import type { LogLine } from "./run-log.ts";
 import { RunError, slugify } from "./runs.ts";
 import type { RunInfo, RunManager } from "./runs.ts";
 import { localDate } from "./routine-runner.ts";
+import { moveIntoRaw } from "./inbox.ts";
+import type { Move } from "./inbox.ts";
+import { scanDepartments } from "../vault/generate.ts";
 
 export const PROPOSAL_ID = /^\d{4}-\d{2}-\d{2}_[a-z0-9-]{1,60}$/;
 const MAX_SKILL_BYTES = 64 * 1024;
@@ -26,7 +29,7 @@ const ProposalSchema = z.object({
   createdAt: z.string(),
   status: z.enum(["pending", "approved", "rejected"]),
   decidedAt: z.string().nullable(),
-  kind: z.enum(["budget", "failed", "blocked"]),
+  kind: z.enum(["budget", "failed", "blocked", "move"]),
   run: z.object({
     id: z.string(), tier: z.enum(["T2", "T3"]), dept: z.string(), skill: z.string().nullable(), routine: z.string().nullable(),
     status: z.string(), error: z.string().nullable(), denied: z.array(z.string()), costUsd: z.number().nullable(), capUsd: z.number(), prompt: z.string(),
@@ -37,6 +40,8 @@ const ProposalSchema = z.object({
   learning: z.string(),
   skillChange: z.object({ skill: z.string(), rule: z.string() }).nullable(),
   applied: z.object({ learningNote: z.string().nullable(), skillFile: z.string().nullable(), note: z.string() }).nullable(),
+  /** Only for kind "move" (inbox triage): where the bridge would move a file from inbox/. Older proposal files have none. */
+  move: z.object({ file: z.string().max(255), to: z.string().max(400), reason: z.string().max(400), movedTo: z.string().max(400).optional() }).nullable().default(null),
 });
 export type Proposal = z.infer<typeof ProposalSchema>;
 
@@ -98,7 +103,10 @@ export class LearningLoop {
   private ledgerFile: string;
   private now: () => Date;
 
-  constructor(opts: { paths: Paths; config: () => OsConfig; runs: RunManager; logDir: string; log: (line: LogLine) => void; now?: () => Date }) {
+  private afterMove: (() => void) | null;
+
+  constructor(opts: { paths: Paths; config: () => OsConfig; runs: RunManager; logDir: string; log: (line: LogLine) => void; now?: () => Date; afterMove?: () => void }) {
+    this.afterMove = opts.afterMove ?? null;
     this.paths = opts.paths; this.config = opts.config; this.runs = opts.runs; this.log = opts.log; this.now = opts.now ?? (() => new Date());
     this.ledgerFile = path.join(opts.logDir, "learning-ledger.json");
   }
@@ -157,7 +165,7 @@ export class LearningLoop {
       run: { id: info.id, tier: info.tier, dept: info.dept, skill: info.skill, routine: info.routine, status: info.status, error: info.error, denied: info.denied.slice(0, 10), costUsd: info.costUsd, capUsd: info.capUsd, prompt: info.text.slice(0, 500) },
       whatBroke: describe(info, kind),
       diagnosis: { status: "skipped", note: "", runId: null, costUsd: null },
-      fix: "", learning: "", skillChange: null, applied: null,
+      fix: "", learning: "", skillChange: null, applied: null, move: null,
     };
     // Keep only the last two weeks of dedup keys.
     for (const k of Object.keys(ledger.seen)) if (k.slice(0, 10) < localDate(new Date(now.getTime() - 14 * 86_400_000), this.tz())) delete ledger.seen[k];
@@ -248,6 +256,55 @@ export class LearningLoop {
     this.log({ kind: "proposal-diagnosis", id, status: p.diagnosis.status, costUsd: end.costUsd });
   }
 
+  /**
+   * Inbox triage (6e): each suggested move becomes a pending "move" proposal. No diagnosis run, no money. A file that
+   * already has a pending move proposal is not proposed twice. Returns how many proposals were created.
+   */
+  proposeMoves(moves: readonly Move[], info: RunInfo): number {
+    const now = this.now();
+    const day = localDate(now, this.tz());
+    const pending = new Set(this.list().filter((p) => p.kind === "move" && p.status === "pending" && p.move).map((p) => p.move!.file));
+    let made = 0;
+    for (const m of moves) {
+      if (pending.has(m.file)) continue;
+      const base = `${day}_${slugify(`move ${m.file}`)}`.slice(0, 71);
+      let id = base;
+      for (let v = 2; existsSync(this.file(id)); v++) id = `${base.slice(0, 66)}-v${v}`;
+      this.save({
+        id, createdAt: now.toISOString(), status: "pending", decidedAt: null, kind: "move",
+        run: { id: info.id, tier: info.tier, dept: info.dept, skill: null, routine: null, status: info.status, error: null, denied: [], costUsd: info.costUsd, capUsd: info.capUsd, prompt: "Sort inbox" },
+        whatBroke: oneLine(`Suggested move: inbox/${m.file} to ${m.to}. ${m.reason}`, 700),
+        diagnosis: { status: "skipped", note: "", runId: null, costUsd: null },
+        fix: "", learning: "", skillChange: null, applied: null,
+        move: { file: m.file, to: m.to, reason: oneLine(m.reason, 400) },
+      });
+      this.log({ kind: "proposal", id, runId: info.id, failure: "move", diagnosis: "skipped" });
+      made++;
+    }
+    return made;
+  }
+
+  /**
+   * Approving a move proposal moves exactly one file from inbox/ into raw/. The proposal file is data, so it is
+   * re-checked: its destination must be raw/<known dept>/<slug>/<the same file name>, and moveIntoRaw does the rest
+   * (plain name, real folders, no links, no overwrite). A refused move leaves the proposal pending.
+   */
+  private approveMove(p: Proposal): Proposal {
+    const m = p.move;
+    if (!m) throw new RunError(409, "This move proposal has no move in it; nothing was changed.");
+    const parts = m.to.split("/");
+    if (parts.length !== 4 || parts[0] !== "raw" || parts[3] !== m.file) throw new RunError(400, "This proposal's destination is not allowed; nothing was moved.");
+    const known = new Set(scanDepartments(this.paths.vault).map((d) => d.slug));
+    const moved = moveIntoRaw(this.paths.vault, m.file, parts[1] as string, parts[2] as string, known);
+    p.status = "approved"; p.decidedAt = this.now().toISOString();
+    p.move = { ...m, movedTo: moved.to };
+    p.applied = { learningNote: null, skillFile: null, note: `Moved ${moved.from} to ${moved.to}.` };
+    this.save(p);
+    this.log({ kind: "inbox-move", id: p.id, from: moved.from, to: moved.to });
+    try { this.afterMove?.(); } catch (e) { this.log({ kind: "inbox-move-after-error", id: p.id, note: e instanceof Error ? e.message.slice(0, 200) : "unknown" }); }
+    return p;
+  }
+
   reject(id: string): Proposal {
     const p = this.decidable(id);
     p.status = "rejected"; p.decidedAt = this.now().toISOString();
@@ -259,6 +316,7 @@ export class LearningLoop {
   /** Applies an approved proposal: append-only writes, done by the bridge. */
   approve(id: string): Proposal {
     const p = this.decidable(id);
+    if (p.kind === "move") return this.approveMove(p);
     if (p.diagnosis.status === "running") throw new RunError(409, "The diagnosis is still running. Wait a moment and try again.");
     const now = this.now();
     const day = localDate(now, this.tz());

@@ -2,7 +2,7 @@
 // fresh, then hands the run ONE MCP server: superos-brain (read-only search and get_note). The run can
 // then search the vault instead of reading files one by one. If the index can't be built, the run goes
 // ahead without the brain rather than failing.
-import { statSync } from "node:fs";
+import { statSync, utimesSync } from "node:fs";
 import path from "node:path";
 import { rebuildIndex } from "../brain/indexer.ts";
 import type { Paths } from "./config.ts";
@@ -42,6 +42,11 @@ export class BrainLink {
       this.log({ kind: "brain-index-failed", note: e instanceof Error ? e.message.slice(0, 200) : "unknown" });
       return false;
     }
+  }
+
+  /** The vault changed under the index (for example a file moved into raw/): make the next run rebuild it. Never throws. */
+  markStale(): void {
+    try { utimesSync(this.dbPath, 0, 0); } catch { /* no index yet: the next run builds one anyway */ }
   }
 
   /** The brain server entry, started with this same Node, pointed at this vault and index. */
