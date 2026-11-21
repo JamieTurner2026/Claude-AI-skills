@@ -15,6 +15,7 @@ import type { Proposal } from "./learning.ts";
 import type { InternalRunOptions, RunInfo } from "./runs.ts";
 import { createBridge } from "./server.ts";
 import type { Bridge } from "./server.ts";
+import { argvFromOutput } from "./fake-argv.ts";
 
 const fake = path.join(path.dirname(fileURLToPath(import.meta.url)), "fake-claude.ts");
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -72,7 +73,7 @@ async function go(e: Env, req: { text: string; tier?: "T2" | "T3"; skill?: strin
 }
 const proposals = (e: Env): Proposal[] => e.b.learning.list();
 const post = (e: Env, p: string) => fetch(e.base + p, { method: "POST", headers: { "content-type": "application/json", "x-superos": "1", authorization: `Bearer ${e.token}` }, body: "{}" });
-const argvOf = (r: RunInfo): string[] => JSON.parse(/ARGV:(.*)/.exec(r.output)?.[1] ?? "[]");
+const argvOf = (r: RunInfo): string[] => argvFromOutput(r.output);
 const Q = "What port does the bridge use?";
 
 test("an uncited brain answer makes exactly one proposal: facts only, no diagnosis, no cost", async (t) => {

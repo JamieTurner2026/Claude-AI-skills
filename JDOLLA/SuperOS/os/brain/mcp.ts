@@ -10,6 +10,8 @@ import { readBrainFile } from "./files.ts";
 import { UNTRUSTED_NOTE, fence } from "./present.ts";
 import { SearchInput, openReadOnly, search } from "./search.ts";
 import { isTrusted, toVaultRel } from "./files.ts";
+import { hybridSearch } from "./hybrid.ts";
+import { searchQueryVector, type QueryVectors } from "./query-vectors.ts";
 
 export const SERVER_NAME = "superos-brain";
 const PROTOCOL = "2024-11-05";
@@ -47,7 +49,8 @@ export const TOOLS = [
   },
 ] as const;
 
-export interface Ctx { vault: string; dbPath: string }
+/** vectors: set by serve() when local embeddings are set up; absent means keyword search, exactly as before. */
+export interface Ctx { vault: string; dbPath: string; vectors?: QueryVectors }
 
 const Rpc = z.object({
   jsonrpc: z.literal("2.0"),
@@ -67,7 +70,8 @@ function runTool(ctx: Ctx, name: string, args: unknown): unknown {
       const input = SearchInput.parse(args);
       const db = openReadOnly(ctx.dbPath); // missing/corrupt: tell the user to rebuild; this server never writes
       try {
-        const hits = search(db, input).map((h) => ({ ...h, snippet: fence(h.snippet, h.trusted, h.path) }));
+        const q = ctx.vectors?.get(input.query) ?? null;
+        const hits = (q ? hybridSearch(db, input, q) : search(db, input)).map((h) => ({ ...h, snippet: fence(h.snippet, h.trusted, h.path) }));
         return toolText(JSON.stringify({ note: UNTRUSTED_NOTE, count: hits.length, hits }, null, 2));
       } finally { db.close(); }
     }
@@ -118,12 +122,16 @@ export function handleMessage(ctx: Ctx, line: unknown): Reply | null {
 
 export function serve(ctx: Ctx): void {
   const rl = createInterface({ input: process.stdin });
+  let queue = Promise.resolve(); // one message at a time, replies in order
   rl.on("line", (line) => {
     if (!line.trim()) return;
-    let msg: unknown;
-    try { msg = JSON.parse(line); } catch { process.stdout.write(JSON.stringify(err(null, -32700, "Parse error")) + "\n"); return; }
-    const reply = handleMessage(ctx, msg);
-    if (reply) process.stdout.write(JSON.stringify(reply) + "\n");
+    queue = queue.then(async () => {
+      let msg: unknown;
+      try { msg = JSON.parse(line); } catch { process.stdout.write(JSON.stringify(err(null, -32700, "Parse error")) + "\n"); return; }
+      const vectors = await searchQueryVector(ctx.dbPath, msg); // embeds a search query when embeddings are set up; never throws
+      const reply = handleMessage(vectors ? { ...ctx, vectors } : ctx, msg);
+      if (reply) process.stdout.write(JSON.stringify(reply) + "\n");
+    });
   });
 }
 

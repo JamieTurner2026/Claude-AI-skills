@@ -3,15 +3,23 @@
 // DELIVER (writes report.md in its working folder), CRASH (a non-budget error). An inbox-triage prompt is answered with the
 // JSON in FAKE_TRIAGE_ANSWER. BRAINANSWER (and friends, see below) emits brain tool_use events and then an answer. A learning-loop
 // diagnosis prompt gets a JSON answer, junk (BADDIAG), a failure (DIAGFAIL), a never-ending answer (DIAGSLOW) or
-// text trying to break out of its fields (DIAGEVIL). It echoes its arguments so tests can check them.
-import { writeFileSync } from "node:fs";
+// text trying to break out of its fields (DIAGEVIL). It writes its arguments to a file named in its output (ARGVFILE:) so tests can check them.
+import { mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 
 const args = process.argv.slice(2);
 const text = args[args.indexOf("-p") + 1] ?? "";
 const out = (o: object) => process.stdout.write(JSON.stringify(o) + "\n");
 
 out({ type: "system", subtype: "init", cwd: process.cwd() });
-out({ type: "assistant", message: { content: [{ type: "text", text: "ARGV:" + JSON.stringify(args) }] } });
+// The arguments go to a file, and the file's name to the output: RunInfo.output keeps only its last 4000 characters, which a
+// long command line can overflow (see bridge/fake-argv.ts). Tests read them back with argvFromOutput().
+const argvDir = path.join(tmpdir(), "fake-claude-argv");
+mkdirSync(argvDir, { recursive: true });
+const argvFile = path.join(argvDir, `${process.pid}-${Date.now()}.json`);
+writeFileSync(argvFile, JSON.stringify(args));
+out({ type: "assistant", message: { content: [{ type: "text", text: "ARGVFILE:" + argvFile }] } });
 out({ type: "assistant", message: { content: [{ type: "text", text: "CWD:" + process.cwd() }] } });
 
 if (text.startsWith("You are sorting files that Jay dropped")) {

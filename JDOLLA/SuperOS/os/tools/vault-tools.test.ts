@@ -16,6 +16,7 @@ import { handleToolMessage, offeredTools } from "./mcp.ts";
 import { SCRIPT_TOOL_NAMES, TOOLS, mcpToolName } from "./registry.ts";
 import { MAX_SCAN_FILES, scanVault } from "./vault.ts";
 import { NY, SECRETS, makeToolVault, put, text } from "./vault-fixture.ts";
+import { argvFromOutput } from "../bridge/fake-argv.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const realOs = path.resolve(here, "..");
@@ -112,7 +113,7 @@ async function argvFor(skill: string | undefined): Promise<{ argv: string[]; vau
   try {
     const info = b.runs.start({ text: "hello", tier: "T2", ...(skill ? { skill } : {}) });
     await new Promise<void>((r) => { b.runs.subscribe(info.id, (e: RunEvent) => { if (e.type === "status" && e.status !== "running") r(); }); });
-    return { argv: JSON.parse(/ARGV:(.*)/.exec(b.runs.get(info.id)!.output)![1]!) as string[], vault };
+    return { argv: argvFromOutput(b.runs.get(info.id)!.output), vault };
   } finally { b.runs.stopAll(); }
 }
 

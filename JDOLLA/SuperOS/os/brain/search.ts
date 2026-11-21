@@ -12,6 +12,8 @@ export const SearchInput = z.object({
 export type SearchInput = z.input<typeof SearchInput>;
 
 export interface SearchHit {
+  /** documents.id of the chunk (lets hybrid search merge rankings). */
+  id: number;
   path: string;
   heading: string;
   dept: string;
@@ -37,7 +39,7 @@ export function openReadOnly(dbPath: string): DatabaseSync {
 
 export function search(db: DatabaseSync, raw: SearchInput): SearchHit[] {
   const input = SearchInput.parse(raw);
-  const sql = `SELECT path, heading, dept, type, title, updated, trusted,
+  const sql = `SELECT rowid AS id, path, heading, dept, type, title, updated, trusted,
       snippet(docs_fts, 6, '[', ']', ' … ', 24) AS snippet, bm25(docs_fts, 0, 0, 0, 4, 2, 0, 1, 0) AS score
     FROM docs_fts WHERE docs_fts MATCH ?${input.dept ? " AND dept = ?" : ""}${input.trustedOnly ? " AND CAST(trusted AS INTEGER) = 1" : ""}
     ORDER BY score LIMIT ?`;
@@ -46,7 +48,7 @@ export function search(db: DatabaseSync, raw: SearchInput): SearchHit[] {
     if (input.dept) args.push(input.dept);
     args.push(input.limit);
     return (db.prepare(sql).all(...args) as Record<string, unknown>[]).map((r) => ({
-      path: String(r["path"]), heading: String(r["heading"]), dept: String(r["dept"]), type: String(r["type"]),
+      id: Number(r["id"]), path: String(r["path"]), heading: String(r["heading"]), dept: String(r["dept"]), type: String(r["type"]),
       title: String(r["title"]), updated: String(r["updated"]), trusted: String(r["trusted"]) === "1",
       snippet: String(r["snippet"]), score: Number(r["score"]),
     }));

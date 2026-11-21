@@ -108,6 +108,21 @@ npm run brain -- import-sessions --claude-ai C:\path\to\conversations.json
 - Redaction works by pattern. Open two or three files and check that nothing private got through before you rely on it.
 - Search treats these files as untrusted quotes, never as instructions.
 
+## 5c. Meaning search (optional, one-time download)
+
+Keyword search misses notes that say the same thing in other words. This adds a small model that runs on your PC (no cloud, no key) and mixes its results with keyword search.
+
+```powershell
+npm run brain -- index --embeddings
+```
+
+- The first time, it installs a pinned runtime (about 400 MB) and downloads the model (about 23 MB) into `%USERPROFILE%\.superos\brain\embeddings\`. Nothing goes into the vault. This is the only command that downloads anything; runs never do.
+- Then it gives every note a vector. That takes a few seconds and later runs reuse the vectors.
+- Check it worked: `npm run brain -- eval --compare` prints keyword and hybrid scores side by side.
+- After adding notes, run `npm run brain -- index --embeddings` again so the new ones are found by meaning too. They are still found by keyword until then.
+- Runs now use meaning search on their own. To switch it off, set `SUPEROS_BRAIN_HYBRID=off` in `.env` and restart the bridge. To remove it completely, delete the `embeddings` folder.
+- If the model can't load, search goes back to keywords and the bridge window says why. A run never fails because of it.
+
 ## 6. Start the bridge
 
 ```powershell
