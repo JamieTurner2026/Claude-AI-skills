@@ -6,6 +6,11 @@ description: Report-only weekly check of the vault: what changed, what is drifti
 
 Department: AI Research, Memory & Automation. Tier: **T2, read-only** (reads the vault, writes one file). Suggested budget: **$0.75 per run** (guess; grows with vault size).
 
+## Tools to use first
+- For any date or "last N days", call the `today` tool from `superos-tools`. Do not guess the date.
+- Call `link_check` for broken `[[wikilinks]]` (the note that has the link and the missing target) instead of scanning for them yourself, and `vault_stats` for counts per folder and department, wiki notes with no sources, and notes not updated in 60 days. They return names, dates and counts only; open a note with the `superos-brain` `get_note` to read it.
+- If a tool is not available in this run, say so at the top of the report and use file dates only.
+
 ## Steps
 1. **What changed:** files in `wiki/`, `raw/`, `outputs/` and `depts/` modified in the last 7 days, grouped by department.
 2. **Drifting:** project notes whose `updated` date is 30 days or more old while newer `raw/` or `outputs/` files for the same project exist.

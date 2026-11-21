@@ -4,10 +4,13 @@
   "skills": {
     "code-quality": { "tools": [] },
     "security-review": { "tools": [] },
-    "knowledge-improvement": { "tools": [] },
+    "knowledge-improvement": { "tools": [], "scriptTools": ["recent_changes"] },
     "game-testing": { "tools": [] },
     "industrial-training-sim": { "tools": [] },
-    "project-intelligence": { "tools": [] },
-    "creative-critic": { "tools": [] }
+    "project-intelligence": { "tools": [], "scriptTools": ["recent_changes", "vault_stats"] },
+    "creative-critic": { "tools": [] },
+    "vault-cleanup": { "tools": [], "scriptTools": ["link_check", "vault_stats"] },
+    "plan-today": { "tools": [], "scriptTools": ["recent_changes", "list_reports"] },
+    "morning-intel": { "tools": [], "scriptTools": ["recent_changes", "list_reports"] }
   }
 }

@@ -7,6 +7,7 @@ npm run brain -- index                 # build or rebuild the index
 npm run brain -- search "servo alarm"  # lines starting with ! come from raw/ (untrusted)
 npm run brain -- get wiki/industrial/servo.md
 node brain/mcp.ts                      # read-only MCP server "superos-brain" (stdio)
+npm run brain -- eval --k 5                                      # retrieval eval: hit@k and MRR (evals/brain/questions.json)
 npm run brain -- import-sessions --dry-run                       # Claude Code sessions (~/.claude/projects)
 npm run brain -- import-sessions --claude-ai conversations.json  # a claude.ai data export
 ```
