@@ -12,6 +12,7 @@ import { MAX_FILES, MAX_FILE_BYTES, MAX_PROMPT_CHARS, PREVIEW_CHARS, buildTriage
 import type { RunInfo } from "./runs.ts";
 import { createBridge } from "./server.ts";
 import type { Bridge } from "./server.ts";
+import { argvFromOutput } from "./fake-argv.ts";
 
 const fake = path.join(path.dirname(fileURLToPath(import.meta.url)), "fake-claude.ts");
 const DEPTS = new Set(["software", "ai"]);
@@ -294,7 +295,7 @@ test("sort: one read-only T2 run at $0.05 that does not touch the routine cap; v
   assert.deepEqual([run.tier, run.capUsd, run.dept, run.routine, run.skill], ["T2", 0.05, "inbox", null, null]);
   const info = e.b.runs.list().find((r) => r.id === run.id)!;
   assert.equal(info.status, "done");
-  const argv = JSON.parse(/ARGV:(.*)/.exec(info.output)?.[1] ?? "[]") as string[];
+  const argv = argvFromOutput(info.output);
   assert.equal(argv[argv.indexOf("--max-budget-usd") + 1], "0.05");
   assert.equal(argv[argv.indexOf("--tools") + 1], "Read,Glob,Grep", "read-only");
   assert.match(argv[argv.indexOf("-p") + 1]!, /FILE 1: name="a.txt"/);

@@ -15,6 +15,7 @@ import { deliverableName, slugify } from "./runs.ts";
 import type { RunEvent, RunInfo } from "./runs.ts";
 import { createBridge } from "./server.ts";
 import type { Bridge } from "./server.ts";
+import { argvFromOutput } from "./fake-argv.ts";
 
 const fake = path.join(path.dirname(fileURLToPath(import.meta.url)), "fake-claude.ts");
 let bridge: Bridge, base: string, token: string, vault: string, logs: string;
@@ -46,7 +47,7 @@ const startOk = async (body: unknown): Promise<RunInfo> => {
   assert.equal(r.status, 202, JSON.stringify(await r.clone().json()));
   return ((await r.json()) as { run: RunInfo }).run;
 };
-const argvOf = (output: string): string[] => JSON.parse(/ARGV:(.*)/.exec(output)?.[1] ?? "[]");
+const argvOf = (output: string): string[] => argvFromOutput(output);
 
 test("exact command line per tier", () => {
   const p = pathsFor(path.join(vault, "os"));
