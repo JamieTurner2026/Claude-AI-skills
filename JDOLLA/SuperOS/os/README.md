@@ -64,6 +64,17 @@ npm run vault -- build             # write it
 - Writes only under `wiki/`, `reports/`, `projects/`, `daily/`, after resolving real paths (a link out is refused). Copies only file names, titles and dates, never bodies; never reads `.env*`, `os/` or `logs/`; never deletes.
 - The bridge runs it once at start and every 30 minutes (`npm start` only), and `POST /api/vault/rebuild` runs it on demand behind the same session, origin and header checks as the other writes. A failure goes to `router.jsonl` and never stops the bridge.
 
+## Router evals (7d)
+```
+npm run eval:router              # accuracy per tier, confusion table, every wrong pick
+npm run eval:router -- --json    # the same as JSON on stdout
+npm run eval:router -- --file <path>   # another set
+```
+- Reads `../evals/router/requests.json` (`{ id, text, tier, dept?, note?, tags? }`; tier is what the request *should* get) and the vault's departments (the same `buildState` the bridge uses), then runs each request through the real `route()`.
+- Prints under-routed T3 (work that got a thin answer) and over-routed T3 (a paid run nobody needed) separately.
+- Reads only, writes only to stdout, no network, no cost. A malformed set (unknown tier, duplicate id, empty text, unknown field or dept) exits 1 and lists every problem.
+- Code: `shared/router-eval.ts` (pure loader and scorer) and `shared/router-eval-cli.ts`.
+
 Setting up on the PC: see `../docs/PC-SETUP.md`.
 
 ## Learning loop (Phase 5)
