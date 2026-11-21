@@ -121,6 +121,10 @@ export function route(input: string, ctx: RouteContext = { depts: [] }): RouteRe
 
   if (OPEN_TO_CREATE.test(body)) return result({ T1: -2, T2: 1, T3: 4 }, "Looks like real work: a full run.");
 
+  // A bare dashboard list name ("apps", "my routines") means show it.
+  const bare = SHOW_TARGETS[body.replace(/[.!]+$/, "").replace(/^(?:the |my |all |today's |todays )+/, "")];
+  if (bare) return result({ T1: 6, T2: 0, T3: -2 }, `Show ${bare}.`, { kind: "show", target: bare });
+
   // T1: a leading open/show/find verb wins over any later keyword.
   for (const verb of T1_VERBS) {
     if (body === verb || body.startsWith(verb + " ")) {
@@ -142,6 +146,11 @@ export function route(input: string, ctx: RouteContext = { depts: [] }): RouteRe
   const isQuestion = text.endsWith("?") || QUESTION_WORDS.has(first);
   const leadsWithWork = WORK_VERBS.has(first);
   const wordCount = words.length;
+
+  // Short work whose only object is a pronoun ("make it pop", "fix it") is too vague to buy a run: ask first.
+  if (leadsWithWork && wordCount <= 3 && /^(?:it|them)$/.test(words[1] ?? "")) {
+    return result({ T1: -2, T2: 3, T3: 1 }, "Too vague to run: a quick reply asks what you mean.");
+  }
 
   // T3 needs the instruction to lead the sentence and have something to act on.
   if (leadsWithWork && wordCount >= 2 && !text.endsWith("?")) {
