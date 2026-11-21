@@ -187,6 +187,10 @@ The bridge now builds these itself when it starts and every 30 minutes: `wiki\_m
 
 In the dashboard, the **Skills** widget lists every skill with its tier (T2 reads, T3 writes drafts) and suggested budget. Press **Run**; add a short note in the box if you want to steer it. A T3 skill asks "Run this? Up to $X" first. Skills share the routines' $2 a day cap (`engine.routines.dailyCapUsd` in `os\config\os.config.json`).
 
+## 10e. Sort your inbox
+
+Drop loose files into `inbox\`. In the **Proposals** widget press **Sort inbox**: one small read-only run (up to $0.05) suggests where each file belongs under `raw\<department>\<topic>\`. Nothing moves until you press **Approve** on a suggestion; **Reject** leaves the file where it is. It looks at up to 25 files at a time, and skips links, folders, files over 1 MB and anything starting with a dot.
+
 ## 11. Windows checks (never tested on Windows; please do these once)
 
 These all passed on Linux in the cloud. Windows is untested. Tell Claude the result of each one.

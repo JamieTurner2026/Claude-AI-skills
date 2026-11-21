@@ -1,6 +1,7 @@
 // Test stand-in for the Claude Code CLI. Speaks a small subset of --output-format stream-json.
 // Behaviour is chosen by words in the request text: HANG (never finishes), FAIL (budget error),
-// DELIVER (writes report.md in its working folder), CRASH (a non-budget error). A learning-loop
+// DELIVER (writes report.md in its working folder), CRASH (a non-budget error). An inbox-triage prompt is answered with the
+// JSON in FAKE_TRIAGE_ANSWER. A learning-loop
 // diagnosis prompt gets a JSON answer, junk (BADDIAG), a failure (DIAGFAIL), a never-ending answer (DIAGSLOW) or
 // text trying to break out of its fields (DIAGEVIL). It echoes its arguments so tests can check them.
 import { writeFileSync } from "node:fs";
@@ -13,7 +14,12 @@ out({ type: "system", subtype: "init", cwd: process.cwd() });
 out({ type: "assistant", message: { content: [{ type: "text", text: "ARGV:" + JSON.stringify(args) }] } });
 out({ type: "assistant", message: { content: [{ type: "text", text: "CWD:" + process.cwd() }] } });
 
-if (text.startsWith("You are reviewing one run")) {
+if (text.startsWith("You are sorting files that Jay dropped")) {
+  // Inbox triage: the answer is whatever the test puts in FAKE_TRIAGE_ANSWER (default: no suggestions).
+  out({ type: "assistant", message: { content: [{ type: "text", text: "PROMPT_CHARS:" + text.length }] } });
+  if (process.env["FAKE_TRIAGE_HANG"]) setInterval(() => undefined, 1000); // never finishes: for the "already running" test
+  else out({ type: "result", subtype: "success", is_error: false, total_cost_usd: 0.004, result: process.env["FAKE_TRIAGE_ANSWER"] ?? "[]" });
+} else if (text.startsWith("You are reviewing one run")) {
   if (text.includes("DIAGSLOW")) setInterval(() => undefined, 1000);
   else if (text.includes("DIAGFAIL")) { out({ type: "result", subtype: "error_max_budget_usd", is_error: true, total_cost_usd: 0.05 }); process.exitCode = 1; }
   else if (text.includes("BADDIAG")) out({ type: "result", subtype: "success", is_error: false, total_cost_usd: 0.05, result: "I think it was the budget, probably." });

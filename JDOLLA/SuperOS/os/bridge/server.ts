@@ -24,6 +24,7 @@ import type { ClaudeBin, RunEvent } from "./runs.ts";
 import type { SandboxStatus } from "./sandbox.ts";
 import { buildAll } from "../vault/generate.ts";
 import { SKILL_SLUG, findSkill } from "./skills.ts";
+import { InboxTriage } from "./inbox.ts";
 import type { BuildResult } from "../vault/generate.ts";
 
 const MAX_BODY = 64 * 1024;
@@ -46,7 +47,7 @@ export const systemOpener: Opener = (abs) => {
   spawn(cmd as string, args as string[], { detached: true, stdio: "ignore", shell: false }).on("error", () => undefined).unref();
 };
 
-export type Bridge = { server: http.Server; secret: string; paths: Paths; mint: () => string; runs: RunManager; routines: RoutineRunner; learning: LearningLoop; vault: { rebuild: (trigger: string) => BuildResult | null; startClock: () => void } };
+export type Bridge = { server: http.Server; secret: string; paths: Paths; mint: () => string; runs: RunManager; routines: RoutineRunner; learning: LearningLoop; inbox: InboxTriage; vault: { rebuild: (trigger: string) => BuildResult | null; startClock: () => void } };
 
 const VAULT_EVERY_MS = 30 * 60_000;
 
@@ -70,7 +71,9 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
   });
   const routines = new RoutineRunner({ paths, config: () => loadConfig(paths), runs, logDir: opts.logDir ?? logDir(paths), log: runLog, schedulerOn: opts.schedulerOn ?? false });
   // Learning loop: every run that ends is checked; failures, blocks and cap hits become proposals.
-  const learning = new LearningLoop({ paths, config: () => loadConfig(paths), runs, logDir: opts.logDir ?? logDir(paths), log: runLog, ...(opts.now ? { now: opts.now } : {}) });
+  // After Jay approves an inbox move: refresh the generated indexes and make the next run rebuild the brain index.
+  const learning = new LearningLoop({ paths, config: () => loadConfig(paths), runs, logDir: opts.logDir ?? logDir(paths), log: runLog, ...(opts.now ? { now: opts.now } : {}), afterMove: () => { rebuildVault("inbox"); brain.markStale(); } });
+  const inbox = new InboxTriage({ paths, config: () => loadConfig(paths), runs, log: runLog, propose: (moves, run) => learning.proposeMoves(moves, run) });
   runs.addEndListener((info) => { learning.onRunEnd(info); });
 
   // Vault generators (indexes, project hubs, the daily note). A failure is logged and never stops the bridge.
@@ -173,6 +176,13 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
       }
     }
     if (url.pathname === "/api/routines" && req.method === "GET") return send(res, 200, routines.status());
+    if (url.pathname === "/api/inbox" && req.method === "GET") return send(res, 200, inbox.status());
+    if (url.pathname === "/api/inbox/sort" && req.method === "POST") {
+      try { return send(res, 202, { run: inbox.start() }); } catch (e) {
+        if (e instanceof RunError) throw new HttpError(e.status, e.message);
+        throw e;
+      }
+    }
     if (url.pathname === "/api/skills" && req.method === "GET") return send(res, 200, routines.skillsView());
     // Run a skill: the same path, caps and containment as a routine's Run now. A T3 skill asks for confirmation first.
     const skillMatch = /^\/api\/skills\/([^/]{1,100})\/run$/.exec(url.pathname);
@@ -349,7 +359,7 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
     startClock: () => { rebuildVault("start"); vaultTimer = setInterval(() => rebuildVault("interval"), VAULT_EVERY_MS); vaultTimer.unref(); },
   };
 
-  return { server, secret, paths, learning, mint: () => mintToken(secret), runs, routines, vault };
+  return { server, secret, paths, learning, inbox, mint: () => mintToken(secret), runs, routines, vault };
 }
 
 // Run directly: `npm start`.

@@ -40,6 +40,12 @@ Needs Node 22.18 or newer (it runs TypeScript directly, no build step).
 - Before each run the index (`%USERPROFILE%\.superos\brain\index.sqlite`, or `~/.superos/brain/`) is rebuilt if it is missing or over 5 minutes old. If that fails the run still goes ahead, without the brain, and `brain-index-failed` is logged.
 - Turn it off with `engine.brain.enabled: false` in `config/os.config.json`.
 
+## Inbox triage (Phase 6e)
+- `bridge/inbox.ts`: **Sort inbox** (in the Proposals widget) starts one read-only T2 run at $0.05, outside the routine cap. The prompt holds up to 25 inbox file names, sizes and their first 800 characters, fenced as untrusted data (reusing `fence` from `brain/present.ts`), plus the department slugs and their existing `raw/<dept>/<topic>/` folders. Dot-files, `.env*`, links, folders, `README.md` and files over 1 MB are skipped.
+- The run answers in JSON `[{file, dept, topic, reason}]`. `parseMoves` (zod) keeps an entry only if the file was offered, the department is known and the topic is a slug; junk gives no proposals.
+- Each kept entry is a learning-loop proposal of kind `move` (`bridge/learning.ts`, same store, routes and decided-once rules; no diagnosis run). Approve calls `moveIntoRaw`: it re-checks the proposal, then moves one regular file from `inbox/` into `raw/<known dept>/<slug>/` (real paths, no links, folders made only there, `-v2` on a name clash, never an overwrite, never out of `raw/`), logs `kind: "inbox-move"`, rebuilds the generated files and marks the brain index stale.
+- `GET /api/inbox`, `POST /api/inbox/sort`, behind the same session, origin and `x-superos` checks.
+
 ## Skill runner (Phase 6c)
 - `bridge/skills.ts` lists `skills/<name>/SKILL.md`: name and description from the frontmatter, tier and suggested budget from the "Tier: **T2" and "budget: **$0.25" lines. An unreadable line shows "unknown" and defaults to T2 and $0.05. Links, odd folder names and files over 64 KB are never run.
 - `GET /api/skills` and `POST /api/skills/:name/run` (body `{ input?, confirm? }`, input up to 500 characters) sit behind the same session, origin and `x-superos` checks as the other writes. Names must match the skill slug pattern.
