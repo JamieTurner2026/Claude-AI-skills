@@ -1,0 +1,277 @@
+{
+  "version": 1,
+  "about": "Brain retrieval eval. Questions are invented, phrased the way Jay might ask, about notes that really exist. 'relevant' lists the notes that answer each one, chosen from what the notes say, not from search output; a hit is any of them in the top k distinct notes. Styles: 'keyword' shares words with the note, 'paraphrase' shares a few, 'synonym' shares almost none (the case embeddings should help with).",
+  "questions": [
+    {
+      "id": "q01",
+      "style": "keyword",
+      "query": "What engine is MIDNIGHT REIGN built in?",
+      "relevant": [
+        "wiki/gamedev/midnight-reign.md",
+        "raw/gamedev/midnight-reign/2026-11-14_repo-snapshot.md"
+      ]
+    },
+    {
+      "id": "q02",
+      "style": "paraphrase",
+      "query": "my street racing game, which milestone is it at",
+      "relevant": [
+        "wiki/gamedev/midnight-reign.md",
+        "raw/gamedev/midnight-reign/2026-11-14_repo-snapshot.md"
+      ]
+    },
+    {
+      "id": "q03",
+      "style": "keyword",
+      "query": "Which Bible translations does the API Bible serve?",
+      "relevant": [
+        "wiki/software/api-bible.md",
+        "raw/software/api-bible/2026-11-14_repo-snapshot.md"
+      ]
+    },
+    {
+      "id": "q04",
+      "style": "paraphrase",
+      "query": "REST endpoint to compare a verse across versions of scripture",
+      "relevant": [
+        "raw/software/api-bible/2026-11-14_repo-snapshot.md",
+        "wiki/software/api-bible.md"
+      ]
+    },
+    {
+      "id": "q05",
+      "style": "keyword",
+      "query": "Davidson Blessons stack Next.js Supabase",
+      "relevant": [
+        "wiki/software/davidson-blessons.md",
+        "raw/software/davidson-blessons/2026-11-14_repo-snapshot.md"
+      ]
+    },
+    {
+      "id": "q06",
+      "style": "paraphrase",
+      "query": "does the bible study app punish you for missing a day",
+      "relevant": [
+        "raw/software/davidson-blessons/2026-11-14_repo-snapshot.md",
+        "wiki/software/davidson-blessons.md"
+      ]
+    },
+    {
+      "id": "q07",
+      "style": "paraphrase",
+      "query": "where do the chapter study notes for the scripture reading app come from",
+      "relevant": [
+        "raw/software/davidson-blessons/2026-11-14_repo-snapshot.md",
+        "wiki/software/davidson-blessons.md"
+      ]
+    },
+    {
+      "id": "q08",
+      "style": "keyword",
+      "query": "Car Finder app backend scraper",
+      "relevant": [
+        "wiki/software/car-finder-app.md",
+        "raw/software/car-finder-app/2026-11-14_repo-snapshot.md"
+      ]
+    },
+    {
+      "id": "q10",
+      "style": "keyword",
+      "query": "LEGEND OF DOOM youth sports website",
+      "relevant": [
+        "wiki/creative/legend-of-doom.md",
+        "raw/creative/legend-of-doom/2026-11-14_repo-snapshot.md"
+      ]
+    },
+    {
+      "id": "q13",
+      "style": "keyword",
+      "query": "Assembly Trainer Pro training games",
+      "relevant": [
+        "wiki/industrial/assembly-trainer-pro.md",
+        "raw/industrial/assembly-trainer-pro/2026-11-14_repo-snapshot.md"
+      ]
+    },
+    {
+      "id": "q14",
+      "style": "paraphrase",
+      "query": "which operator training app should go forward",
+      "relevant": [
+        "raw/strategy/interview/2026-11-14_jay-answers.md",
+        "wiki/industrial/assembly-trainer-pro.md",
+        "wiki/industrial/dda2-training-app.md"
+      ]
+    },
+    {
+      "id": "q15",
+      "style": "keyword",
+      "query": "DDA2 Training Hub production lines",
+      "relevant": [
+        "wiki/industrial/dda2-training-app.md",
+        "raw/industrial/dda2-training-app/2026-11-14_repo-snapshot.md"
+      ]
+    },
+    {
+      "id": "q18",
+      "style": "keyword",
+      "query": "six memory types",
+      "relevant": [
+        "wiki/ai/memory-types.md",
+        "raw/ai/charter/2026-11-13_department-brief.md"
+      ]
+    },
+    {
+      "id": "q20",
+      "style": "paraphrase",
+      "query": "what kind of art and visuals do I like",
+      "relevant": [
+        "wiki/creative/creative-likes.md",
+        "raw/creative/charter/2026-11-13_department-brief.md"
+      ]
+    },
+    {
+      "id": "q21",
+      "style": "paraphrase",
+      "query": "did I want a creative DNA profile",
+      "relevant": [
+        "raw/strategy/interview/2026-11-14_jay-answers.md",
+        "wiki/creative/creative-likes.md"
+      ]
+    },
+    {
+      "id": "q22",
+      "style": "keyword",
+      "query": "PLC ladder logic Studio 5000",
+      "relevant": [
+        "raw/industrial/charter/2026-11-13_department-brief.md",
+        "wiki/industrial/charter.md"
+      ]
+    },
+    {
+      "id": "q24",
+      "style": "keyword",
+      "query": "Security Review Agent",
+      "relevant": [
+        "raw/security/charter/2026-11-13_department-brief.md",
+        "wiki/security/charter.md"
+      ]
+    },
+    {
+      "id": "q26",
+      "style": "paraphrase",
+      "query": "how should I juggle three projects at the same time",
+      "relevant": [
+        "raw/strategy/charter/2026-11-13_department-brief.md",
+        "wiki/strategy/charter.md"
+      ]
+    },
+    {
+      "id": "q28",
+      "style": "paraphrase",
+      "query": "car handling, braking and suspension for my game",
+      "relevant": [
+        "raw/gamedev/charter/2026-11-13_department-brief.md",
+        "wiki/gamedev/charter.md",
+        "wiki/gamedev/midnight-reign.md"
+      ]
+    },
+    {
+      "id": "q30",
+      "style": "paraphrase",
+      "query": "what should I do today",
+      "relevant": [
+        "wiki/directives.md"
+      ]
+    },
+    {
+      "id": "s01",
+      "style": "synonym",
+      "query": "nighttime auto racing title I am making",
+      "relevant": [
+        "wiki/gamedev/midnight-reign.md",
+        "raw/gamedev/midnight-reign/2026-11-14_repo-snapshot.md"
+      ]
+    },
+    {
+      "id": "s02",
+      "style": "synonym",
+      "query": "holy book scripture lookup service",
+      "relevant": [
+        "wiki/software/api-bible.md",
+        "raw/software/api-bible/2026-11-14_repo-snapshot.md"
+      ]
+    },
+    {
+      "id": "s03",
+      "style": "synonym",
+      "query": "devotional reading website streak rules",
+      "relevant": [
+        "wiki/software/davidson-blessons.md",
+        "raw/software/davidson-blessons/2026-11-14_repo-snapshot.md"
+      ]
+    },
+    {
+      "id": "s04",
+      "style": "synonym",
+      "query": "used automobile shopping helper",
+      "relevant": [
+        "wiki/software/car-finder-app.md",
+        "raw/software/car-finder-app/2026-11-14_repo-snapshot.md"
+      ]
+    },
+    {
+      "id": "s05",
+      "style": "synonym",
+      "query": "children athletics club homepage",
+      "relevant": [
+        "wiki/creative/legend-of-doom.md",
+        "raw/creative/legend-of-doom/2026-11-14_repo-snapshot.md"
+      ]
+    },
+    {
+      "id": "s06",
+      "style": "synonym",
+      "query": "factory worker onboarding single page",
+      "relevant": [
+        "wiki/industrial/dda2-training-app.md",
+        "raw/industrial/dda2-training-app/2026-11-14_repo-snapshot.md"
+      ]
+    },
+    {
+      "id": "s07",
+      "style": "synonym",
+      "query": "which kinds of recollection does the assistant keep",
+      "relevant": [
+        "wiki/ai/memory-types.md",
+        "raw/ai/charter/2026-11-13_department-brief.md"
+      ]
+    },
+    {
+      "id": "s08",
+      "style": "synonym",
+      "query": "aesthetic taste and favourite looks",
+      "relevant": [
+        "wiki/creative/creative-likes.md",
+        "raw/creative/charter/2026-11-13_department-brief.md"
+      ]
+    },
+    {
+      "id": "s09",
+      "style": "synonym",
+      "query": "juggling several initiatives and deadlines",
+      "relevant": [
+        "wiki/strategy/charter.md",
+        "raw/strategy/charter/2026-11-13_department-brief.md"
+      ]
+    },
+    {
+      "id": "s10",
+      "style": "synonym",
+      "query": "looking up meaning instead of exact words",
+      "relevant": [
+        "wiki/ai/charter.md",
+        "raw/ai/charter/2026-11-13_department-brief.md"
+      ]
+    }
+  ]
+}
