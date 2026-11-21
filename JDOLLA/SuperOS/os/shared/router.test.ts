@@ -122,3 +122,21 @@ test("simulate is a work verb", () => {
   assert.notEqual(route("simulate?", ctx).tier, "T3");
   assert.notEqual(route("how do I simulate a conveyor?", ctx).tier, "T3");
 });
+
+test("a bare dashboard list name means show it", () => {
+  assert.deepEqual(route("apps", ctx).action, { kind: "show", target: "apps" });
+  assert.deepEqual(route("my routines", ctx).action, { kind: "show", target: "routines" });
+  assert.deepEqual(route("Directives.", ctx).action, { kind: "show", target: "directives" });
+  // Controls: a list name inside a longer request, or asked about, is not navigation.
+  for (const t of ["apps that track spending", "routines?", "build apps for the dashboard", "tasks for this week"]) {
+    assert.notEqual(route(t, ctx).tier, "T1", t);
+  }
+});
+
+test("short work with only a pronoun as its object asks first", () => {
+  for (const t of ["make it pop", "fix it", "build them", "make it better"]) assert.equal(route(t, ctx).tier, "T2", t);
+  // Controls: a real object, or more detail, is still work.
+  for (const t of ["fix this bug", "make it pop with neon for the splash page", "fix the login bug", "make a logo"]) {
+    assert.equal(route(t, ctx).tier, "T3", t);
+  }
+});
