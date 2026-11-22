@@ -122,3 +122,7 @@ export type OsState = {
   /** Problems found while reading the vault, shown on the dashboard rather than hidden. */
   warnings: string[];
 };
+
+/** One step of Jay's list for the PC (GET /api/setup). Only a state, fixed words and a PC-SETUP section: never a path or file content. */
+export type SetupRow = { id: string; label: string; state: "done" | "todo" | "manual"; section: string; hint: string };
+export type SetupView = { rows: SetupRow[]; done: number; total: number };
