@@ -32,3 +32,11 @@ export function checkRemote(remote: string, opts: { allowFile?: boolean; publicR
   if (isPublicRepo(r, opts.publicRepos ?? PUBLIC_REPOS)) return MSG_PUBLIC_REMOTE;
   return null;
 }
+
+const BRANCH = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,59}$/;
+/** A strict git branch name: no leading dash, no "..", no "//", not ending in "/", "." or ".lock", no component starting with "." or ending in ".lock". Nothing that could be an option, a refspec ("a:b") or a path trick. */
+export function isValidBranch(b: string): boolean {
+  if (!BRANCH.test(b) || b.includes("..") || b.includes("//") || b.endsWith("/") || b.endsWith(".")) return false;
+  return b.split("/").every((c) => c !== "" && !c.startsWith(".") && !c.endsWith(".lock"));
+}
+export const MSG_BAD_BRANCH = "engine.backup.branch must be a plain branch name such as main (letters, digits, . _ - and / only). Nothing was pushed.";

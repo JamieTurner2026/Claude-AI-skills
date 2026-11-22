@@ -14,7 +14,7 @@ import { dateIn } from "../sources/file-source.ts";
 import { MAX_FILE_BYTES, isAllowedPath, isNeverPushed, pathspecs } from "./allowlist.ts";
 import { makeGit } from "./git.ts";
 import type { GitRunner } from "./git.ts";
-import { MSG_BAD_URL, MSG_NESTED, MSG_NOT_A_REPO, MSG_PUBLIC_REMOTE, MSG_PUBLIC_VAULT, PUBLIC_REPOS, checkRemote, isPublicRepo, repoId } from "./remote.ts";
+import { MSG_BAD_BRANCH, MSG_BAD_URL, MSG_NESTED, MSG_NOT_A_REPO, MSG_PUBLIC_REMOTE, MSG_PUBLIC_VAULT, PUBLIC_REPOS, checkRemote, isPublicRepo, isValidBranch, repoId } from "./remote.ts";
 
 export type BackupStatus = "refused" | "dry-run" | "nothing" | "pushed" | "failed";
 export type BackupFile = { change: "added" | "changed" | "removed"; path: string };
@@ -31,7 +31,6 @@ export type BackupOptions = {
   git?: GitRunner;
 };
 
-const BRANCH = /^[A-Za-z0-9][A-Za-z0-9._-]{0,59}$/;
 const MAX_LISTED = 200;
 
 const result = (status: BackupStatus, message: string, files: BackupFile[] = [], committed = false, pushed = false, skipped = 0): BackupResult => ({ status, message, files, committed, pushed, skipped });
@@ -57,7 +56,7 @@ async function backup(o: BackupOptions): Promise<BackupResult> {
   const remote = o.remote.trim();
   const refusal = checkRemote(remote, { allowFile: o.allowFileRemote === true, publicRepos });
   if (refusal) return result("refused", refusal);
-  if (!BRANCH.test(o.branch) || o.branch.includes("..") || o.branch.endsWith(".lock")) return result("refused", "engine.backup.branch must be a plain branch name such as main. Nothing was pushed.");
+  if (!isValidBranch(o.branch)) return result("refused", MSG_BAD_BRANCH);
   let vault: string;
   try { vault = realpathSync(o.vault); } catch { return result("failed", "The vault folder was not found."); }
 

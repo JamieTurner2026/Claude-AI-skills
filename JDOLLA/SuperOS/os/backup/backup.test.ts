@@ -11,7 +11,8 @@ import type { BackupOptions } from "./backup.ts";
 import { parseArgs } from "./cli.ts";
 import { FORBIDDEN, NOW, TZ, WANTED, git, makeBackupVault, put, tmp, tree } from "./fixture.ts";
 import { makeGit } from "./git.ts";
-import { MSG_BAD_URL, MSG_NESTED, MSG_NOT_A_REPO, MSG_NO_REMOTE, MSG_PUBLIC_REMOTE, MSG_PUBLIC_VAULT, checkRemote, isPublicRepo, repoId } from "./remote.ts";
+import { ConfigSchema } from "../bridge/config.ts";
+import { MSG_BAD_BRANCH, MSG_BAD_URL, MSG_NESTED, MSG_NOT_A_REPO, MSG_NO_REMOTE, MSG_PUBLIC_REMOTE, MSG_PUBLIC_VAULT, checkRemote, isPublicRepo, isValidBranch, repoId } from "./remote.ts";
 import { readBackupRecord, writeBackupRecord } from "./record.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -69,10 +70,33 @@ test("refusals that need no git: no remote, bad URL and the public repo all stop
   assert.equal(control.status === "refused" || control.status === "failed", true);
 });
 
-test("branch names: anything that could be an option or a path is refused", async () => {
+test("branch names: anything that could be an option, a refspec or a path trick is refused with a plain message and nothing runs; ordinary names pass", async () => {
   const { vault, remote } = makeBackupVault();
-  for (const b of ["", "--force", "-x", "a b", "a/../b", "x.lock", "refs/heads/x", "a;b"]) assert.equal((await runBackup(base(vault, remote, { branch: b }))).status, "refused", JSON.stringify(b));
-  assert.equal((await runBackup(base(vault, remote, { branch: "backup-1.0", dryRun: true }))).status, "dry-run", "control");
+  const BAD = ["", "--force", "-x", "a b", "a/../b", "x.lock", "a.lock/b", "main:other", "+main", "a;b", "a//b", "a/", "x.", ".hidden", "a/.b", "main\n--force", "HEAD:refs/heads/x", "a".repeat(61), "ü"];
+  for (const b of BAD) {
+    const s = spy();
+    const r = await runBackup(base(vault, remote, { branch: b, spy: s.spy }));
+    assert.deepEqual([r.status, r.message, s.calls.length], ["refused", MSG_BAD_BRANCH, 0], JSON.stringify(b));
+    assert.ok(!isValidBranch(b), JSON.stringify(b));
+  }
+  for (const ok of ["main", "backup-1.0", "backup/nightly", "a_b.c-d/e", "a".repeat(60)]) assert.ok(isValidBranch(ok), ok);
+  assert.equal((await runBackup(base(vault, remote, { branch: "backup/nightly", dryRun: true }))).status, "dry-run", "control: a name with a slash goes through");
+  assert.equal(git(remote, "for-each-ref").out, "");
+});
+
+test("config: engine.backup.branch is validated when the config loads, with the same plain message; a good config still loads", () => {
+  const cfg = JSON.parse(readFileSync(path.join(here, "..", "config", "os.config.json"), "utf8")) as { engine: { backup: { branch: string } } };
+  assert.equal(ConfigSchema.safeParse(cfg).success, true, "control: the shipped config");
+  for (const bad of ["main:other", "-x", "a b", "x.lock", "a/../b", "a/", ""]) {
+    const r = ConfigSchema.safeParse({ ...cfg, engine: { ...cfg.engine, backup: { remote: "", branch: bad } } });
+    assert.equal(r.success, false, JSON.stringify(bad));
+    if (!r.success) assert.equal(r.error.issues[0]!.message, MSG_BAD_BRANCH);
+  }
+  assert.equal(ConfigSchema.safeParse({ ...cfg, engine: { ...cfg.engine, backup: { remote: "", branch: "backup/nightly" } } }).success, true);
+  const noBackup = { ...cfg, engine: { ...cfg.engine } } as { engine: Record<string, unknown> };
+  delete noBackup.engine["backup"];
+  const parsed = ConfigSchema.parse(noBackup);
+  assert.deepEqual(parsed.engine.backup, { remote: "", branch: "main" }, "an older config without the block gets the defaults");
 });
 
 test("the vault is not a git repo, or sits inside another: refused with plain messages and nothing is created", async () => {
