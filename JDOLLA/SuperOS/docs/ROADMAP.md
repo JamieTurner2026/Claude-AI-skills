@@ -49,8 +49,7 @@ The vault has only 26 notes today, so 7a's gain in the cloud will be small. The 
 - **8a Gmail, read-only:** only the "Brain" label, imported as untrusted `raw/` notes. Drafts only; nothing is sent.
 - **8b Google Calendar, read-only:** today's events go into the daily note and `plan-today`.
 - **8c Morning page:** `morning-intel` uses 8a and 8b. It stays report-only.
-Prep (branch 2, started 2026-11-22): offline adapters that read feed files in `inbox/_feeds/`, a daily-note section and two read-only tools. No account is connected.
-Connecting is blocked until Jay names the label and connects Calendar.
+**Status: adapters ready, connect pending Jay.** Built 2026-11-22 (`os/sources/`): `MailSource` and `CalendarSource` interfaces and one `FileSource` that reads `inbox/_feeds/mail.json` and `calendar.json`. The daily note shows "Today's calendar" and "Mail labelled Brain"; two safe tools, `calendar_today` and `mail_brain`, go to `plan-today` and `morning-intel`. No account is connected, nothing uses the network, no token is stored. Still blocked until Jay names the label and connects Gmail and Calendar; a live adapter then implements the same two interfaces. 8a's "imported as `raw/` notes" is not built: the feed only feeds the daily note and the tools.
 
 ## Phase 9: the PC
 - **9a Windows checks:** Jay runs PC-SETUP section 11; each result becomes a fix task. Prep built 2026-11-22: `npm run doctor` prints pass/warn/fail with the PC-SETUP section to fix (PR #32).
@@ -73,7 +72,7 @@ Blocked on the PC session.
 7. Decide three things: the private Brain repo name; the Gmail "Brain" label and Calendar connect; whether the cloud allowlist keeps the huggingface hosts.
 
 ## Queue
-- **Branch 2:** Phase 8 prep (offline Gmail and Calendar adapters), now
+- **Branch 2:** ~~Phase 8 prep~~ (#35) → 9b status check
 - **Branch 3:** q30 "what should I do today" fix (waiting for Jay's go in its chat) → 10c
 - **Branch 4:** `npm run smoke` and the PC-SETUP rewrite
 - **Main session:** review and merge each PR, keep this file and the Brain page current

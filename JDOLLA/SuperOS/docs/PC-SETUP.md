@@ -236,6 +236,15 @@ In the dashboard, the **Skills** widget lists every skill with its tier (T2 read
 
 Drop loose files into `inbox\`. In the **Proposals** widget press **Sort inbox**: one small read-only run (up to $0.05) suggests where each file belongs under `raw\<department>\<topic>\`. Nothing moves until you press **Approve** on a suggestion; **Reject** leaves the file where it is. It looks at up to 25 files at a time, and skips links, folders, files over 1 MB and anything starting with a dot.
 
+## 10f. Mail and calendar feed files (optional, nothing is connected)
+
+The daily note and the `plan-today` and `morning-intel` skills can show today's calendar and mail you labelled Brain, read from two files you put here yourself:
+
+- `inbox\_feeds\calendar.json`: `{ "events": [ { "title": "Standup", "start": "2026-11-16T09:30:00-05:00", "end": "2026-11-16T10:00:00-05:00", "location": "Room 4" } ] }`
+- `inbox\_feeds\mail.json`: `{ "messages": [ { "id": "m1", "from": "Ada <ada@example.com>", "subject": "Quarterly plan", "date": "2026-11-16T08:15:00-05:00", "snippet": "first words...", "labels": ["Brain"] } ] }`
+
+Only messages whose `labels` include `Brain` are used. Only names, dates and subjects reach the daily note and the tools; a snippet is read but never shown, and anything else in the file (such as a body) is ignored. Files over 1 MB, links, and bad JSON are ignored (the daily note says so in one line). These two files are git-ignored: never commit them. Nothing connects to Gmail or Calendar; that is a later step you approve.
+
 ## 11. Windows checks (never tested on Windows; please do these once)
 
 These all passed on Linux in the cloud. Windows is untested. Tell Claude the result of each one.

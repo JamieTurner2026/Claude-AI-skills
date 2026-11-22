@@ -7,6 +7,7 @@ os/.cache/
 outputs/_work/
 raw/sessions/
 /daily/
+/inbox/_feeds/
 /projects/
 /reports/
 proposals/*
