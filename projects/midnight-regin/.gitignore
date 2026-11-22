@@ -1,0 +1,32 @@
+# Unreal Engine
+unreal/**/Binaries/
+unreal/**/Intermediate/
+unreal/**/Saved/
+unreal/**/DerivedDataCache/
+unreal/**/.vs/
+unreal/**/*.sln
+unreal/**/*.xcworkspace
+unreal/**/*.VC.db
+unreal/**/*.opensdf
+unreal/**/*.sdf
+unreal/**/*.suo
+
+# C++ core build
+build/
+core/build/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

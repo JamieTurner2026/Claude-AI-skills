@@ -1,0 +1,49 @@
+name: midnight-regin
+
+on:
+  push:
+    branches: [main]
+    paths: ["projects/midnight-regin/**", ".github/workflows/midnight-regin.yml"]
+  pull_request:
+    paths: ["projects/midnight-regin/**", ".github/workflows/midnight-regin.yml"]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: projects/midnight-regin
+
+jobs:
+  core:
+    name: C++ core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S core -B build
+      - run: cmake --build build
+      - run: ctest --test-dir build --output-on-failure
+
+  python:
+    name: Python prototype port
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest
+      - run: pytest prototype/python
+
+  assets:
+    name: Blender assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: sudo apt-get update && sudo apt-get install -y libxi6 libxxf86vm1 libxfixes3 libxrender1 libgl1 libxkbcommon0 libsm6
+      - run: pip install bpy pytest
+      - run: python3 blender/build_all.py
+      - run: pytest blender/tests

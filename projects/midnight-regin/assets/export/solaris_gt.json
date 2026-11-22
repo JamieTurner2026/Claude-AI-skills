@@ -1,0 +1,84 @@
+{
+  "id": "solaris_gt",
+  "display_name": "Solaris GT",
+  "fbx": "SK_SolarisGT.fbx",
+  "units": "cm",
+  "forward_axis": "+X",
+  "bones": [
+    "Root",
+    "Phys_Wheel_FL",
+    "Phys_Wheel_FR",
+    "Phys_Wheel_BL",
+    "Phys_Wheel_BR"
+  ],
+  "size_cm": [
+    441.3,
+    186.0,
+    122.7
+  ],
+  "triangles": 7802,
+  "materials": [
+    "M_MR_Paint",
+    "M_MR_Trim",
+    "M_MR_Glass",
+    "M_MR_LightFront",
+    "M_MR_LightRear",
+    "M_MR_NeonCyan",
+    "M_MR_Rim",
+    "M_MR_Tire"
+  ],
+  "wheel_radius": 36,
+  "wheel_widths": {
+    "front": 24,
+    "rear": 26
+  },
+  "wheels_unreal": {
+    "Phys_Wheel_FL": [
+      131.0,
+      -80,
+      36
+    ],
+    "Phys_Wheel_FR": [
+      131.0,
+      80,
+      36
+    ],
+    "Phys_Wheel_BL": [
+      -131.0,
+      -80,
+      36
+    ],
+    "Phys_Wheel_BR": [
+      -131.0,
+      80,
+      36
+    ]
+  },
+  "sockets_unreal": {
+    "spoiler": [
+      -196,
+      0,
+      86
+    ],
+    "front_bumper": [
+      221,
+      0,
+      14
+    ],
+    "rear_bumper": [
+      -221,
+      0,
+      14
+    ],
+    "exhaust_left": [
+      -222,
+      -42,
+      26
+    ],
+    "exhaust_right": [
+      -222,
+      42,
+      26
+    ]
+  }
+}

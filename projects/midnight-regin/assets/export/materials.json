@@ -1,0 +1,95 @@
+{
+  "color_space": "sRGB hex",
+  "materials": {
+    "M_MR_Paint": {
+      "color": "#FF1493",
+      "metallic": 0.85,
+      "roughness": 0.28,
+      "emissive_strength": 0.0
+    },
+    "M_MR_Glass": {
+      "color": "#0A1420",
+      "metallic": 0.6,
+      "roughness": 0.08,
+      "emissive_strength": 0.0
+    },
+    "M_MR_Trim": {
+      "color": "#15151A",
+      "metallic": 0.2,
+      "roughness": 0.6,
+      "emissive_strength": 0.0
+    },
+    "M_MR_Tire": {
+      "color": "#0B0B0D",
+      "metallic": 0.0,
+      "roughness": 0.9,
+      "emissive_strength": 0.0
+    },
+    "M_MR_Rim": {
+      "color": "#C8CCD4",
+      "metallic": 1.0,
+      "roughness": 0.25,
+      "emissive_strength": 0.0
+    },
+    "M_MR_LightFront": {
+      "color": "#DFFFFF",
+      "metallic": 0.0,
+      "roughness": 0.3,
+      "emissive_strength": 12.0
+    },
+    "M_MR_LightRear": {
+      "color": "#FF2040",
+      "metallic": 0.0,
+      "roughness": 0.3,
+      "emissive_strength": 10.0
+    },
+    "M_MR_NeonCyan": {
+      "color": "#00FFFF",
+      "metallic": 0.0,
+      "roughness": 0.4,
+      "emissive_strength": 8.0
+    },
+    "M_MR_NeonPink": {
+      "color": "#FF1493",
+      "metallic": 0.0,
+      "roughness": 0.4,
+      "emissive_strength": 8.0
+    },
+    "M_MR_Asphalt": {
+      "color": "#19191E",
+      "metallic": 0.0,
+      "roughness": 0.45,
+      "emissive_strength": 0.0
+    },
+    "M_MR_Ground": {
+      "color": "#101014",
+      "metallic": 0.0,
+      "roughness": 0.8,
+      "emissive_strength": 0.0
+    },
+    "M_MR_RoadLine": {
+      "color": "#E8E8F0",
+      "metallic": 0.0,
+      "roughness": 0.5,
+      "emissive_strength": 0.6
+    },
+    "M_MR_Concrete": {
+      "color": "#2A2A33",
+      "metallic": 0.0,
+      "roughness": 0.8,
+      "emissive_strength": 0.0
+    },
+    "M_MR_Building": {
+      "color": "#14141C",
+      "metallic": 0.3,
+      "roughness": 0.5,
+      "emissive_strength": 0.0
+    },
+    "M_MR_Window": {
+      "color": "#FFC870",
+      "metallic": 0.0,
+      "roughness": 0.4,
+      "emissive_strength": 3.0
+    }
+  }
+}
