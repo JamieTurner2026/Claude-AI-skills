@@ -119,7 +119,7 @@ npm run brain -- index --embeddings
 - The first time, it installs a pinned runtime (about 400 MB) and downloads the model (about 23 MB) into `%USERPROFILE%\.superos\brain\embeddings\`. Nothing goes into the vault. This is the only command that downloads anything; runs never do.
 - Then it gives every note a vector. That takes a few seconds and later runs reuse the vectors.
 - Check it worked: `npm run brain -- eval --compare` prints keyword and hybrid scores side by side.
-- After adding notes, run `npm run brain -- index --embeddings` again so the new ones are found by meaning too. They are still found by keyword until then.
+- New or changed notes get their vectors on their own: while the bridge runs, the rebuild before each run embeds them in the background (at most 5 s of work per rebuild, without holding up the run). `npm run brain -- index --embeddings` still does them all at once.
 - Runs now use meaning search on their own. To switch it off, set `SUPEROS_BRAIN_HYBRID=off` in `.env` and restart the bridge. To remove it completely, delete the `embeddings` folder.
 - If the model can't load, search goes back to keywords and the bridge window says why. A run never fails because of it.
 
