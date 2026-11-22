@@ -143,7 +143,7 @@ export function checkLogDir(d: DoctorDeps): Check {
   const dir = logDirFor(d);
   if (!d.isDir(dir)) return warn("logs", "Log folder", `${dir} does not exist yet; the bridge creates it on first start`, "PC-SETUP §6: start the bridge once, then run the doctor again");
   const r = d.probeWrite(dir);
-  return r.ok ? pass("logs", "Log folder", `${dir} is writable`) : fail("logs", "Log folder", `${dir} is not writable: ${r.error.slice(0, 100)}`, "PC-SETUP §11 (step 3): check the folder's permissions");
+  return r.ok ? pass("logs", "Log folder", `${dir} is writable`) : fail("logs", "Log folder", `${dir} is not writable: ${r.error.slice(0, 100)}`, "PC-SETUP §14 (step 3): check the folder's permissions");
 }
 
 export function bridgePort(d: DoctorDeps): number {
@@ -163,7 +163,7 @@ export async function checkPort(d: DoctorDeps): Promise<Check> {
 
 export function checkBrainIndex(d: DoctorDeps): Check {
   const f = d.brainIndexPath();
-  if (!d.exists(f)) return warn("brain", "Brain index", `not built yet (${f})`, "PC-SETUP §5: npm run brain -- index (runs also build it first)");
+  if (!d.exists(f)) return warn("brain", "Brain index", `not built yet (${f})`, "PC-SETUP §5.1: npm run brain -- index (runs also build it first)");
   const hours = Math.max(0, (d.now.getTime() - d.mtimeMs(f)) / 3_600_000);
   const age = hours < 1 ? `${Math.round(hours * 60)} min` : hours < 48 ? `${Math.round(hours)} h` : `${Math.round(hours / 24)} days`;
   return pass("brain", "Brain index", `built ${age} ago (rebuilt before a run when over 5 minutes old)`);
@@ -171,14 +171,14 @@ export function checkBrainIndex(d: DoctorDeps): Check {
 
 export function checkEmbeddings(d: DoctorDeps): Check {
   return d.embeddingsRuntime() ? pass("embeddings", "Meaning search", "local embeddings runtime installed")
-    : warn("embeddings", "Meaning search", "not set up (optional; search uses keywords only)", "PC-SETUP §5c: npm run brain -- index --embeddings, only if you want it");
+    : warn("embeddings", "Meaning search", "not set up (optional; search uses keywords only)", "PC-SETUP §5.2: npm run brain -- index --embeddings, only if you want it");
 }
 
 export function checkSandbox(d: DoctorDeps): Check {
   const s = detectSandbox(d.platform, d.sandboxHas);
   if (s.available) return pass("sandbox", "Bash sandbox", s.reason);
   const why = d.platform === "win32" ? "Runs that need Bash are refused on native Windows; everything else works. Bash only works if Claude Code runs inside WSL2." : `${s.reason} Runs that need Bash are refused.`;
-  return warn("sandbox", "Bash sandbox", why, "PC-SETUP §11 (step 4)");
+  return warn("sandbox", "Bash sandbox", why, "PC-SETUP §14 (step 4)");
 }
 
 export function checkScheduler(d: DoctorDeps): Check {
