@@ -9,6 +9,7 @@ npm run open    # opens the dashboard in your browser, signed in
 npm run check   # type check
 npm test        # tests
 npm run doctor  # is this PC ready? PASS/WARN/FAIL per check, each with the PC-SETUP section that fixes it
+npm run smoke   # after every update: the real bridge on a temp copy of the vault, fake CLI, no cost, PASS/FAIL per step
 ```
 
 - `shared/` contract types and the three-tier router (no dependencies).
