@@ -3,6 +3,7 @@ import { route } from "../shared/router.ts";
 import { TIERS } from "../shared/types.ts";
 import type { LayoutItem, OsState, RouteResult } from "../shared/types.ts";
 import { ApiError, api } from "./api.ts";
+import { formatAge, healthWarnings } from "../shared/health.ts";
 import { h } from "./dom.ts";
 import { registry } from "./widgets/registry.ts";
 import type { WidgetContext } from "./widgets/_template.ts";
@@ -66,7 +67,29 @@ function draw(): void {
   if (focusedId) document.getElementById(focusedId)?.focus();
 }
 
+const healthEl = $("health");
+/** The Health strip: one line of state chips. A chip turns the warning colour when healthWarnings() says so. */
+async function drawHealth(): Promise<void> {
+  try {
+    const v = await api.health();
+    const warns = healthWarnings(v);
+    const chip = (label: string, value: string, warn: boolean) => h("span", { class: warn ? "chip warn" : "chip" }, label, " ", h("b", {}, value));
+    healthEl.replaceChildren(
+      chip("Bridge", `up ${formatAge(v.uptimeSec)}`, false),
+      chip("Scheduler", v.scheduler.on ? `on, ${v.scheduler.routinesOn}/${v.scheduler.routinesTotal} routines` : "OFF", !v.scheduler.on),
+      chip("Spend", `$${v.spend.todayUsd.toFixed(2)} / $${v.spend.capUsd.toFixed(2)}`, v.spend.pct > 80),
+      chip("Last run", v.lastRun ? `${v.lastRun.status}, ${formatAge((Date.now() - Date.parse(v.lastRun.at)) / 1000)} ago` : "none", false),
+      chip("Index", !v.brain.present ? "not built" : v.brain.stale ? "stale" : `${formatAge(v.brain.indexAgeSec ?? 0)} old`, v.brain.indexAgeSec !== null && v.brain.indexAgeSec > 86_400),
+      chip("Embeddings", v.brain.embeddings ? "present" : "off", false),
+      chip("Proposals", `${v.proposals.pending} pending`, false));
+    healthEl.classList.toggle("warning", warns.length > 0);
+    healthEl.title = warns.join(". ");
+    healthEl.hidden = false;
+  } catch { healthEl.hidden = true; } // signed out or the bridge is down: the main view already says so
+}
+
 async function refresh(): Promise<void> {
+  void drawHealth();
   try { state = await api.state(); draw(); }
   catch (e) {
     const signedOut = e instanceof ApiError && e.status === 401;
@@ -162,3 +185,4 @@ $("edit").addEventListener("click", (e) => {
 
 showTiers(classify());
 void refresh();
+setInterval(() => void drawHealth(), 30_000);

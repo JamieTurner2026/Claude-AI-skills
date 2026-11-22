@@ -90,6 +90,9 @@ Setting up on the PC: see `../docs/PC-SETUP.md`.
 - `GET /api/proposals`, `POST /api/proposals/:id/approve|reject` sit behind the same session, origin and header checks. Approving is append-only: a new `wiki/_learnings/<id>.md` and one bullet under `## Learned rules` in the skill.
 - Switch it off with `engine.learning.enabled: false`.
 
+## Status check (Phase 9b)
+- `GET /api/health` (session required) reports version, uptime, scheduler, routines on, spend vs cap, last run, brain index age, embeddings and pending proposals. `npm run status` prints it (exit 0 running, 1 not running, 2 unusable answer). The dashboard's Health strip shows it. Logic: `bridge/health.ts`, `bridge/status.ts`, `shared/health.ts`. No tray icon.
+
 ## Offline sources (Phase 8 prep)
 - `sources/` holds the `MailSource` and `CalendarSource` interfaces and `FileSource`, which reads `inbox/_feeds/mail.json` and `calendar.json`. Nothing connects to an account or the network. Feed text is other people's words: cleaned to one line, fenced as untrusted data in tool answers, reduced to inert plain text in the daily note. Tools `calendar_today` and `mail_brain` return names and subjects only.
 

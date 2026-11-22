@@ -236,6 +236,13 @@ In the dashboard, the **Skills** widget lists every skill with its tier (T2 read
 
 Drop loose files into `inbox\`. In the **Proposals** widget press **Sort inbox**: one small read-only run (up to $0.05) suggests where each file belongs under `raw\<department>\<topic>\`. Nothing moves until you press **Approve** on a suggestion; **Reject** leaves the file where it is. It looks at up to 25 files at a time, and skips links, folders, files over 1 MB and anything starting with a dot.
 
+## 10g. Check that the bridge is alive
+
+- The dashboard shows a **Health strip** under the title: bridge uptime, scheduler on or off, routines on, spend today against the daily cap, the last run, the brain index age, whether embeddings are present, and pending proposals. It turns amber when the scheduler is off, the index is over 1 day old, or today's spend is over 80% of the cap.
+- `cd os` then `npm run status` prints the same as a short table. It talks only to `127.0.0.1`. If the bridge is not running it prints `not running` and exits with code **1**; any other trouble (a refused session, an answer it cannot read) exits **2**; healthy exits **0**. A Task Scheduler "check" task can run it and alert on a non-zero exit.
+- The report holds counts, states and times only: never a note, a path, a prompt or a setting's value.
+- **There is no tray icon.** A tray icon is Windows-only and cannot be built or tested here, so it is not built; the Health strip and `npm run status` are the status check. Not yet run on Windows (section 11).
+
 ## 10f. Mail and calendar feed files (optional, nothing is connected)
 
 The daily note and the `plan-today` and `morning-intel` skills can show today's calendar and mail you labelled Brain, read from two files you put here yourself:
