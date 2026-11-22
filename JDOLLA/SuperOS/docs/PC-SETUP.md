@@ -236,6 +236,19 @@ In the dashboard, the **Skills** widget lists every skill with its tier (T2 read
 
 Drop loose files into `inbox\`. In the **Proposals** widget press **Sort inbox**: one small read-only run (up to $0.05) suggests where each file belongs under `raw\<department>\<topic>\`. Nothing moves until you press **Approve** on a suggestion; **Reject** leaves the file where it is. It looks at up to 25 files at a time, and skips links, folders, files over 1 MB and anything starting with a dot.
 
+## 10h. Back up the vault to a private repo (optional, off until you set it up)
+
+Nothing is pushed anywhere until you finish these steps. The backup never goes to the public code repo: it refuses that, and it refuses any vault that sits inside a repo pointing at it.
+
+1. On GitHub, create a **private** repo for the vault (for example `brain`). Do not add a README.
+2. In the vault folder (the one that holds `CLAUDE.md`, `wiki\` and `os\`), run once: `git init -b main`, then `git config user.name "Your Name"` and `git config user.email "you@example.com"`. The vault must be its own repo. If it is inside another repo the backup refuses.
+3. Sign in to GitHub on this PC the way you normally do (Git for Windows' Git Credential Manager, or an SSH key). The backup never reads or stores a password or token; it uses whatever login git already has.
+4. In `os\config\os.config.json` set `"backup": { "remote": "https://github.com/<you>/<repo>.git", "branch": "main" }` (the `git@github.com:<you>/<repo>.git` spelling works too). Restart the bridge.
+5. `cd os` then `npm run backup -- --dry-run`. It lists every file that would be committed and changes nothing. Check the list.
+6. `npm run backup` does a real backup now. Or switch on **Vault backup** in the Routines widget: it runs daily at 23:40, with no model and no cost. The Health strip shows the last result.
+
+What is backed up: `CLAUDE.md`, `Home.md`, and `wiki`, `raw`, `outputs`, `inbox`, `daily`, `projects`, `reports`, `depts`, `skills`, `docs`, `evals`, `apps`, `routines`, `proposals`. Never: `.env*`, anything starting with a dot, `logs\`, `os\`, `.claude\`, `raw\sessions\`, `outputs\_work\`, `inbox\_feeds\`, key files (`.pem`, `.key`, `id_rsa`...). Links and files over 25 MB are left out and counted. If a secret was committed by hand earlier, the push is refused until you remove it from git. It never force-pushes: if the remote has changes this PC does not, it stops and says so. Not yet run on Windows (section 11).
+
 ## 10g. Check that the bridge is alive
 
 - The dashboard shows a **Health strip** under the title: bridge uptime, scheduler on or off, routines on, spend today against the daily cap, the last run, the brain index age, whether embeddings are present, and pending proposals. It turns amber when the scheduler is off, the index is over 1 day old, or today's spend is over 80% of the cap.

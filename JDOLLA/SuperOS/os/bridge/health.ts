@@ -27,6 +27,8 @@ export function brainHealth(dbPath: string, nowMs: number): HealthView["brain"] 
 
 export type HealthInput = {
   version: string; startedAtMs: number; now: Date; routines: RoutineStatus; runs: readonly RunInfo[]; brainDb: string; pendingProposals: number;
+  /** The last backup's record (backup/record.ts), or null if none yet. Only its time and one-word result are shown. */
+  backup: { at: string; status: "pushed" | "nothing" | "refused" | "failed" } | null;
 };
 
 export function buildHealth(d: HealthInput): HealthView {
@@ -43,5 +45,6 @@ export function buildHealth(d: HealthInput): HealthView {
     lastRun: last ? { status: last.status, tier: last.tier, at: last.endedAt || last.startedAt } : null,
     brain: brainHealth(d.brainDb, d.now.getTime()),
     proposals: { pending: d.pendingProposals },
+    backup: d.backup ? { at: d.backup.at, status: d.backup.status } : null, // the message text stays out of the strip
   };
 }

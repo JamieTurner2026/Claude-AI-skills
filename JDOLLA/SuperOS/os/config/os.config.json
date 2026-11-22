@@ -8,6 +8,7 @@
     "routines": { "dailyCapUsd": 2, "maxBudgetUsd": 1 },
     "brain": { "enabled": true },
     "tools": { "enabled": true },
+    "backup": { "remote": "", "branch": "main" },
     "learning": { "enabled": true, "diagnosisBudgetUsd": 0.05, "dailyCapUsd": 0.25 }
   },
   "artifactRoots": ["outputs"],

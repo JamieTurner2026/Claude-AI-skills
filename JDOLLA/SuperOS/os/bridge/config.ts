@@ -30,6 +30,8 @@ export const ConfigSchema = z.object({
       /** A T2 answer that used the brain but names no vault note gets a proposal (no diagnosis run, no cost). */
       citations: z.object({ enabled: z.boolean() }).default({ enabled: true }),
     }).default({ enabled: true, diagnosisBudgetUsd: 0.05, dailyCapUsd: 0.25 }),
+    /** Vault backup (Phase 9c): the one private GitHub repo the vault may be pushed to. Empty means no backup (the routine refuses). */
+    backup: z.object({ remote: z.string().max(300).default(""), branch: z.string().max(60).default("main") }).default({ remote: "", branch: "main" }),
     /** Optional path to the Claude Code CLI. Default: "claude" ("claude.exe" on Windows), found on PATH. */
     claudeBin: z.string().min(1).max(260).optional(),
   }),

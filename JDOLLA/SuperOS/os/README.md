@@ -90,6 +90,9 @@ Setting up on the PC: see `../docs/PC-SETUP.md`.
 - `GET /api/proposals`, `POST /api/proposals/:id/approve|reject` sit behind the same session, origin and header checks. Approving is append-only: a new `wiki/_learnings/<id>.md` and one bullet under `## Learned rules` in the skill.
 - Switch it off with `engine.learning.enabled: false`.
 
+## Vault backup (Phase 9c prep)
+- `backup/` commits an allowlist of vault content to the vault's own git repo and pushes it to the one private GitHub repo named in `engine.backup.remote`. Off until Jay sets it up (PC-SETUP 10h). `npm run backup -- --dry-run` lists what would go. Refuses the public repo and any vault inside a repo that points at it. Routine `vault-backup` is a built-in routine kind: no model, $0.
+
 ## Status check (Phase 9b)
 - `GET /api/health` (session required) reports version, uptime, scheduler, routines on, spend vs cap, last run, brain index age, embeddings and pending proposals. `npm run status` prints it (exit 0 running, 1 not running, 2 unusable answer). The dashboard's Health strip shows it. Logic: `bridge/health.ts`, `bridge/status.ts`, `shared/health.ts`. No tray icon.
 

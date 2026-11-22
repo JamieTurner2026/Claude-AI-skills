@@ -81,7 +81,8 @@ async function drawHealth(): Promise<void> {
       chip("Last run", v.lastRun ? `${v.lastRun.status}, ${formatAge((Date.now() - Date.parse(v.lastRun.at)) / 1000)} ago` : "none", false),
       chip("Index", !v.brain.present ? "not built" : v.brain.stale ? "stale" : `${formatAge(v.brain.indexAgeSec ?? 0)} old`, v.brain.indexAgeSec !== null && v.brain.indexAgeSec > 86_400),
       chip("Embeddings", v.brain.embeddings ? "present" : "off", false),
-      chip("Proposals", `${v.proposals.pending} pending`, false));
+      chip("Proposals", `${v.proposals.pending} pending`, false),
+      chip("Backup", v.backup ? `${v.backup.status}, ${formatAge((Date.now() - Date.parse(v.backup.at)) / 1000)} ago` : "never run", v.backup?.status === "failed" || v.backup?.status === "refused"));
     healthEl.classList.toggle("warning", warns.length > 0);
     healthEl.title = warns.join(". ");
     healthEl.hidden = false;
