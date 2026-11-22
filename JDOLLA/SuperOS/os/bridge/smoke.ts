@@ -95,6 +95,7 @@ export const GET_ROUTES: Array<{ path: string; shape: Shape }> = [
   { path: "/api/skills", shape: (b) => (Array.isArray(b) || has(b, { skills: "array" }) === null ? null : "no skills list") },
   { path: "/api/proposals", shape: (b) => has(b, { proposals: "array", spentTodayUsd: "number", dailyCapUsd: "number", enabled: "boolean" }) },
   { path: "/api/inbox", shape: (b) => has(b, { count: "number", skipped: "number", max: "number", running: "boolean" }) },
+  { path: "/api/health", shape: (b) => has(b, { uptimeSec: "number", scheduler: "object", spend: "object", brain: "object", proposals: "object" }) },
 ];
 
 export type SmokeOpts = {

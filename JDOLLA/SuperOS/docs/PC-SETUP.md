@@ -4,7 +4,7 @@ How to get the Super OS running on Jay's Windows PC, start to finish. About 20 m
 
 Nothing here sends, buys, deletes or publishes anything. The only step that costs money is the first question (§8), capped at $0.05.
 
-**Order:** §1–§9 once, top to bottom. After that, every time you pull an update: §2, `npm install`, then `npm run smoke` (§9). §10–§13 explain the widgets; §14 is the one-time Windows checks.
+**Order:** §1–§9 once, top to bottom. After that, every time you pull an update: §2, `npm install`, then `npm run smoke` (§9.1). §9.2 is the status check, §10–§13 explain the widgets and feed files; §14 is the one-time Windows checks.
 
 ## 1. What you need first
 
@@ -197,7 +197,9 @@ Type a question about your notes in the command bar, for example *"What are my s
 - brain tool calls listed on the run
 - a final cost well under the $0.05 cap (about $0.001 in the cloud test)
 
-## 9. After every update: `npm run smoke`
+## 9. After every update, and checking the bridge
+
+### 9.1 `npm run smoke`
 
 Each time you pull new code (§2), run in `os\`:
 
@@ -208,12 +210,19 @@ npm run smoke
 
 It costs nothing and never touches your real vault, logs or brain index. It copies the vault to a temp folder (without `node_modules`, `.git`, `logs`, the session secret, imported sessions or any `.env` file), starts the real bridge on that copy on a free port with a stand-in for Claude, and checks:
 
-- every dashboard data route (state, runs, routines, skills, proposals, inbox) answers with the right shape;
+- every dashboard data route (state, runs, routines, skills, proposals, inbox, health) answers with the right shape;
 - one question runs end to end (status done, cost recorded);
 - the vault rebuild works;
 - the brain indexes the copy and a search finds notes.
 
 Then it stops everything and deletes the temp folder, even when a step fails. Every step prints PASS or FAIL. If anything says FAIL, don't start the bridge: send Claude the FAIL lines.
+
+### 9.2 Check that the bridge is alive
+
+- The dashboard shows a **Health strip** under the title: bridge uptime, scheduler on or off, routines on, spend today against the daily cap, the last run, the brain index age, whether embeddings are present, and pending proposals. It turns amber when the scheduler is off, the index is over 1 day old, or today's spend is over 80% of the cap.
+- `cd os` then `npm run status` prints the same as a short table. It talks only to `127.0.0.1`. If the bridge is not running it prints `not running` and exits with code **1**; any other trouble (a refused session, an answer it cannot read) exits **2**; healthy exits **0**. A Task Scheduler "check" task can run it and alert on a non-zero exit.
+- The report holds counts, states and times only: never a note, a path, a prompt or a setting's value.
+- **There is no tray icon.** A tray icon is Windows-only and cannot be built or tested here, so it is not built; the Health strip and `npm run status` are the status check. Not yet run on Windows (§14).
 
 ## 10. Routines
 
@@ -256,9 +265,20 @@ Drafting each suggestion is a small read-only run that costs up to $0.05. All of
 - On the Proposals card, **Suggest changes** adds up to 3 "Suggested change" cards a week. Approve only records your decision; **you edit `os\config\os.config.json` or the routine yourself**.
 - New typed requests are logged as their first 80 characters in `router.jsonl` (on this PC only).
 
-## 13. Sort your inbox
+## 13. Inbox and feed files
+
+### 13.1 Sort your inbox
 
 Drop loose files into `inbox\`. In the **Proposals** widget press **Sort inbox**: one small read-only run (up to $0.05) suggests where each file belongs under `raw\<department>\<topic>\`. Nothing moves until you press **Approve** on a suggestion; **Reject** leaves the file where it is. It looks at up to 25 files at a time, and skips links, folders, files over 1 MB and anything starting with a dot.
+
+### 13.2 Mail and calendar feed files (optional, nothing is connected)
+
+The daily note and the `plan-today` and `morning-intel` skills can show today's calendar and mail you labelled Brain, read from two files you put here yourself:
+
+- `inbox\_feeds\calendar.json`: `{ "events": [ { "title": "Standup", "start": "2026-11-16T09:30:00-05:00", "end": "2026-11-16T10:00:00-05:00", "location": "Room 4" } ] }`
+- `inbox\_feeds\mail.json`: `{ "messages": [ { "id": "m1", "from": "Ada <ada@example.com>", "subject": "Quarterly plan", "date": "2026-11-16T08:15:00-05:00", "snippet": "first words...", "labels": ["Brain"] } ] }`
+
+Only messages whose `labels` include `Brain` are used. Only names, dates and subjects reach the daily note and the tools; a snippet is read but never shown, and anything else in the file (such as a body) is ignored. Files over 1 MB, links, and bad JSON are ignored (the daily note says so in one line). These two files are git-ignored: never commit them. Nothing connects to Gmail or Calendar; that is a later step you approve.
 
 ## 14. Windows checks (never tested on Windows; please do these once)
 

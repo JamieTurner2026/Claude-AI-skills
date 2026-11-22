@@ -35,7 +35,7 @@ describe("npm run smoke", () => {
     const tempsBefore = smokeTemps();
     const r = await runSmoke({ vault: REAL_VAULT });
     assert.equal(r.ok, true, r.steps.filter((s) => !s.ok).map((s) => `${s.name}: ${s.detail}`).join("; "));
-    for (const name of ["copy vault", "start bridge", "GET /api/state", "GET /api/runs", "GET /api/routines", "GET /api/skills", "GET /api/proposals", "GET /api/inbox", "T2 run (fake CLI)", "POST /api/vault/rebuild", "brain index", "brain search"]) {
+    for (const name of ["copy vault", "start bridge", "GET /api/state", "GET /api/runs", "GET /api/routines", "GET /api/skills", "GET /api/proposals", "GET /api/inbox", "GET /api/health", "T2 run (fake CLI)", "POST /api/vault/rebuild", "brain index", "brain search"]) {
       assert.ok(r.steps.some((s) => s.name === name && s.ok), name);
     }
     assert.equal(r.cleanedUp, true);

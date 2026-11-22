@@ -26,6 +26,7 @@ import { buildAll } from "../vault/generate.ts";
 import { usagePathFor } from "../brain/usage.ts";
 import { SKILL_SLUG, findSkill } from "./skills.ts";
 import { statsFromLogDir, suggestChanges } from "../analysis/run-stats.ts";
+import { buildHealth } from "./health.ts";
 import { InboxTriage } from "./inbox.ts";
 import type { BuildResult } from "../vault/generate.ts";
 
@@ -56,6 +57,8 @@ const VAULT_EVERY_MS = 30 * 60_000;
 export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line: string) => void; claudeBin?: ClaudeBin; logDir?: string; sandbox?: () => SandboxStatus; schedulerOn?: boolean; brainDbPath?: string; now?: () => Date } = {}): Bridge {
   const paths = pathsFor(osDir);
   const secret = loadOrCreateSecret(paths);
+  const startedAtMs = Date.now();
+  const version = (() => { try { return z.object({ version: z.string().max(40) }).parse(JSON.parse(readFileSync(path.join(paths.os, "package.json"), "utf8"))).version; } catch { return "unknown"; } })();
   const opener = opts.opener ?? systemOpener;
   const log = opts.log ?? (() => undefined);
   const appRoot = realpathSync(paths.os);
@@ -186,6 +189,17 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
       const stats = statsFromLogDir(opts.logDir ?? logDir(paths), (opts.now ?? (() => new Date()))(), days);
       const found = suggestChanges(stats, { routineMaxBudgetUsd: cfg.engine.routines.maxBudgetUsd, dailyCapUsd: cfg.engine.routines.dailyCapUsd, t2CapUsd: cfg.engine.t2.maxBudgetUsd });
       return send(res, 200, { days, found: found.length, ...learning.proposeTunes(found, days) });
+    }
+    // Health (9b): counts, states and times only. Same session check as every API call; a foreign Origin is refused too.
+    if (url.pathname === "/api/health") {
+      if (req.method !== "GET") throw new HttpError(405, "Method not allowed.");
+      const origin = req.headers.origin;
+      if (origin && !ownOrigins().some((o) => origin === `http://${o}`)) throw new HttpError(403, "Wrong origin.");
+      const now = (opts.now ?? (() => new Date()))();
+      return send(res, 200, buildHealth({
+        version, startedAtMs, now, routines: routines.status(), runs: runs.list(), brainDb: brain.dbPath,
+        pendingProposals: learning.list().filter((p) => p.status === "pending").length,
+      }));
     }
     if (url.pathname === "/api/routines" && req.method === "GET") return send(res, 200, routines.status());
     if (url.pathname === "/api/inbox" && req.method === "GET") return send(res, 200, inbox.status());
