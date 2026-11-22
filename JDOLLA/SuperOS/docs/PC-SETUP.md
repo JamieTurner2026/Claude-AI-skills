@@ -48,8 +48,18 @@ From here on, `<vault>` means the `JDOLLA\SuperOS` folder.
 
 ## 3. Install and test
 
+**Run the doctor first.** It checks this PC and changes nothing:
+
 ```powershell
 cd <vault>\os
+npm run doctor
+```
+
+It prints one row per check: PASS, WARN or FAIL. Every row that is not PASS names the section here that fixes it. Fix the FAIL rows before going on; WARN rows are fine to start with (for example "Meaning search not set up" or "Bash sandbox": native Windows has none, so runs that need Bash are refused). If it says **Packages not installed**, run `npm install` below, then `npm run doctor` again. It never reads the values in `os\.env` and never prints a secret; `npm run doctor -- --json` gives the same as JSON to send to Claude.
+
+Then install and test:
+
+```powershell
 npm install
 npm run check
 npm test
