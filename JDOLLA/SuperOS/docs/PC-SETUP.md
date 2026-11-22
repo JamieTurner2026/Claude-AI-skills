@@ -48,8 +48,18 @@ From here on, `<vault>` means the `JDOLLA\SuperOS` folder.
 
 ## 3. Install and test
 
+**Run the doctor first.** It checks this PC and changes nothing:
+
 ```powershell
 cd <vault>\os
+npm run doctor
+```
+
+It prints one row per check: PASS, WARN or FAIL. Every row that is not PASS names the section here that fixes it. Fix the FAIL rows before going on; WARN rows are fine to start with (for example "Meaning search not set up" or "Bash sandbox": native Windows has none, so runs that need Bash are refused). If it says **Packages not installed**, run `npm install` below, then `npm run doctor` again. It never reads the values in `os\.env` and never prints a secret; `npm run doctor -- --json` gives the same as JSON to send to Claude.
+
+Then install and test:
+
+```powershell
 npm install
 npm run check
 npm test
@@ -119,7 +129,7 @@ npm run brain -- index --embeddings
 - The first time, it installs a pinned runtime (about 400 MB) and downloads the model (about 23 MB) into `%USERPROFILE%\.superos\brain\embeddings\`. Nothing goes into the vault. This is the only command that downloads anything; runs never do.
 - Then it gives every note a vector. That takes a few seconds and later runs reuse the vectors.
 - Check it worked: `npm run brain -- eval --compare` prints keyword and hybrid scores side by side.
-- After adding notes, run `npm run brain -- index --embeddings` again so the new ones are found by meaning too. They are still found by keyword until then.
+- New or changed notes get their vectors on their own: while the bridge runs, the rebuild before each run embeds them in the background (at most 5 s of work per rebuild, without holding up the run). `npm run brain -- index --embeddings` still does them all at once.
 - Runs now use meaning search on their own. To switch it off, set `SUPEROS_BRAIN_HYBRID=off` in `.env` and restart the bridge. To remove it completely, delete the `embeddings` folder.
 - If the model can't load, search goes back to keywords and the bridge window says why. A run never fails because of it.
 
@@ -195,6 +205,7 @@ Drafting each suggestion is a small read-only run that costs up to $0.05. All of
 - **Approve** saves the lesson to `wiki\_learnings\` and adds the rule at the end of the skill under "Learned rules". Nothing else in the skill changes.
 - **Reject** changes nothing.
 - Nothing is ever applied without your click.
+- A **question you ask that is answered from your notes without naming the note** also shows up here as an "Uncited answer" (it costs nothing). Approving it adds one rule to the skill, if the answer came from a skill. Turn it off with `"citations": { "enabled": false }` under `learning` in `os\config\os.config.json`.
 - To switch the loop off, set `"learning": { "enabled": false, ... }` under `engine` in `os\config\os.config.json` and restart the bridge.
 
 Runs also get one safe tool, `today`, which gives the real date in your time zone. Tools are scripts the bridge runs; no run gets a command line.

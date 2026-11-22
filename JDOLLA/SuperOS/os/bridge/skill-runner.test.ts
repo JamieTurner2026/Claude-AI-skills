@@ -13,6 +13,7 @@ import type { Routine } from "./routine-runner.ts";
 import type { RunInfo } from "./runs.ts";
 import { createBridge } from "./server.ts";
 import type { Bridge } from "./server.ts";
+import { argvFromOutput } from "./fake-argv.ts";
 
 const fake = path.join(path.dirname(fileURLToPath(import.meta.url)), "fake-claude.ts");
 const skill = (name: string, tier: string, budget: string | null, body: string): string =>
@@ -47,7 +48,7 @@ function ended(e: Env, id: string): Promise<void> {
   if (e.b.runs.list().find((r) => r.id === id)?.status !== "running") return Promise.resolve();
   return new Promise((resolve) => { e.b.runs.subscribe(id, (ev) => { if (ev.type === "status" && ev.status !== "running") resolve(); }); });
 }
-const argvOf = (e: Env, id: string): string[] => JSON.parse(/ARGV:(.*)/.exec(e.b.runs.list().find((r) => r.id === id)!.output)?.[1] ?? "[]");
+const argvOf = (e: Env, id: string): string[] => argvFromOutput(e.b.runs.list().find((r) => r.id === id)!.output);
 const flag = (argv: string[], f: string): string | undefined => argv[argv.indexOf(f) + 1];
 
 test("the list needs a session and shows each skill's tier and budget; unknown lines show as unknown", async (t) => {

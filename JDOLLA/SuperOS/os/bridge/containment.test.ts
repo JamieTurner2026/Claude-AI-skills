@@ -16,6 +16,7 @@ import { detectSandbox } from "./sandbox.ts";
 import type { SandboxStatus } from "./sandbox.ts";
 import type { RunEvent, RunInfo } from "./runs.ts";
 import { createBridge } from "./server.ts";
+import { argvFromOutput } from "./fake-argv.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fake = path.join(here, "fake-claude.ts");
@@ -114,7 +115,7 @@ test("through the bridge: refused runs start nothing; blocked tool calls are rec
   assert.equal(ok.status, 202);
   const info = ((await ok.json()) as { run: RunInfo }).run;
   await finished(info.id);
-  const argv = JSON.parse(/ARGV:(.*)/.exec(b.runs.get(info.id)!.output)?.[1] ?? "[]") as string[];
+  const argv = argvFromOutput(b.runs.get(info.id)!.output);
   assert.ok(argv[argv.indexOf("--tools") + 1]!.split(",").includes("Bash"));
   assert.equal(JSON.parse(argv[argv.indexOf("--settings") + 1]!).sandbox.allowUnsandboxedCommands, false);
   assert.ok((JSON.parse(argv[argv.indexOf("--settings") + 1]!).permissions.deny as string[]).includes(`Edit(${absRule(vault)}/os/**)`), "vault rules reach the CLI");

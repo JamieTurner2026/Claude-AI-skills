@@ -15,7 +15,8 @@
     "brain": "node brain/cli.ts",
     "vault": "node vault/cli.ts",
     "analyse:runs": "node analysis/cli.ts",
-    "eval:router": "node shared/router-eval-cli.ts"
+    "eval:router": "node shared/router-eval-cli.ts",
+    "doctor": "node bridge/doctor.mjs"
   },
   "dependencies": {
     "zod": "^3.25.0"

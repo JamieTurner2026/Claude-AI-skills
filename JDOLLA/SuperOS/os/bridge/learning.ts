@@ -13,7 +13,7 @@ import type { OsConfig, Paths } from "./config.ts";
 import type { LogLine } from "./run-log.ts";
 import { RunError, slugify } from "./runs.ts";
 import type { RunInfo, RunManager } from "./runs.ts";
-import { localDate } from "./routine-runner.ts";
+import { NOTHING_NEW, localDate } from "./routine-runner.ts";
 import { moveIntoRaw } from "./inbox.ts";
 import type { Move } from "./inbox.ts";
 import type { Suggestion } from "../analysis/run-stats.ts";
@@ -44,7 +44,7 @@ const ProposalSchema = z.object({
   createdAt: z.string(),
   status: z.enum(["pending", "approved", "rejected"]),
   decidedAt: z.string().nullable(),
-  kind: z.enum(["budget", "failed", "blocked", "move", "tune"]),
+  kind: z.enum(["budget", "failed", "blocked", "move", "uncited", "tune"]),
   run: z.object({
     id: z.string(), tier: z.enum(["T2", "T3"]), dept: z.string(), skill: z.string().nullable(), routine: z.string().nullable(),
     status: z.string(), error: z.string().nullable(), denied: z.array(z.string()), costUsd: z.number().nullable(), capUsd: z.number(), prompt: z.string(),
@@ -98,6 +98,36 @@ export function failureKind(info: RunInfo): FailureKind | null {
   if (info.status === "failed") return /budget cap/i.test(info.error ?? "") ? "budget" : "failed";
   if (info.denied.length > 0) return "blocked";
   return null;
+}
+
+/** The tools that read the vault through the brain. A run that used one answered (at least partly) from the vault. */
+export const BRAIN_READ_TOOLS = ["mcp__superos-brain__search", "mcp__superos-brain__get_note"] as const;
+export const UNCITED_RULE = "Name the vault note (path or [[link]]) for every claim you take from the vault.";
+const UNCITED_FIX = "Ask for the source with each answer: every claim taken from the vault should name its note by vault path (for example wiki/software/api-bible.md) or as a [[wikilink]]. Open the notes it opened to check the answer.";
+const UNCITED_LESSON = "An answer that comes from the vault but names no note cannot be checked, so it should always say which note it came from.";
+const VAULT_PATH = /(?<![\w./-])(?:wiki|raw|depts|reports|outputs|projects)\/[^\s\[\]()<>"'`|]{1,300}?\.(?:md|txt|json|csv|pdf|png|jpe?g)(?![\w])/i;
+const WIKILINK = /\[\[[ \t]*[^\s\[\]][^\[\]\n]{0,299}\]\]/; // [[x]] with something in it; [[ ]] names nothing
+
+/** True if an answer names at least one vault note: a wiki/raw/depts/reports/outputs/projects path with a known extension, or a [[wikilink]]. */
+export function namesVaultSource(answer: string): boolean {
+  return VAULT_PATH.test(answer) || WIKILINK.test(answer);
+}
+
+/**
+ * A T2 run that answered from the brain without naming a source note: tier T2, done, an ordinary run (not a diagnosis, not
+ * inbox triage), a real final answer (not NOTHING_NEW), the brain's search or get_note used, and no vault path or [[link]] in the answer.
+ */
+export function isUncitedAnswer(info: RunInfo): boolean {
+  if (info.tier !== "T2" || info.status !== "done" || info.purpose !== "run" || info.dept === "inbox") return false;
+  const answer = (info.result ?? "").trim();
+  if (!answer || answer === NOTHING_NEW) return false;
+  if (!BRAIN_READ_TOOLS.some((t) => info.toolsUsed.includes(t))) return false;
+  return !namesVaultSource(answer);
+}
+
+function describeUncited(info: RunInfo): string {
+  const opened = info.notesOpened.length ? ` Notes it opened: ${info.notesOpened.join(", ")}.` : "";
+  return oneLine(`Answered from the brain without naming a source note. Request: "${oneLine(info.text, 200)}".${opened}`, 700);
 }
 
 function describe(info: RunInfo, kind: FailureKind): string {
@@ -166,7 +196,8 @@ export class LearningLoop {
   private consider(info: RunInfo): Proposal | null {
     const config = this.config();
     if (!config.engine.learning.enabled) return null;
-    const kind = failureKind(info);
+    // A failure comes first (a failed run gets its normal failure proposal); otherwise an uncited brain answer.
+    const kind: FailureKind | "uncited" | null = failureKind(info) ?? (config.engine.learning.citations.enabled && isUncitedAnswer(info) ? "uncited" : null);
     if (!kind) return null;
     const now = this.now();
     const day = localDate(now, this.tz());
@@ -180,13 +211,24 @@ export class LearningLoop {
     const proposal: Proposal = {
       id, createdAt: now.toISOString(), status: "pending", decidedAt: null, kind,
       run: { id: info.id, tier: info.tier, dept: info.dept, skill: info.skill, routine: info.routine, status: info.status, error: info.error, denied: info.denied.slice(0, 10), costUsd: info.costUsd, capUsd: info.capUsd, prompt: info.text.slice(0, 500) },
-      whatBroke: describe(info, kind),
+      whatBroke: kind === "uncited" ? describeUncited(info) : describe(info, kind),
       diagnosis: { status: "skipped", note: "", runId: null, costUsd: null },
       fix: "", learning: "", skillChange: null, applied: null, move: null, tune: null,
     };
     // Keep only the last two weeks of dedup keys.
     for (const k of Object.keys(ledger.seen)) if (k.slice(0, 10) < localDate(new Date(now.getTime() - 14 * 86_400_000), this.tz())) delete ledger.seen[k];
     ledger.seen[key] = id;
+
+    if (kind === "uncited") {
+      // Fixed text from the bridge: no diagnosis run, so no cost. Approving adds the rule to the skill, if there is one.
+      proposal.fix = UNCITED_FIX;
+      proposal.learning = UNCITED_LESSON;
+      proposal.skillChange = info.skill ? { skill: info.skill, rule: UNCITED_RULE } : null;
+      this.saveLedger(ledger);
+      this.save(proposal);
+      this.log({ kind: "proposal", id, runId: info.id, failure: "uncited", diagnosis: "skipped" });
+      return proposal;
+    }
 
     // Reserve the diagnosis budget BEFORE starting it, so the daily cap can't be crossed.
     const budget = config.engine.learning.diagnosisBudgetUsd;
@@ -397,11 +439,14 @@ export class LearningLoop {
         const skillsRoot = realpathSync(path.join(this.paths.vault, "skills"));
         const rel = path.relative(skillsRoot, realpathSync(file));
         if (!st.isFile() || rel.startsWith("..") || path.isAbsolute(rel) || st.size > MAX_SKILL_BYTES) throw new Error("bad");
-        skillPlan = { file, text: appendRule(readFileSync(file, "utf8"), `${oneLine(p.skillChange.rule, 300)} (approved ${day}, from proposals/${p.id}.json)`) };
+        const current = readFileSync(file, "utf8");
+        const rule = oneLine(p.skillChange.rule, 300);
+        if (current.split("\n").some((l) => l.startsWith("- ") && l.slice(2).startsWith(rule))) note = `skills/${s}/SKILL.md already has this rule, so it was not added again. `;
+        else skillPlan = { file, text: appendRule(current, `${rule} (approved ${day}, from proposals/${p.id}.json)`) };
       } catch { note = `skills/${s}/SKILL.md was missing or unsafe, so the rule was not added. `; }
     }
 
-    const title = oneLine(`${p.kind === "budget" ? "Budget cap" : p.kind === "blocked" ? "Blocked tools" : "Failure"}: ${p.run.routine ?? p.run.skill ?? `${p.run.tier} run`} (${p.id.slice(0, 10)})`, 120);
+    const title = oneLine(`${p.kind === "budget" ? "Budget cap" : p.kind === "blocked" ? "Blocked tools" : p.kind === "uncited" ? "Uncited answer" : "Failure"}: ${p.run.routine ?? p.run.skill ?? `${p.run.tier} run`} (${p.id.slice(0, 10)})`, 120);
     const body = [
       "---",
       `title: ${JSON.stringify(title)}`,

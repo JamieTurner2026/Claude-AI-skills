@@ -1,6 +1,7 @@
 [
   {"id": "plan-today", "name": "Plan today", "schedule": "weekdays 07:00", "enabled": false, "skill": "plan-today", "tier": "T2", "budgetUsd": 0.25},
   {"id": "morning-intel", "name": "Morning intel", "schedule": "weekdays 07:30", "enabled": false, "skill": "morning-intel", "tier": "T2", "budgetUsd": 0.4},
+  {"id": "proposals-review", "name": "Proposals review", "schedule": "weekly sun 17:00", "enabled": false, "skill": "proposals-review", "tier": "T2", "budgetUsd": 0.25},
   {"id": "vault-cleanup", "name": "Vault cleanup", "schedule": "weekly sun 18:00", "enabled": false, "skill": "vault-cleanup", "tier": "T2", "budgetUsd": 0.75},
   {"id": "content-cascade", "name": "Content cascade", "schedule": "weekly fri 16:00", "enabled": false, "skill": "content-cascade", "tier": "T3", "budgetUsd": 1.0}
 ]

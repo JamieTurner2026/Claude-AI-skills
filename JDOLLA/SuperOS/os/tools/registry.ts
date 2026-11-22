@@ -5,6 +5,7 @@
 import type { z } from "zod";
 import { linkCheck } from "./link_check.ts";
 import { listReports } from "./list_reports.ts";
+import { proposalsSummary } from "./proposals_summary.ts";
 import { recentChanges } from "./recent_changes.ts";
 import { runStats } from "./run_stats.ts";
 import { today } from "./today.ts";
@@ -23,8 +24,8 @@ export type ScriptTool = {
   run: (input: unknown, ctx: ToolContext) => unknown;
 };
 
-export const TOOLS: readonly ScriptTool[] = [today, recentChanges, linkCheck, vaultStats, listReports, runStats];
-export const SCRIPT_TOOL_NAMES = ["today", "recent_changes", "link_check", "vault_stats", "list_reports", "run_stats"] as const;
+export const TOOLS: readonly ScriptTool[] = [today, recentChanges, linkCheck, vaultStats, listReports, proposalsSummary, runStats];
+export const SCRIPT_TOOL_NAMES = ["today", "recent_changes", "link_check", "vault_stats", "list_reports", "proposals_summary", "run_stats"] as const;
 export type ScriptToolName = (typeof SCRIPT_TOOL_NAMES)[number];
 export const TOOLS_SERVER = "superos-tools";
 export const mcpToolName = (name: string) => `mcp__${TOOLS_SERVER}__${name}`;

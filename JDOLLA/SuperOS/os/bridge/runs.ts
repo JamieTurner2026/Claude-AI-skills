@@ -37,6 +37,10 @@ export type RunInfo = {
   skill: string | null;
   /** "diagnosis" for the learning loop's own runs, which never trigger another proposal. */
   purpose: "run" | "diagnosis";
+  /** Unique tool names the run called, from the stream's tool_use events (at most 30). */
+  toolsUsed: string[];
+  /** Vault paths the run opened with the brain's get_note, when the stream shows them (at most 10). */
+  notesOpened: string[];
 };
 
 /** Extra options only the bridge itself uses (never taken from a web request). */
@@ -59,6 +63,9 @@ export class RunError extends Error {
 export type ClaudeBin = { cmd: string; prefixArgs: string[] };
 
 export const LIMITS = { T2: 3, T3: 1 } as const;
+const MAX_TOOLS_USED = 30;
+const MAX_NOTES_OPENED = 10;
+
 export const LOG_REQUEST_CHARS = 80;
 
 /** What to write to router.jsonl as the request: the first 80 characters of what Jay typed, on one plain line, or null. */
@@ -194,7 +201,7 @@ export class RunManager {
     const run: Run = {
       id, tier: req.tier, text: req.text.slice(0, 300), dept: req.dept && /^[a-z][a-z0-9-]{0,39}$/.test(req.dept) ? req.dept : "general",
       status: "running", startedAt: new Date().toISOString(), endedAt: null, capUsd: cap, costUsd: null,
-      output: "", error: null, deliverables: [], denied: [], result: null, routine: internal.routine ?? null, skill: req.skill && /^[a-z0-9][a-z0-9-]{0,39}$/.test(req.skill) ? req.skill : null, purpose: internal.purpose ?? "run", onEnd: internal.onEnd ?? null, child: null, listeners: new Set(), events: [], stopRequested: false, workDir,
+      output: "", error: null, deliverables: [], denied: [], result: null, routine: internal.routine ?? null, skill: req.skill && /^[a-z0-9][a-z0-9-]{0,39}$/.test(req.skill) ? req.skill : null, purpose: internal.purpose ?? "run", toolsUsed: [], notesOpened: [], onEnd: internal.onEnd ?? null, child: null, listeners: new Set(), events: [], stopRequested: false, workDir,
     };
     this.runs.set(id, run);
     this.trim();
@@ -234,10 +241,14 @@ export class RunManager {
             this.emit(run, { type: "denied", tool, detail });
           }
         } else if (m.type === "assistant" && Array.isArray(m.message?.content)) {
-          for (const block of m.message.content as Array<{ type?: unknown; text?: unknown; name?: unknown; id?: unknown }>) {
+          for (const block of m.message.content as Array<{ type?: unknown; text?: unknown; name?: unknown; id?: unknown; input?: unknown }>) {
             if (block.type === "text" && typeof block.text === "string") this.emit(run, { type: "text", text: block.text + "\n" });
             if (block.type === "tool_use" && typeof block.name === "string") {
               if (typeof block.id === "string" && toolNames.size < 500) toolNames.set(block.id, block.name.slice(0, 60));
+              const used = block.name.slice(0, 60);
+              if (!run.toolsUsed.includes(used) && run.toolsUsed.length < MAX_TOOLS_USED) run.toolsUsed.push(used);
+              const opened = used === "mcp__superos-brain__get_note" && typeof block.input === "object" && block.input !== null ? (block.input as { path?: unknown }).path : undefined;
+              if (typeof opened === "string" && opened.length <= 200 && /^[\w][\w ./()-]*$/.test(opened) && !opened.includes("..") && !run.notesOpened.includes(opened) && run.notesOpened.length < MAX_NOTES_OPENED) run.notesOpened.push(opened);
               this.emit(run, { type: "tool", name: block.name.slice(0, 60) });
             }
           }

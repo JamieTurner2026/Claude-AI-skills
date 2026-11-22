@@ -66,6 +66,9 @@ export type RunView = {
   routine: string | null;
   skill: string | null;
   purpose: "run" | "diagnosis";
+  /** Unique tool names the run called, and the vault paths it opened with get_note. */
+  toolsUsed: string[];
+  notesOpened: string[];
 };
 
 /** Routine status as the dashboard sees it (mirrors RoutineStatus in bridge/routine-runner.ts). */
@@ -86,7 +89,7 @@ export type SkillsView = { skills: SkillView[]; spentTodayUsd: number; dailyCapU
 /** A learning-loop proposal as the dashboard sees it (mirrors Proposal in bridge/learning.ts). */
 export type ProposalView = {
   id: string; createdAt: string; status: "pending" | "approved" | "rejected"; decidedAt: string | null;
-  kind: "budget" | "failed" | "blocked" | "move" | "tune";
+  kind: "budget" | "failed" | "blocked" | "move" | "uncited" | "tune";
   run: { id: string; tier: "T2" | "T3"; dept: string; skill: string | null; routine: string | null; status: string; error: string | null; denied: string[]; costUsd: number | null; capUsd: number; prompt: string };
   whatBroke: string;
   diagnosis: { status: "running" | "done" | "failed" | "skipped"; note: string; runId: string | null; costUsd: number | null };

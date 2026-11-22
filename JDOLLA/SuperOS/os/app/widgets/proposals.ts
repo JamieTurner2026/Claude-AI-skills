@@ -9,7 +9,7 @@ const money = (n: number) => `$${n.toFixed(2)}`;
 const when = (iso: string) => new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 // Same words as TUNE_NOTICE in bridge/learning.ts (a test keeps them equal; the browser cannot import the bridge).
 const TUNE_NOTICE = "Approving only records your decision. It never changes config; you edit config yourself.";
-const KIND = { budget: "Hit budget cap", failed: "Failed", blocked: "Tools blocked", move: "Inbox move", tune: "Suggested change" } as const;
+const KIND = { budget: "Hit budget cap", failed: "Failed", blocked: "Tools blocked", move: "Inbox move", uncited: "Uncited answer", tune: "Suggested change" } as const;
 
 export const proposals: Widget = {
   id: "proposals",
