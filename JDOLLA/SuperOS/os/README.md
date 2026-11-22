@@ -91,6 +91,9 @@ Setting up on the PC: see `../docs/PC-SETUP.md`.
 - `GET /api/proposals`, `POST /api/proposals/:id/approve|reject` sit behind the same session, origin and header checks. Approving is append-only: a new `wiki/_learnings/<id>.md` and one bullet under `## Learned rules` in the skill.
 - Switch it off with `engine.learning.enabled: false`.
 
+## CI (9a)
+- `.github/workflows/superos.yml` runs `npm ci`, `npm run check`, `npm test`, `npm run eval:router` and `npm run smoke` on Linux and Windows for every PR and push to main that touches `JDOLLA/SuperOS/`. No secrets; the fake CLI only. It cannot check claude.exe, sign-in or Task Scheduler: those stay in PC-SETUP §14.
+
 ## Status check (Phase 9b)
 - `GET /api/health` (session required) reports version, uptime, scheduler, routines on, spend vs cap, last run, brain index age, embeddings and pending proposals. `npm run status` prints it (exit 0 running, 1 not running, 2 unusable answer). The dashboard's Health strip shows it. Logic: `bridge/health.ts`, `bridge/status.ts`, `shared/health.ts`. No tray icon.
 
