@@ -40,7 +40,15 @@ test("scan: offers plain files only; links, folders, dot-files, .env*, over 1 MB
   put(v, "inbox/.env.local", "SECRET=1");
   put(v, "inbox/.hidden.txt", "x");
   put(v, "inbox/big.bin", Buffer.alloc(MAX_FILE_BYTES + 1));
+  // On Windows a colon name cannot exist: NTFS writes "has:colon.txt" as a hidden stream on a file named "has".
+  // Check that is what happens (so a colon name can never reach the scan there), then remove "has"; elsewhere the
+  // colon file is real and the scan must skip it.
+  const win = process.platform === "win32";
   put(v, "inbox/has:colon.txt", "x");
+  if (win) {
+    assert.ok(readdirSync(path.join(v, "inbox")).includes("has") && !readdirSync(path.join(v, "inbox")).includes("has:colon.txt"), "NTFS turned the colon name into a stream");
+    rmSync(path.join(v, "inbox/has"));
+  }
   put(v, "inbox/trailing-dot.", "x");
   mkdirSync(path.join(v, "inbox/folder"), { recursive: true });
   const o = outside();
@@ -49,7 +57,7 @@ test("scan: offers plain files only; links, folders, dot-files, .env*, over 1 MB
   const scan = scanInbox(v);
   assert.deepEqual(scan.files.map((f) => f.name), ["idea.md", "notes.txt"]);
   assert.equal(scan.total, 2);
-  assert.equal(scan.skipped, 8, "folder, link, .env, .env.local, .hidden.txt, big.bin, has:colon.txt, trailing-dot.");
+  assert.equal(scan.skipped, win ? 7 : 8, "folder, link, .env, .env.local, .hidden.txt, big.bin, trailing-dot., and has:colon.txt where it can exist");
   assert.equal(scan.files[1]?.preview, "hello");
   assert.equal(scanInbox(v, { previews: false }).files[0]?.preview, null, "no previews when only counting");
 });
@@ -72,7 +80,7 @@ test("scan: previews are the first 800 characters; binary files get none; at mos
 
 test("isTriageName: plain names pass; paths, dot-files, control characters and Windows-hostile names do not", () => {
   for (const ok of ["a.txt", "My notes (v2).md", "résumé.pdf", "x"]) assert.ok(isTriageName(ok), ok);
-  for (const bad of ["", ".env", ".git", "a/b", "a\\b", "../x", "..", "x\n.txt", "a\u0000b", "con?", "a|b", "a<b", "trail ", "dot.", "README.md", "readme.MD", "x".repeat(201), 5, null, undefined]) assert.ok(!isTriageName(bad), String(bad));
+  for (const bad of ["", ".env", ".git", "a/b", "a\\b", "../x", "..", "x\n.txt", "a\u0000b", "con?", "a|b", "a<b", "a:b", "has:colon.txt", "trail ", "dot.", "README.md", "readme.MD", "x".repeat(201), 5, null, undefined]) assert.ok(!isTriageName(bad), String(bad));
 });
 
 // ---------- the prompt ----------

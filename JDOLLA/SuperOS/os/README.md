@@ -91,6 +91,9 @@ Setting up on the PC: see `../docs/PC-SETUP.md`.
 - `GET /api/proposals`, `POST /api/proposals/:id/approve|reject` sit behind the same session, origin and header checks. Approving is append-only: a new `wiki/_learnings/<id>.md` and one bullet under `## Learned rules` in the skill.
 - Switch it off with `engine.learning.enabled: false`.
 
+## CI (9a)
+- `.github/workflows/superos.yml` runs `npm ci`, `npm run check`, `npm test`, `npm run eval:router` and `npm run smoke` on Linux and Windows for every PR and push to main that touches `JDOLLA/SuperOS/`. No secrets; the fake CLI only. It cannot check claude.exe, sign-in or Task Scheduler: those stay in PC-SETUP §14.
+
 ## Vault backup (Phase 9c prep)
 - `backup/` commits an allowlist of vault content to the vault's own git repo and pushes it to the one private GitHub repo named in `engine.backup.remote`. Off until Jay sets it up (PC-SETUP §10.1). `npm run backup -- --dry-run` lists what would go. Refuses the public repo and any vault inside a repo that points at it. Routine `vault-backup` is a built-in routine kind: no model, $0.
 

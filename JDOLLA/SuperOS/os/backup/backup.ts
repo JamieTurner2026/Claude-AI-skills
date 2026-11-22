@@ -58,7 +58,8 @@ async function backup(o: BackupOptions): Promise<BackupResult> {
   if (refusal) return result("refused", refusal);
   if (!isValidBranch(o.branch)) return result("refused", MSG_BAD_BRANCH);
   let vault: string;
-  try { vault = realpathSync(o.vault); } catch { return result("failed", "The vault folder was not found."); }
+  // .native: on Windows it also expands 8.3 short names (C:\Users\RUNNER~1) the way git reports paths, so the two compare equal.
+  try { vault = realpathSync.native(o.vault); } catch { return result("failed", "The vault folder was not found."); }
 
   const raw = o.git ?? makeGit(vault);
   const SAFE = ["-c", `core.hooksPath=${os.devNull}`, "-c", "core.fsmonitor=false", "-c", "commit.gpgsign=false", "-c", "protocol.allow=never",
@@ -66,13 +67,14 @@ async function backup(o: BackupOptions): Promise<BackupResult> {
   const git: GitRunner = (args, t) => { const full = [...SAFE, ...args]; o.spy?.(full); return raw(full, t); };
 
   const v = await git(["--version"]);
-  if (v.code !== 0) return result("failed", "git is not installed (or not on PATH) on this PC. Install Git for Windows, then try again.");
+  if (v.code === null) return result("failed", "git is not installed (or not on PATH) on this PC. Install Git for Windows, then try again.");
+  if (v.code !== 0) return result("failed", `git did not start cleanly: ${(v.stderr.trim().split("\n")[0] ?? "").slice(0, 300) || `exit ${v.code}`}. Nothing was committed or pushed.`);
 
   // Is the vault its own repo, and does anything in that repo point at the public one?
   const top = await git(["rev-parse", "--show-toplevel"]);
   if (top.code !== 0 || !top.stdout.trim()) return result("refused", MSG_NOT_A_REPO);
   let topReal: string;
-  try { topReal = realpathSync(top.stdout.trim()); } catch { return result("refused", MSG_NOT_A_REPO); }
+  try { topReal = realpathSync.native(top.stdout.trim()); } catch { return result("refused", MSG_NOT_A_REPO); }
   const urls = await git(["config", "--get-regexp", "^remote\\..*\\.(url|pushurl)$"]);
   for (const line of urls.stdout.split("\n")) {
     const u = line.trim().split(/\s+/, 2)[1];
