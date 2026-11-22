@@ -191,7 +191,7 @@ test("a skill run never marks a scheduled routine of the same name as done", asy
   assert.ok(l.lastRunAt["skill:plan-today"]);
   // control: the routine's own Run now does mark it
   const second = e.b.routines.runNow("plan-today");
-  await ended(e, second.id);
+  await ended(e, second!.id);
   assert.ok(ledger(e).lastRunAt["plan-today"]);
 });
 

@@ -27,6 +27,9 @@ import { usagePathFor } from "../brain/usage.ts";
 import { SKILL_SLUG, findSkill } from "./skills.ts";
 import { statsFromLogDir, suggestChanges } from "../analysis/run-stats.ts";
 import { buildHealth } from "./health.ts";
+import { runBackup } from "../backup/backup.ts";
+import type { BackupOptions } from "../backup/backup.ts";
+import { readBackupRecord, writeBackupRecord } from "../backup/record.ts";
 import { InboxTriage } from "./inbox.ts";
 import type { BuildResult } from "../vault/generate.ts";
 
@@ -54,7 +57,7 @@ export type Bridge = { server: http.Server; secret: string; paths: Paths; mint: 
 
 const VAULT_EVERY_MS = 30 * 60_000;
 
-export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line: string) => void; claudeBin?: ClaudeBin; logDir?: string; sandbox?: () => SandboxStatus; schedulerOn?: boolean; brainDbPath?: string; now?: () => Date } = {}): Bridge {
+export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line: string) => void; claudeBin?: ClaudeBin; logDir?: string; sandbox?: () => SandboxStatus; schedulerOn?: boolean; brainDbPath?: string; now?: () => Date; /** Tests only: never from config. */ backupOptions?: Pick<BackupOptions, "allowFileRemote" | "publicRepos" | "spy"> } = {}): Bridge {
   const paths = pathsFor(osDir);
   const secret = loadOrCreateSecret(paths);
   const startedAtMs = Date.now();
@@ -75,7 +78,16 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
     logDir: opts.logDir ?? logDir(paths),
     ...(opts.sandbox ? { sandbox: opts.sandbox } : {}),
   });
-  const routines = new RoutineRunner({ paths, config: () => loadConfig(paths), runs, logDir: opts.logDir ?? logDir(paths), log: runLog, schedulerOn: opts.schedulerOn ?? false });
+  const routines = new RoutineRunner({ paths, config: () => loadConfig(paths), runs, logDir: opts.logDir ?? logDir(paths), log: runLog, schedulerOn: opts.schedulerOn ?? false,
+    builtins: {
+      // The nightly vault backup: git in the vault folder, no model, $0. Refuses (plainly) until a private remote is named.
+      "vault-backup": async (now) => {
+        const c = loadConfig(paths);
+        const r = await runBackup({ vault: paths.vault, remote: c.engine.backup.remote, branch: c.engine.backup.branch, timezone: c.timezones[0] ?? "America/New_York", now, ...(opts.backupOptions ?? {}) });
+        writeBackupRecord(opts.logDir ?? logDir(paths), r, now);
+        return { status: r.status, message: r.message };
+      },
+    } });
   // Learning loop: every run that ends is checked; failures, blocks and cap hits become proposals.
   // After Jay approves an inbox move: refresh the generated indexes and make the next run rebuild the brain index.
   const learning = new LearningLoop({ paths, config: () => loadConfig(paths), runs, logDir: opts.logDir ?? logDir(paths), log: runLog, ...(opts.now ? { now: opts.now } : {}), afterMove: () => { rebuildVault("inbox"); brain.markStale(); } });
@@ -175,7 +187,7 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
           routines.setEnabled(id, enabled);
           return send(res, 200, routines.status());
         }
-        return send(res, 202, { run: routines.runNow(id) });
+        return send(res, 202, { run: routines.runNow(id) }); // null for a built-in routine (no model run)
       } catch (e) {
         if (e instanceof RunError) throw new HttpError(e.status, e.message);
         throw e;
@@ -199,6 +211,7 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
       return send(res, 200, buildHealth({
         version, startedAtMs, now, routines: routines.status(), runs: runs.list(), brainDb: brain.dbPath,
         pendingProposals: learning.list().filter((p) => p.status === "pending").length,
+        backup: readBackupRecord(opts.logDir ?? logDir(paths)),
       }));
     }
     if (url.pathname === "/api/routines" && req.method === "GET") return send(res, 200, routines.status());

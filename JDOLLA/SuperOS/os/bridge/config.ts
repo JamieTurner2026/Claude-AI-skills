@@ -2,6 +2,7 @@
 import { readFileSync, writeFileSync, renameSync, existsSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
+import { MSG_BAD_BRANCH, isValidBranch } from "../backup/remote.ts";
 
 export const LayoutItemSchema = z.object({
   widget: z.string().regex(/^[a-z][a-z0-9-]{0,39}$/),
@@ -30,6 +31,8 @@ export const ConfigSchema = z.object({
       /** A T2 answer that used the brain but names no vault note gets a proposal (no diagnosis run, no cost). */
       citations: z.object({ enabled: z.boolean() }).default({ enabled: true }),
     }).default({ enabled: true, diagnosisBudgetUsd: 0.05, dailyCapUsd: 0.25 }),
+    /** Vault backup (Phase 9c): the one private GitHub repo the vault may be pushed to. Empty means no backup (the routine refuses). */
+    backup: z.object({ remote: z.string().max(300).default(""), branch: z.string().refine(isValidBranch, MSG_BAD_BRANCH).default("main") }).default({ remote: "", branch: "main" }),
     /** Optional path to the Claude Code CLI. Default: "claude" ("claude.exe" on Windows), found on PATH. */
     claudeBin: z.string().min(1).max(260).optional(),
   }),

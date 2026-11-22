@@ -34,7 +34,7 @@ export const api = {
   runs: () => call<{ runs: RunView[] }>("/api/runs"),
   routines: () => call<RoutinesView>("/api/routines"),
   setRoutine: (id: string, enabled: boolean) => call<RoutinesView>(`/api/routines/${encodeURIComponent(id)}/toggle`, { enabled }),
-  runRoutine: (id: string) => call<{ run: RunView }>(`/api/routines/${encodeURIComponent(id)}/run`, {}),
+  runRoutine: (id: string) => call<{ run: RunView | null }>(`/api/routines/${encodeURIComponent(id)}/run`, {}),
   skills: () => call<SkillsView>("/api/skills"),
   /** A T3 skill without confirm answers 409 with { needsConfirm, capUsd }. */
   runSkill: (name: string, input: string | undefined, confirm: boolean) =>
