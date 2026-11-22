@@ -54,7 +54,7 @@ The vault has only 26 notes today, so 7a's gain in the cloud will be small. The 
 ## Phase 9: the PC
 - **9a Windows checks:** CI covers Windows; Jay's PC still runs §14 for claude.exe, sign-in and Task Scheduler. CI (PR #42): `.github/workflows/superos.yml` runs check, test, eval:router and smoke on ubuntu-latest and windows-latest for every SuperOS change. Prep built 2026-11-22: `npm run doctor` prints pass/warn/fail with the PC-SETUP section to fix (PR #32); after every update, `npm run smoke` (PC-SETUP §9.1).
 - **9b Start with Windows:** the bridge starts at login, with a tray or status check. Prep built 2026-11-22: `npm run autostart` (per-user Task Scheduler task, untested on Windows; PR #33). Status check built 2026-11-22: `GET /api/health`, `npm run status` and a Health strip on the dashboard (PR #37; PC-SETUP §9.2). Still open: a tray icon (Windows-only, cannot be built or tested in the cloud).
-- **9c Backups:** the vault's own private git repo, committed nightly by a routine; a vault note never goes into this public repo.
+- **9c Backups:** the vault's own private git repo, committed nightly by a routine; a vault note never goes into this public repo. **Status: prep built 2026-11-22, switched off, pushes nothing until Jay acts.** `os/backup/` + a `vault-backup` routine (daily 23:40, built in, no model, $0, `enabled: false`), `npm run backup -- --dry-run`, and a Backup line in the Health strip. It refuses (plainly) until `engine.backup.remote` names a private `https://github.com/<owner>/<repo>.git` or `git@github.com:<owner>/<repo>.git`, and always refuses the public code repo, a vault that is not its own git repo, and a vault inside a repo that points at the public one. Still needs Jay: create the private repo, `git init` the vault, name the remote, sign in to GitHub on the PC, then switch the routine on.
 Blocked on the PC session.
 
 ## Phase 10: learning loop v2
@@ -72,7 +72,7 @@ Blocked on the PC session.
 7. Decide three things: the private Brain repo name; the Gmail "Brain" label and Calendar connect; whether the cloud allowlist keeps the huggingface hosts.
 
 ## Queue
-- **Branch 2:** ~~Phase 8 prep~~ (#35) → 9b status check
+- **Branch 2:** ~~Phase 8 prep~~ (#35) → ~~9b status check~~ (#37) → 9c backup (#41) → 9c finish
 - **Branch 3:** q30 "what should I do today" fix (waiting for Jay's go in its chat) → 10c
 - **Branch 4:** `npm run smoke` and the PC-SETUP rewrite
 - **Main session:** review and merge each PR, keep this file and the Brain page current

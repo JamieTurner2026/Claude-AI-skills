@@ -28,6 +28,8 @@ export const RoutineSchema = z.object({
   schedule: z.string().max(120),
   enabled: z.boolean(),
   skill: z.string().regex(SLUG).optional(),
+  /** A routine the bridge runs itself, with no model and no cost (for example the vault backup). */
+  builtin: z.enum(["vault-backup"]).optional(),
   tier: z.enum(["T2", "T3"]).default("T2"),
   budgetUsd: z.number().positive().max(100).optional(),
 }).passthrough();
@@ -40,9 +42,13 @@ const LedgerSchema = z.object({
 });
 export type Ledger = z.infer<typeof LedgerSchema>;
 
+/** What a built-in routine reports. status is the backup's own word (pushed, nothing, refused, failed). */
+export type BuiltinResult = { status: string; message: string };
+export type BuiltinHandler = (now: Date) => Promise<BuiltinResult>;
+
 export type RoutineStatus = {
   schedulerOn: boolean; timezone: string; today: string; spentTodayUsd: number; dailyCapUsd: number;
-  routines: Array<{ id: string; name: string; schedule: string; enabled: boolean; tier: "T2" | "T3"; budgetUsd: number; skill: string | null;
+  routines: Array<{ id: string; name: string; schedule: string; enabled: boolean; tier: "T2" | "T3"; budgetUsd: number; skill: string | null; builtin: string | null;
     lastRunAt: string | null; lastResult: Ledger["lastResult"][string] | null }>;
   problems: string[];
 };
@@ -68,8 +74,11 @@ export class RoutineRunner {
   readonly schedulerOn: boolean;
   private timers: Array<ReturnType<typeof setTimeout>> = [];
   private ticking = false;
+  private builtins: Record<string, BuiltinHandler>;
+  private builtinRunning = new Set<string>();
 
-  constructor(opts: { paths: Paths; config: () => OsConfig; runs: RunManager; logDir: string; log: (line: LogLine) => void; schedulerOn: boolean }) {
+  constructor(opts: { paths: Paths; config: () => OsConfig; runs: RunManager; logDir: string; log: (line: LogLine) => void; schedulerOn: boolean; builtins?: Record<string, BuiltinHandler> }) {
+    this.builtins = opts.builtins ?? {};
     this.paths = opts.paths; this.config = opts.config; this.runs = opts.runs; this.log = opts.log; this.schedulerOn = opts.schedulerOn;
     this.ledgerFile = path.join(opts.logDir, "routine-ledger.json");
   }
@@ -118,7 +127,7 @@ export class RoutineRunner {
     writeAtomic(this.ledgerFile, JSON.stringify(l, null, 2) + "\n");
   }
 
-  budgetOf(r: Routine): number { return r.budgetUsd ?? DEFAULT_BUDGET[r.tier]; }
+  budgetOf(r: Routine): number { return r.builtin ? 0 : r.budgetUsd ?? DEFAULT_BUDGET[r.tier]; }
 
   /** One scheduler pass. Returns the ids of routines started. Never two passes at once. */
   async tick(now: Date = new Date()): Promise<string[]> {
@@ -139,7 +148,7 @@ export class RoutineRunner {
   }
 
   /** Run one routine now (the dashboard's Run now button). Same budget and daily cap rules. */
-  runNow(id: string, now: Date = new Date()): RunInfo {
+  runNow(id: string, now: Date = new Date()): RunInfo | null {
     const r = this.readRoutines().routines.find((x) => x.id === id);
     if (!r) throw new RunError(404, "No routine with that id.");
     return this.launch(r, now, "manual");
@@ -156,7 +165,7 @@ export class RoutineRunner {
     if (!skill) throw new RunError(404, "No skill with that name.");
     if (!skill.runnable) throw new RunError(400, skill.problem ?? "That skill cannot run.");
     const r: Routine = { id: skillKey(skill.name), name: skill.name, schedule: "", enabled: true, skill: skill.name, tier: skill.tier, budgetUsd: skill.budgetUsd };
-    return this.launch(r, opts.now ?? new Date(), "skill", cleanInput(opts.input));
+    return this.launch(r, opts.now ?? new Date(), "skill", cleanInput(opts.input)) as RunInfo; // a skill run always starts a model run
   }
 
   /** Why a run with this budget cannot start now because of the shared daily cap, or null. Reads only; reserves nothing. */
@@ -175,7 +184,8 @@ export class RoutineRunner {
     };
   }
 
-  private launch(r: Routine, now: Date, why: "schedule" | "manual" | "skill", input?: string): RunInfo {
+  private launch(r: Routine, now: Date, why: "schedule" | "manual" | "skill", input?: string): RunInfo | null {
+    if (r.builtin) return this.launchBuiltin(r, now, why);
     const config = this.config();
     const tz = this.tz();
     const today = localDate(now, tz);
@@ -221,6 +231,38 @@ export class RoutineRunner {
     }
     this.log({ kind: "routine-start", id: r.id, why, runId: info.id, budgetUsd: budget, tier: r.tier });
     return info;
+  }
+
+  /**
+   * A built-in routine (the vault backup) runs in the bridge itself: no model, no cost, nothing reserved against the daily
+   * cap. Like every routine it is written to the ledger BEFORE it starts, so a restart never runs the same slot twice, and
+   * it never runs twice at once. Returns null (there is no model run to show).
+   */
+  private launchBuiltin(r: Routine, now: Date, why: "schedule" | "manual" | "skill"): null {
+    const handler = this.builtins[r.builtin as string];
+    const ledger = this.loadLedger();
+    ledger.lastRunAt[r.id] = now.toISOString();
+    if (!handler || this.builtinRunning.has(r.id)) {
+      const note = handler ? "It is already running." : "This built-in routine is not available in this bridge.";
+      if (!this.builtinRunning.has(r.id)) ledger.lastResult[r.id] = { at: now.toISOString(), status: "skipped", costUsd: null, runId: null, note };
+      this.saveLedger(ledger);
+      this.log({ kind: "routine-skipped", id: r.id, why, note });
+      throw new RunError(handler ? 409 : 400, note);
+    }
+    this.builtinRunning.add(r.id);
+    ledger.lastResult[r.id] = { at: now.toISOString(), status: "running", costUsd: 0, runId: null, note: "" };
+    this.saveLedger(ledger);
+    this.log({ kind: "routine-start", id: r.id, why, builtin: r.builtin as string, budgetUsd: 0, tier: "T1" });
+    const done = (res: BuiltinResult): void => {
+      this.builtinRunning.delete(r.id);
+      const status = res.status === "pushed" || res.status === "nothing" ? "done" : res.status === "refused" ? "skipped" : "failed";
+      const l = this.loadLedger();
+      l.lastResult[r.id] = { at: new Date().toISOString(), status, costUsd: 0, runId: null, note: res.message.slice(0, 300) };
+      this.saveLedger(l);
+      this.log({ kind: "routine-end", id: r.id, builtin: r.builtin as string, status, costUsd: 0, spentToday: l.spend[localDate(now, this.tz())] ?? 0 });
+    };
+    void handler(now).then(done, () => done({ status: "failed", message: "It stopped unexpectedly." }));
+    return null;
   }
 
   private finish(r: Routine, end: RunInfo, day: string, budget: number): void {
@@ -278,7 +320,7 @@ export class RoutineRunner {
     const { routines, problems } = this.readRoutines();
     return {
       schedulerOn: this.schedulerOn, timezone: tz, today, spentTodayUsd: ledger.spend[today] ?? 0, dailyCapUsd: config.engine.routines.dailyCapUsd,
-      routines: routines.map((r) => ({ id: r.id, name: r.name, schedule: r.schedule, enabled: r.enabled, tier: r.tier, budgetUsd: this.budgetOf(r), skill: r.skill ?? null,
+      routines: routines.map((r) => ({ id: r.id, name: r.name, schedule: r.schedule, enabled: r.enabled, tier: r.tier, budgetUsd: this.budgetOf(r), skill: r.skill ?? null, builtin: r.builtin ?? null,
         lastRunAt: ledger.lastRunAt[r.id] ?? null, lastResult: ledger.lastResult[r.id] ?? null })),
       problems,
     };

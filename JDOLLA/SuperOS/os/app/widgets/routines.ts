@@ -24,12 +24,12 @@ export const routines: Widget = {
         const sw = h("button", { type: "button", class: "switch", "aria-pressed": String(r.enabled), "aria-label": `${r.name}: ${r.enabled ? "on" : "off"}`,
           click: () => void ctx.api.setRoutine(r.id, !r.enabled).then(draw, (e: unknown) => ctx.toast(e instanceof Error ? e.message : "Could not change it.")) }, r.enabled ? "On" : "Off");
         const run = h("button", { type: "button", class: "runnow", click: () => void ctx.api.runRoutine(r.id).then(
-          (res) => { ctx.toast(`Started ${r.name} (up to ${money(res.run.capUsd)}).`); void ctx.refresh(); },
+          (res) => { ctx.toast(res.run ? `Started ${r.name} (up to ${money(res.run.capUsd)}).` : `Started ${r.name} (no model, no cost). The result shows here in a moment.`); void ctx.refresh(); },
           (e: unknown) => { ctx.toast(e instanceof Error ? e.message : "Could not start it."); void ctx.refresh(); }) }, "Run now");
         const last = r.lastResult ? `Last: ${r.lastResult.status} ${when(r.lastResult.at)}${r.lastResult.costUsd !== null ? `, ${money(r.lastResult.costUsd)}` : ""}${r.lastResult.note ? ` · ${r.lastResult.note}` : ""}` : "Not run yet";
         body.append(h("div", { class: "rt" },
           h("div", { class: "top" }, h("span", { class: "nm" }, r.name), sw, run),
-          h("div", { class: "meta" }, `${r.schedule} · ${r.tier} · up to ${money(r.budgetUsd)}${r.skill ? ` · /${r.skill}` : ""}`),
+          h("div", { class: "meta" }, r.builtin ? `${r.schedule} · built in · no model · $0` : `${r.schedule} · ${r.tier} · up to ${money(r.budgetUsd)}${r.skill ? ` · /${r.skill}` : ""}`),
           h("div", { class: "last" }, last)));
       }
     };

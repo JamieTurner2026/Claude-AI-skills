@@ -241,6 +241,19 @@ Money limits:
 
 To stop everything scheduled at once, set `SUPEROS_SCHEDULER=off` in `os\.env` and restart the bridge.
 
+### 10.1 Back up the vault to a private repo (optional, off until you set it up)
+
+Nothing is pushed anywhere until you finish these steps. The backup never goes to the public code repo: it refuses that, and it refuses any vault that sits inside a repo pointing at it.
+
+1. On GitHub, create a **private** repo for the vault (for example `brain`). Do not add a README.
+2. In the vault folder (the one that holds `CLAUDE.md`, `wiki\` and `os\`), run once: `git init -b main`, then `git config user.name "Your Name"` and `git config user.email "you@example.com"`. The vault must be its own repo. If it is inside another repo the backup refuses.
+3. Sign in to GitHub on this PC the way you normally do (Git for Windows' Git Credential Manager, or an SSH key). The backup never reads or stores a password or token; it uses whatever login git already has.
+4. In `os\config\os.config.json` set `"backup": { "remote": "https://github.com/<you>/<repo>.git", "branch": "main" }` (the `git@github.com:<you>/<repo>.git` spelling works too). Restart the bridge.
+5. `cd os` then `npm run backup -- --dry-run`. It lists every file that would be committed and changes nothing. Check the list.
+6. `npm run backup` does a real backup now. Or switch on **Vault backup** in the Routines widget: it runs daily at 23:40, with no model and no cost. The Health strip shows the last result.
+
+What is backed up: `CLAUDE.md`, `Home.md`, and `wiki`, `raw`, `outputs`, `inbox`, `daily`, `projects`, `reports`, `depts`, `skills`, `docs`, `evals`, `apps`, `routines`, `proposals`. Never: `.env*`, anything starting with a dot, `logs\`, `os\`, `.claude\`, `raw\sessions\`, `outputs\_work\`, `inbox\_feeds\`, key files (`.pem`, `.key`, `id_rsa`...). Links and files over 25 MB are left out and counted. If a secret was committed by hand earlier, the push is refused until you remove it from git. It never force-pushes: if the remote has changes this PC does not, it stops and says so. Not yet run on Windows (section 14).
+
 ## 11. Run a skill by hand
 
 In the dashboard, the **Skills** widget lists every skill with its tier (T2 reads, T3 writes drafts) and suggested budget. Press **Run**; add a short note in the box if you want to steer it. A T3 skill asks "Run this? Up to $X" first. Skills share the routines' $2 a day cap (`engine.routines.dailyCapUsd` in `os\config\os.config.json`).
