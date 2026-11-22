@@ -39,6 +39,7 @@ Needs Node 22.18 or newer (it runs TypeScript directly, no build step).
 - Every run gets one MCP server, `superos-brain` (`brain/mcp.ts`, shipped with the bridge), with only its two read-only tools pre-approved: `search` and `get_note`. `--strict-mcp-config` keeps every other server out; file tools are never pre-approved.
 - Before each run the index (`%USERPROFILE%\.superos\brain\index.sqlite`, or `~/.superos/brain/`) is rebuilt if it is missing or over 5 minutes old. If that fails the run still goes ahead, without the brain, and `brain-index-failed` is logged.
 - Turn it off with `engine.brain.enabled: false` in `config/os.config.json`.
+- **Usage (7c):** each `get_note` appends `{t, path}` to `usage.jsonl` beside the index: the resolved note path and the time only, never the query, arguments or text. Capped at 512 KB with one rotated copy (`usage.1.jsonl`); `SUPEROS_BRAIN_USAGE=off` stops it. `npm run brain -- usage [--json]` shows the most-used and never-used wiki notes. The vault generators read it (read only) and end each department-index line with "· last used <day>" or "· never used".
 
 ## Sources under every claim (Phase 7e)
 - `RunInfo.toolsUsed` and `notesOpened` come from the CLI's `tool_use` events. The brain hint (`bridge/brain-link.ts`) asks every run to name the vault note (path or `[[link]]`) for each claim it takes from the vault.

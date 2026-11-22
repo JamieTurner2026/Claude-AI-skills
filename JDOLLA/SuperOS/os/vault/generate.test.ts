@@ -44,6 +44,23 @@ describe("each generated file, from a fixture vault", () => {
     assert.ok(!t.includes("_index]]: "), "does not list itself");
     assert.ok(!t.includes(".hidden") && !t.includes(SECRETS.env));
   });
+  it("wiki/<dept>/_index.md: last used / never used from the brain's usage file (7c)", () => {
+    const v2 = makeGenVault();
+    rmSync(path.join(v2.vault, "wiki/software/_index.md"));
+    const usageFile = path.join(outsideDir(), "usage.jsonl");
+    writeFileSync(usageFile, JSON.stringify({ t: "2026-11-16T02:00:00.000Z", path: "wiki/software/davidson.md" }) + "\n");
+    const before = snapshot(v2.vault);
+    buildAll(v2.paths, NOW, { usageFile });
+    const t = read(v2.vault, "wiki/software/_index.md");
+    assert.match(t, /davidson\]\]: Davidson Blessons \(project, updated 2026-11-14\) · last used 2026-11-15/); // 21:00 New York the day before
+    assert.match(t, /howto-deploy\]\]: How to deploy \(howto, updated 2026-11-12\) · never used/);
+    // Jay's own notes are untouched; only generated files changed.
+    const after = snapshot(v2.vault);
+    for (const [rel, hash] of Object.entries(before)) {
+      if (!rel.endsWith("_index.md") && !rel.startsWith("daily/") && !rel.startsWith("projects/") && !rel.startsWith("reports/_index")) assert.equal(after[rel], hash, rel);
+    }
+    assert.equal(readFileSync(usageFile, "utf8").split("\n").filter(Boolean).length, 1, "the generator only reads the usage file");
+  });
   it("reports/_index.md: newest first", () => {
     const t = read(vault, "reports/_index.md");
     assert.ok(t.indexOf("2026-11-16 [[reports/2026-11-16_software_davidson-review]]") > 0);
@@ -89,7 +106,7 @@ describe("each generated file, from a fixture vault", () => {
     rmSync(path.join(v.vault, "wiki/ai/_index.md"));
     buildAll(v.paths, NOW);
     const idx = read(v.vault, "wiki/ai/_index.md");
-    assert.match(idx, /^- \[\[wiki\/ai\/memory\]\]: Memory os\/\.env x \(concept, updated 2026-11-01\)$/m);
+    assert.match(idx, /^- \[\[wiki\/ai\/memory\]\]: Memory os\/\.env x \(concept, updated 2026-11-01\)(?: · (?:never used|last used \d{4}-\d{2}-\d{2}))?$/m);
     assert.ok(!idx.includes("[[os/") && !idx.includes("<b>"));
     assert.equal(clean("a\n# b [[c]] <d>e</d> `f` | g"), "a # b c e f g");
     assert.ok(clean("x".repeat(500)).length <= 120);
