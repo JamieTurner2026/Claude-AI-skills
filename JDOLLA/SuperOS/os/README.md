@@ -8,6 +8,7 @@ npm start       # bridge on http://127.0.0.1:4317 (port from .env)
 npm run open    # opens the dashboard in your browser, signed in
 npm run check   # type check
 npm test        # tests
+npm run doctor  # is this PC ready? PASS/WARN/FAIL per check, each with the PC-SETUP section that fixes it
 ```
 
 - `shared/` contract types and the three-tier router (no dependencies).
