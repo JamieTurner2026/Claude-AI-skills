@@ -72,7 +72,7 @@ Blocked on the PC session.
 7. Decide three things: the private Brain repo name; the Gmail "Brain" label and Calendar connect; whether the cloud allowlist keeps the huggingface hosts.
 
 ## Queue
-- **Branch 2:** ~~Phase 8 prep~~ (#35) → 9b status check
+- **Branch 2:** ~~Phase 8 prep~~ (#35) → ~~9b status check~~ (#37) → 9c backup (#41) → 9c finish
 - **Branch 3:** q30 "what should I do today" fix (waiting for Jay's go in its chat) → 10c
 - **Branch 4:** `npm run smoke` and the PC-SETUP rewrite
 - **Main session:** review and merge each PR, keep this file and the Brain page current
