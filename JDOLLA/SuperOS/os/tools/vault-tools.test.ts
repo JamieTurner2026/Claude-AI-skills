@@ -24,7 +24,7 @@ const fake = path.join(realOs, "bridge", "fake-claude.ts");
 
 test("registry: every tool is named once, read-only in shape, strict about arguments, and in the policy's name list", () => {
   assert.deepEqual(TOOLS.map((t) => t.name), [...SCRIPT_TOOL_NAMES]);
-  assert.deepEqual([...SCRIPT_TOOL_NAMES], ["today", "recent_changes", "link_check", "vault_stats", "list_reports", "proposals_summary", "run_stats", "calendar_today", "mail_brain"]);
+  assert.deepEqual([...SCRIPT_TOOL_NAMES], ["today", "recent_changes", "link_check", "vault_stats", "list_reports", "proposals_summary", "run_stats", "calendar_today", "mail_brain", "backup_status"]);
   for (const t of TOOLS) {
     assert.equal((t.inputSchema as { additionalProperties?: boolean }).additionalProperties, false, `${t.name} schema forbids extra arguments`);
     assert.equal(t.input.safeParse({ unexpected: 1, days: 1, limit: 1 }).success, false, t.name);
@@ -93,7 +93,7 @@ test("policy: the default script tools stay [today]; each skill is given exactly
   const policy = loadPolicy(pathsFor(realOs));
   assert.deepEqual(policy.scriptTools, ["today"]);
   const want: Record<string, string[]> = {
-    "vault-cleanup": ["link_check", "vault_stats"],
+    "vault-cleanup": ["link_check", "vault_stats", "backup_status"],
     "plan-today": ["recent_changes", "list_reports", "calendar_today", "mail_brain"],
     "morning-intel": ["recent_changes", "list_reports", "calendar_today", "mail_brain"],
     "project-intelligence": ["recent_changes", "vault_stats"],
@@ -120,7 +120,7 @@ async function argvFor(skill: string | undefined): Promise<{ argv: string[]; vau
 test("through the bridge: a skill's run is allowed exactly its tools, and the tools server is told the vault", async () => {
   const brain = ["mcp__superos-brain__search", "mcp__superos-brain__get_note"];
   const cases: Array<[string | undefined, string[]]> = [
-    ["vault-cleanup", ["today", "link_check", "vault_stats"]],
+    ["vault-cleanup", ["today", "link_check", "vault_stats", "backup_status"]],
     ["plan-today", ["today", "recent_changes", "list_reports", "calendar_today", "mail_brain"]],
     ["morning-intel", ["today", "recent_changes", "list_reports", "calendar_today", "mail_brain"]],
     ["project-intelligence", ["today", "recent_changes", "vault_stats"]],
@@ -136,7 +136,7 @@ test("through the bridge: a skill's run is allowed exactly its tools, and the to
     assert.equal(server.env["SUPEROS_TOOLS"], tools.join(","), `${skill ?? "no skill"}: tools server list`);
     assert.equal(server.env["SUPEROS_VAULT"], vault);
     assert.equal(flag("--tools"), "Read,Glob,Grep", "still read-only");
-    for (const forbidden of ["link_check", "list_reports", "recent_changes", "vault_stats", "run_stats", "calendar_today", "mail_brain"]) if (!tools.includes(forbidden)) assert.ok(!flag("--allowedTools").includes(forbidden), `${skill ?? "no skill"} must not be allowed ${forbidden}`);
+    for (const forbidden of ["link_check", "list_reports", "recent_changes", "vault_stats", "run_stats", "calendar_today", "mail_brain", "backup_status"]) if (!tools.includes(forbidden)) assert.ok(!flag("--allowedTools").includes(forbidden), `${skill ?? "no skill"} must not be allowed ${forbidden}`);
   }
 });
 

@@ -9,7 +9,7 @@
     "industrial-training-sim": { "tools": [] },
     "project-intelligence": { "tools": [], "scriptTools": ["recent_changes", "vault_stats"] },
     "creative-critic": { "tools": [] },
-    "vault-cleanup": { "tools": [], "scriptTools": ["link_check", "vault_stats"] },
+    "vault-cleanup": { "tools": [], "scriptTools": ["link_check", "vault_stats", "backup_status"] },
     "plan-today": { "tools": [], "scriptTools": ["recent_changes", "list_reports", "calendar_today", "mail_brain"] },
     "morning-intel": { "tools": [], "scriptTools": ["recent_changes", "list_reports", "calendar_today", "mail_brain"] },
     "proposals-review": { "tools": [], "scriptTools": ["proposals_summary", "list_reports"] }

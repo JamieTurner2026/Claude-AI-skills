@@ -336,7 +336,20 @@ test("the last result is recorded for the Health strip (not for a dry run), and 
   writeBackupRecord(logs, { status: "dry-run", message: "x", files: [], committed: false, pushed: false, skipped: 0 }, NOW);
   assert.equal(readBackupRecord(logs), null, "a dry run is not a backup");
   writeBackupRecord(logs, { status: "pushed", message: "Backed up 2 changed files.", files: [{ change: "added", path: "a" }, { change: "added", path: "b" }], committed: true, pushed: true, skipped: 0 }, NOW);
-  assert.deepEqual(readBackupRecord(logs), { at: NOW.toISOString(), status: "pushed", message: "Backed up 2 changed files.", files: 2 });
+  assert.deepEqual(readBackupRecord(logs), { at: NOW.toISOString(), status: "pushed", message: "Backed up 2 changed files.", files: 2, lastOkAt: NOW.toISOString() });
+  // The last success is carried forward across failures and refusals, and "nothing to do" counts as a success.
+  const later = new Date(NOW.getTime() + 86_400_000);
+  writeBackupRecord(logs, { status: "failed", message: "x", files: [], committed: false, pushed: false, skipped: 0 }, later);
+  assert.deepEqual([readBackupRecord(logs)!.status, readBackupRecord(logs)!.lastOkAt], ["failed", NOW.toISOString()]);
+  writeBackupRecord(logs, { status: "refused", message: "x", files: [], committed: false, pushed: false, skipped: 0 }, later);
+  assert.equal(readBackupRecord(logs)!.lastOkAt, NOW.toISOString());
+  writeBackupRecord(logs, { status: "nothing", message: "x", files: [], committed: false, pushed: false, skipped: 0 }, later);
+  assert.equal(readBackupRecord(logs)!.lastOkAt, later.toISOString(), "an up-to-date backup is a success");
+  const first = tmp("backup-logs-");
+  writeBackupRecord(first, { status: "refused", message: "x", files: [], committed: false, pushed: false, skipped: 0 }, NOW);
+  assert.equal(readBackupRecord(first)!.lastOkAt, null, "never succeeded");
+  writeFileSync(path.join(first, "backup-status.json"), JSON.stringify({ at: NOW.toISOString(), status: "pushed", message: "old format", files: 1 }));
+  assert.equal(readBackupRecord(first)!.lastOkAt, null, "a record from before this field still reads");
   writeFileSync(path.join(logs, "backup-status.json"), "{broken");
   assert.equal(readBackupRecord(logs), null);
 });

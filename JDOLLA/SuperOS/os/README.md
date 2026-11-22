@@ -94,6 +94,8 @@ Setting up on the PC: see `../docs/PC-SETUP.md`.
 ## Vault backup (Phase 9c prep)
 - `backup/` commits an allowlist of vault content to the vault's own git repo and pushes it to the one private GitHub repo named in `engine.backup.remote`. Off until Jay sets it up (PC-SETUP §10.1). `npm run backup -- --dry-run` lists what would go. Refuses the public repo and any vault inside a repo that points at it. Routine `vault-backup` is a built-in routine kind: no model, $0.
 
+- The vault-cleanup report has a `## Backups` section from the read-only tool `backup_status` (last result, days since the last success, a warning after 3 days). `npm run doctor` has a `Vault backup` row (own repo, remote named, remote passes `checkRemote`; files only, no network).
+
 ## Status check (Phase 9b)
 - `GET /api/health` (session required) reports version, uptime, scheduler, routines on, spend vs cap, last run, brain index age, embeddings and pending proposals. `npm run status` prints it (exit 0 running, 1 not running, 2 unusable answer). The dashboard's Health strip shows it. Logic: `bridge/health.ts`, `bridge/status.ts`, `shared/health.ts`. No tray icon.
 

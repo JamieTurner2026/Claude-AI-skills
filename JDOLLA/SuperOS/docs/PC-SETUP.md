@@ -252,6 +252,8 @@ Nothing is pushed anywhere until you finish these steps. The backup never goes t
 5. `cd os` then `npm run backup -- --dry-run`. It lists every file that would be committed and changes nothing. Check the list.
 6. `npm run backup` does a real backup now. Or switch on **Vault backup** in the Routines widget: it runs daily at 23:40, with no model and no cost. The Health strip shows the last result.
 
+`npm run doctor` has a **Vault backup** row that checks steps 2 and 4 without touching the network (it also fails if the vault's own git config points at the public repo). The weekly vault-cleanup report has a **Backups** section: the last result, days since the last success, and a warning after 3 days.
+
 What is backed up: `CLAUDE.md`, `Home.md`, and `wiki`, `raw`, `outputs`, `inbox`, `daily`, `projects`, `reports`, `depts`, `skills`, `docs`, `evals`, `apps`, `routines`, `proposals`. Never: `.env*`, anything starting with a dot, `logs\`, `os\`, `.claude\`, `raw\sessions\`, `outputs\_work\`, `inbox\_feeds\`, key files (`.pem`, `.key`, `id_rsa`...). Links and files over 25 MB are left out and counted. If a secret was committed by hand earlier, the push is refused until you remove it from git. It never force-pushes: if the remote has changes this PC does not, it stops and says so. Not yet run on Windows (section 14).
 
 ## 11. Run a skill by hand

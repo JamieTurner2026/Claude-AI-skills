@@ -8,6 +8,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import path from "node:path";
+import { checkRemote, isPublicRepo } from "../backup/remote.ts";
 import { detectSandbox } from "./sandbox.ts";
 
 export type Status = "pass" | "warn" | "fail";
@@ -36,6 +37,8 @@ export type DoctorDeps = {
   brainIndexPath: () => string;
   embeddingsRuntime: () => boolean;
   sandboxHas: (cmd: string) => boolean;
+  /** engine.backup.remote from the config ("" when none); null if the config could not be read. */
+  backupRemote: () => string | null;
 };
 
 const pathFor = (platform: string) => (platform === "win32" ? path.win32 : path.posix);
@@ -193,6 +196,34 @@ export function checkScheduler(d: DoctorDeps): Check {
     : warn("scheduler", "Scheduler", "off: no routine runs on its own (Run now still works)", "PC-SETUP §4 and §10: set SUPEROS_SCHEDULER=on when you want routines");
 }
 
+/**
+ * The vault backup row (Phase 9c). Looks only at files: is the vault folder its own git repo (a .git entry in it), is a
+ * remote named in the config, does that remote pass the same check the backup uses, and does the vault's own git config
+ * point at the public repo. It starts no process and makes no network call, and never prints a URL.
+ */
+export function checkBackup(d: DoctorDeps): Check {
+  const p = pathFor(d.platform);
+  const label = "Vault backup";
+  const dotGit = p.join(d.vault, ".git");
+  const ownRepo = d.exists(dotGit);
+  const remote = d.backupRemote();
+  if (ownRepo && d.isDir(dotGit)) {
+    let cfg = "";
+    try { cfg = d.readText(p.join(dotGit, "config")); } catch { /* unreadable: skip this part */ }
+    for (const line of cfg.split(/\r?\n/)) {
+      const m = /^\s*(?:url|pushurl)\s*=\s*(.+?)\s*$/i.exec(line);
+      if (m?.[1] && isPublicRepo(m[1])) return fail("backup", label, "this vault's git repo points at the public code repo", "PC-SETUP §10.1: the vault needs its own private repo; a vault note must never go to the public one");
+    }
+  }
+  const facts = (remoteNote: string) => `own git repo: ${ownRepo ? "yes" : "no"}; remote: ${remoteNote}`;
+  if (remote === null) return warn("backup", label, "the config could not be read, so the backup remote is unknown", "PC-SETUP §4: check os/config/os.config.json");
+  if (!remote.trim()) return warn("backup", label, `not set up (optional); ${facts("not set")}`, "PC-SETUP §10.1: name a private repo in engine.backup.remote when you want nightly backups");
+  const bad = checkRemote(remote);
+  if (bad) return warn("backup", label, `${facts("set")}; the remote is not usable: ${bad.replace(/ Nothing was pushed\.$/, "")}`, "PC-SETUP §10.1 (step 4): fix engine.backup.remote");
+  if (!ownRepo) return warn("backup", label, facts("set, passes the check"), "PC-SETUP §10.1 (step 2): run git init -b main in the vault folder");
+  return pass("backup", label, `${facts("set, passes the check")}; run: npm run backup -- --dry-run`);
+}
+
 export async function runDoctor(d: DoctorDeps): Promise<Check[]> {
   const safe = (id: string, label: string, f: () => Check): Check => {
     try { return f(); } catch (e) { return fail(id, label, `check crashed: ${(e instanceof Error ? e.message : String(e)).slice(0, 100)}`, "PC-SETUP Troubleshooting: send Claude this line"); }
@@ -208,6 +239,7 @@ export async function runDoctor(d: DoctorDeps): Promise<Check[]> {
     safe("embeddings", "Meaning search", () => checkEmbeddings(d)),
     safe("sandbox", "Bash sandbox", () => checkSandbox(d)),
     safe("scheduler", "Scheduler", () => checkScheduler(d)),
+    safe("backup", "Vault backup", () => checkBackup(d)),
   ];
 }
 
@@ -226,7 +258,7 @@ export function formatDoctor(checks: readonly Check[]): string {
 
 // ---------- the real machine ----------
 
-export function realDeps(vault: string, osDir: string, extra: Pick<DoctorDeps, "claudeBinFromConfig" | "brainIndexPath" | "embeddingsRuntime">): DoctorDeps {
+export function realDeps(vault: string, osDir: string, extra: Pick<DoctorDeps, "claudeBinFromConfig" | "brainIndexPath" | "embeddingsRuntime"> & Partial<Pick<DoctorDeps, "backupRemote">>): DoctorDeps {
   return {
     platform: process.platform, env: process.env, nodeVersion: process.version, vault, osDir, now: new Date(),
     exists: (p) => existsSync(p),
@@ -254,6 +286,7 @@ export function realDeps(vault: string, osDir: string, extra: Pick<DoctorDeps, "
       finally { try { rmSync(f, { force: true }); } catch { /* nothing to clean */ } }
     },
     sandboxHas: (cmd) => findOnPath(cmd, { platform: process.platform, env: process.env, exists: existsSync }) !== null,
+    backupRemote: () => null,
     ...extra,
   };
 }
