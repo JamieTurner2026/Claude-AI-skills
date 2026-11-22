@@ -141,6 +141,20 @@ npm start
 
 Leave this window open. You should see `JDOLLA$ bridge running on http://127.0.0.1:4317`. It only listens on this PC; nothing on your network can reach it. Stop it with Ctrl+C.
 
+## 6b. Start the bridge when you log in (optional)
+
+So you don't have to run `npm start` by hand each time:
+
+```powershell
+npm run autostart -- install
+```
+
+- The first time, it changes nothing. It prints exactly what it would do: the Task Scheduler task definition and the one `schtasks.exe` command. Read it, then run the same command again to install.
+- It makes one task, **"JDOLLA SuperOS bridge"**, for your user only, with no admin rights. 30 seconds after you log in it runs the bridge (`node bridge/server.ts` in this `os` folder, which is what `npm start` runs). A bridge window opens at logon; leave it open, as in step 6.
+- `npm run autostart -- status` shows the task. `npm run autostart -- remove` deletes it (only that task, by its exact name). Add `--dry-run` to see a command without running it.
+- If you move the vault or update Node, run `install` again. It shows the new plan first.
+- **Never tested on Windows.** If `install` says "Access is denied", Windows wants admin rights for logon tasks on your PC. Don't run it as administrator. Use this instead: press Win+R, type `shell:startup`, and put a shortcut there whose target is the `node.exe` path and `bridge\server.ts` shown in the dry run, starting in this `os` folder. Then tell me what happened so the tool can be fixed.
+
 ## 7. Open the dashboard
 
 In a **second** PowerShell window:
