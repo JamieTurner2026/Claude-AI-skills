@@ -47,7 +47,7 @@ The vault has only 26 notes today, so 7a's gain in the cloud will be small. The 
 - **8a Gmail, read-only:** only the "Brain" label, imported as untrusted `raw/` notes. Drafts only; nothing is sent.
 - **8b Google Calendar, read-only:** today's events go into the daily note and `plan-today`.
 - **8c Morning page:** `morning-intel` uses 8a and 8b. It stays report-only.
-Blocked until Jay names the label and connects Calendar.
+**Status: adapters ready, connect pending Jay.** Built 2026-11-22 (`os/sources/`): `MailSource` and `CalendarSource` interfaces and one `FileSource` that reads `inbox/_feeds/mail.json` and `calendar.json`. The daily note shows "Today's calendar" and "Mail labelled Brain"; two safe tools, `calendar_today` and `mail_brain`, go to `plan-today` and `morning-intel`. No account is connected, nothing uses the network, no token is stored. Still blocked until Jay names the label and connects Gmail and Calendar; a live adapter then implements the same two interfaces. 8a's "imported as `raw/` notes" is not built: the feed only feeds the daily note and the tools.
 
 ## Phase 9: the PC
 - **9a Windows checks:** Jay runs PC-SETUP section 11; each result becomes a fix task.

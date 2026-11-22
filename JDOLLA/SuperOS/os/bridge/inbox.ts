@@ -51,7 +51,7 @@ export function scanInbox(vault: string, opts: { previews?: boolean } = {}): Inb
   let total = 0;
   let skipped = 0;
   for (const e of entries.sort((a, b) => a.name.localeCompare(b.name))) {
-    if (e.name.toLowerCase() === "readme.md") continue;
+    if (e.name.toLowerCase() === "readme.md" || e.name === "_feeds") continue; // _feeds/ holds the mail and calendar feed files (Phase 8 prep), not things to sort
     const file = path.join(dir, e.name);
     let st;
     try { st = lstatSync(file); } catch { skipped++; continue; }
