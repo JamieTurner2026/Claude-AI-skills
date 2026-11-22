@@ -6,6 +6,7 @@ Controls how knowledge is collected, organized, verified, retrieved and reused. 
 - `/claude-skills-api`: generate xlsx, pptx, pdf and docx files through the Claude API
 - `vault-cleanup` (draft in `skills/vault-cleanup/`, not installed): report-only weekly vault check
 - `knowledge-improvement` (draft, inert, `skills/knowledge-improvement/`): recommend updates to skills and retrieval from new material; report only
+- `proposals-review` (draft, inert, `skills/proposals-review/`): weekly review of the learning loop's proposals (what keeps breaking, whether approved rules helped); report only. Routine `proposals-review`, Sundays 17:00, ships off
 
 ## References
 - Charter: `wiki/ai/charter.md`
