@@ -7,7 +7,7 @@ import type { Widget } from "./_template.ts";
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const when = (iso: string) => new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-const KIND = { budget: "Hit budget cap", failed: "Failed", blocked: "Tools blocked", move: "Inbox move" } as const;
+const KIND = { budget: "Hit budget cap", failed: "Failed", blocked: "Tools blocked", move: "Inbox move", uncited: "Uncited answer" } as const;
 
 export const proposals: Widget = {
   id: "proposals",

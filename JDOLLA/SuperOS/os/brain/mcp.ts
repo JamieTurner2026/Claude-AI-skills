@@ -12,6 +12,7 @@ import { SearchInput, openReadOnly, search } from "./search.ts";
 import { isTrusted, toVaultRel } from "./files.ts";
 import { hybridSearch } from "./hybrid.ts";
 import { searchQueryVector, type QueryVectors } from "./query-vectors.ts";
+import { defaultUsagePath, recordUse } from "./usage.ts";
 
 export const SERVER_NAME = "superos-brain";
 const PROTOCOL = "2024-11-05";
@@ -50,7 +51,8 @@ export const TOOLS = [
 ] as const;
 
 /** vectors: set by serve() when local embeddings are set up; absent means keyword search, exactly as before. */
-export interface Ctx { vault: string; dbPath: string; vectors?: QueryVectors }
+/** usageFile: where get_note records which note was opened (path and time only). Absent means no usage log. */
+export interface Ctx { vault: string; dbPath: string; vectors?: QueryVectors; usageFile?: string }
 
 const Rpc = z.object({
   jsonrpc: z.literal("2.0"),
@@ -81,6 +83,8 @@ function runTool(ctx: Ctx, name: string, args: unknown): unknown {
     const trusted = isTrusted(vaultRel);
     const { front, body } = parseFrontmatter(text);
     const clipped = body.length > MAX_NOTE_CHARS;
+    // Only the resolved note path and the time; never the query, the arguments or the text (7c).
+    if (ctx.usageFile) recordUse(ctx.usageFile, vaultRel);
     return toolText(JSON.stringify({
       note: UNTRUSTED_NOTE, path: vaultRel, trusted, title: front.title ?? path.basename(vaultRel), truncated: clipped,
       text: fence(clipped ? body.slice(0, MAX_NOTE_CHARS) : body, trusted, vaultRel),
@@ -137,5 +141,6 @@ export function serve(ctx: Ctx): void {
 
 if (import.meta.main) {
   const vault = process.env["SUPEROS_VAULT"] ?? path.resolve(import.meta.dirname, "../..");
-  serve({ vault, dbPath: process.env["SUPEROS_BRAIN_DB"] ?? defaultIndexPath() });
+  const usage = process.env["SUPEROS_BRAIN_USAGE"] === "off" ? {} : { usageFile: defaultUsagePath() };
+  serve({ vault, dbPath: process.env["SUPEROS_BRAIN_DB"] ?? defaultIndexPath(), ...usage });
 }

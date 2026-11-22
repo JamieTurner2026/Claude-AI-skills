@@ -190,6 +190,7 @@ Drafting each suggestion is a small read-only run that costs up to $0.05. All of
 - **Approve** saves the lesson to `wiki\_learnings\` and adds the rule at the end of the skill under "Learned rules". Nothing else in the skill changes.
 - **Reject** changes nothing.
 - Nothing is ever applied without your click.
+- A **question you ask that is answered from your notes without naming the note** also shows up here as an "Uncited answer" (it costs nothing). Approving it adds one rule to the skill, if the answer came from a skill. Turn it off with `"citations": { "enabled": false }` under `learning` in `os\config\os.config.json`.
 - To switch the loop off, set `"learning": { "enabled": false, ... }` under `engine` in `os\config\os.config.json` and restart the bridge.
 
 Runs also get one safe tool, `today`, which gives the real date in your time zone. Tools are scripts the bridge runs; no run gets a command line.

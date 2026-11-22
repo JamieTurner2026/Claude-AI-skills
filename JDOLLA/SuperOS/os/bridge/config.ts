@@ -27,6 +27,8 @@ export const ConfigSchema = z.object({
       enabled: z.boolean(),
       diagnosisBudgetUsd: z.number().positive().max(1),
       dailyCapUsd: z.number().positive().max(10),
+      /** A T2 answer that used the brain but names no vault note gets a proposal (no diagnosis run, no cost). */
+      citations: z.object({ enabled: z.boolean() }).default({ enabled: true }),
     }).default({ enabled: true, diagnosisBudgetUsd: 0.05, dailyCapUsd: 0.25 }),
     /** Optional path to the Claude Code CLI. Default: "claude" ("claude.exe" on Windows), found on PATH. */
     claudeBin: z.string().min(1).max(260).optional(),
