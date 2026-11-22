@@ -21,13 +21,13 @@ const Stored = z.object({
   run: z.object({ skill: z.string().nullable(), routine: z.string().nullable().optional() }).passthrough(),
   skillChange: z.object({ skill: z.string(), rule: z.string() }).nullable().optional(),
 }).passthrough();
-type Stored = z.infer<typeof Stored>;
+export type Stored = z.infer<typeof Stored>;
 
 const oneLine = (s: string, max: number): string => s.replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 const skillOf = (p: Stored): string => (p.run.skill && SLUG.test(p.run.skill) ? p.run.skill : "(typed request)");
 const isFailure = (p: Stored): boolean => p.kind === "budget" || p.kind === "failed" || p.kind === "blocked";
 
-function readProposals(vault: string): { items: Stored[]; skipped: number; truncated: boolean } {
+export function readProposals(vault: string): { items: Stored[]; skipped: number; truncated: boolean } {
   const root = vaultRoot(vault);
   const { files, truncated } = scanVault(vault, ["proposals"]); // links and dot entries already skipped
   const items: Stored[] = [];
@@ -43,11 +43,41 @@ function readProposals(vault: string): { items: Stored[]; skipped: number; trunc
   return { items, skipped, truncated };
 }
 
+/** Median days from creation to decision over decided proposals, rounded to 0.1; null when none was decided. */
+export function medianDaysToDecision(items: readonly Stored[]): number | null {
+  const d = items.filter((p) => p.status !== "pending" && p.decidedAt).map((p) => (Date.parse(p.decidedAt!) - Date.parse(p.createdAt)) / DAY_MS).filter((x) => Number.isFinite(x) && x >= 0).sort((a, b) => a - b);
+  if (!d.length) return null;
+  const mid = Math.floor(d.length / 2);
+  const m = d.length % 2 ? d[mid]! : (d[mid - 1]! + d[mid]!) / 2;
+  return Math.round(m * 10) / 10;
+}
+
+export const LEARNED_HEADING = "## Learned rules";
+
+/** Learned rules per skill: the "- " bullets under "## Learned rules" in skills/<name>/SKILL.md. Counts only, never the text. */
+export function countLearnedRules(vault: string): { skill: string; rules: number }[] {
+  const root = vaultRoot(vault);
+  const out: { skill: string; rules: number }[] = [];
+  for (const f of scanVault(vault, ["skills"]).files) {
+    const m = /^skills\/([a-z0-9][a-z0-9-]{0,39})\/SKILL\.md$/.exec(f.rel);
+    if (!m || f.size > MAX_READ_BYTES) continue;
+    let text: string;
+    try { text = readFileSync(path.join(root, f.rel), "utf8"); } catch { continue; }
+    const lines = text.split(/\r?\n/);
+    const at = lines.findIndex((l) => l.trim() === LEARNED_HEADING);
+    if (at < 0) continue;
+    let rules = 0;
+    for (let i = at + 1; i < lines.length && !/^#{1,2} /.test(lines[i]!); i++) if (/^- \S/.test(lines[i]!)) rules++;
+    if (rules) out.push({ skill: m[1]!, rules });
+  }
+  return out.sort((a, b) => b.rules - a.rules || (a.skill < b.skill ? -1 : 1));
+}
+
 const count = <T extends string>(xs: T[]): Record<string, number> => xs.reduce<Record<string, number>>((m, x) => ((m[x] = (m[x] ?? 0) + 1), m), {});
 
 export const proposalsSummary: ScriptTool = {
   name: "proposals_summary",
-  description: "Summary of proposals/ from the last N days: counts by kind and status, the most repeated failures (kind and skill), the skills with the most rejected proposals, and rules Jay approved with how often that skill failed before and since. Counts, dates, skill names and short rule text only; never run output or error text.",
+  description: "Summary of proposals/ from the last N days: counts by kind and status, the most repeated failures (kind and skill), the skills with the most rejected proposals, rules Jay approved with how often that skill failed before and since, the median days to a decision, and learned-rule counts per skill. Counts, dates, skill names and short rule text only; never run output or error text.",
   input: z.object({ days: z.number().int().min(1).max(90) }).strict(),
   inputSchema: { type: "object", properties: { days: { type: "integer", minimum: 1, maximum: 90 } }, required: ["days"], additionalProperties: false },
   run(input, ctx) {
@@ -113,6 +143,8 @@ export const proposalsSummary: ScriptTool = {
       repeatedFailures,
       mostRejected,
       approvedRules,
+      medianDaysToDecision: medianDaysToDecision(inWindow),
+      learnedRules: countLearnedRules(ctx.vault).slice(0, LIST_CAP),
       skipped,
       truncated,
     };
