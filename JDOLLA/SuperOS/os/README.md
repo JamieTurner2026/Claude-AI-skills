@@ -40,6 +40,11 @@ Needs Node 22.18 or newer (it runs TypeScript directly, no build step).
 - Before each run the index (`%USERPROFILE%\.superos\brain\index.sqlite`, or `~/.superos/brain/`) is rebuilt if it is missing or over 5 minutes old. If that fails the run still goes ahead, without the brain, and `brain-index-failed` is logged.
 - Turn it off with `engine.brain.enabled: false` in `config/os.config.json`.
 
+## Sources under every claim (Phase 7e)
+- `RunInfo.toolsUsed` and `notesOpened` come from the CLI's `tool_use` events. The brain hint (`bridge/brain-link.ts`) asks every run to name the vault note (path or `[[link]]`) for each claim it takes from the vault.
+- `bridge/learning.ts`, in the same end listener as the failure checks: a done, ordinary T2 run (not a diagnosis, not inbox triage, not `NOTHING_NEW`) that used `mcp__superos-brain__search` or `get_note` and whose answer names no vault path or `[[link]]` (`namesVaultSource`) gets a proposal of kind `uncited`. No diagnosis run and no cost; for a skill the proposal carries the rule "Name the vault note (path or [[link]]) for every claim you take from the vault." Approve appends it once (never twice); Reject changes nothing. A failure or blocked tool calls take priority, so there is one proposal per run.
+- `engine.learning.citations.enabled` (default `true`) switches it off; `engine.learning.enabled: false` turns the whole loop off.
+
 ## Inbox triage (Phase 6e)
 - `bridge/inbox.ts`: **Sort inbox** (in the Proposals widget) starts one read-only T2 run at $0.05, outside the routine cap. The prompt holds up to 25 inbox file names, sizes and their first 800 characters, fenced as untrusted data (reusing `fence` from `brain/present.ts`), plus the department slugs and their existing `raw/<dept>/<topic>/` folders. Dot-files, `.env*`, links, folders, `README.md` and files over 1 MB are skipped.
 - The run answers in JSON `[{file, dept, topic, reason}]`. `parseMoves` (zod) keeps an entry only if the file was offered, the department is known and the topic is a slug; junk gives no proposals.

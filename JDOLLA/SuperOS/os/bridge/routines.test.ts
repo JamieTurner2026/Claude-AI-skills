@@ -12,6 +12,7 @@ import { RoutineRunner, buildPrompt, localDate } from "./routine-runner.ts";
 import type { RunEvent } from "./runs.ts";
 import { createBridge } from "./server.ts";
 import type { Bridge } from "./server.ts";
+import { argvFromOutput } from "./fake-argv.ts";
 
 const fake = path.join(path.dirname(fileURLToPath(import.meta.url)), "fake-claude.ts");
 const AT_0700 = new Date("2026-11-16T12:00:30Z"); // Monday 07:00:30 in New York
@@ -37,7 +38,7 @@ function ended(b: Bridge, routine: string, skip = 0): Promise<RunEvent & { type:
   return new Promise((resolve) => { b.runs.subscribe(run.id, (e) => { if (e.type === "status") resolve(e); }); });
 }
 const ledger = (logs: string) => JSON.parse(readFileSync(path.join(logs, "routine-ledger.json"), "utf8")) as { lastRunAt: Record<string, string>; spend: Record<string, number>; lastResult: Record<string, { status: string; note: string }> };
-const argvOf = (b: Bridge, routine: string): string[] => JSON.parse(/ARGV:(.*)/.exec(b.runs.list().find((r) => r.routine === routine)!.output)?.[1] ?? "[]");
+const argvOf = (b: Bridge, routine: string): string[] => argvFromOutput(b.runs.list().find((r) => r.routine === routine)!.output);
 
 test("a due routine runs with its skill and budget, and the bridge writes the report", async () => {
   const { b, vault, logs } = setup([plan()]);

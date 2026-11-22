@@ -15,6 +15,7 @@ import { makeVault } from "./fixture.ts";
 import { defaultClaudeBin } from "./runs.ts";
 import type { RunEvent } from "./runs.ts";
 import { createBridge } from "./server.ts";
+import { argvFromOutput } from "./fake-argv.ts";
 
 const fake = path.join(path.dirname(fileURLToPath(import.meta.url)), "fake-claude.ts");
 const brainVault = () => {
@@ -47,7 +48,7 @@ test("through the bridge: a run gets the brain config and a freshly built index"
   t.after(() => b.runs.stopAll());
   const info = b.runs.start({ text: "what is a servo alarm?", tier: "T2" });
   await new Promise<void>((r) => { b.runs.subscribe(info.id, (e: RunEvent) => { if (e.type === "status") r(); }); });
-  const argv = JSON.parse(/ARGV:(.*)/.exec(b.runs.get(info.id)!.output)![1]!) as string[];
+  const argv = argvFromOutput(b.runs.get(info.id)!.output);
   const cfg = JSON.parse(flag(argv, "--mcp-config")!) as { mcpServers: Record<string, { command: string; args: string[]; env: Record<string, string> }> };
   assert.deepEqual(Object.keys(cfg.mcpServers), ["superos-brain", "superos-tools"], "only the bridge's own servers");
   const s = cfg.mcpServers["superos-brain"]!;
@@ -67,7 +68,7 @@ test("switched off in config: no brain", async (t) => {
   t.after(() => b.runs.stopAll());
   const info = b.runs.start({ text: "what?", tier: "T2" });
   await new Promise<void>((r) => { b.runs.subscribe(info.id, (e: RunEvent) => { if (e.type === "status") r(); }); });
-  assert.ok(!b.runs.get(info.id)!.output.includes("superos-brain"), "no brain server or brain tools");
+  assert.ok(!argvFromOutput(b.runs.get(info.id)!.output).join(" ").includes("superos-brain"), "no brain server or brain tools");
 });
 
 test("an index that can't be built never blocks the run", async (t) => {
@@ -79,7 +80,7 @@ test("an index that can't be built never blocks the run", async (t) => {
   const info = b.runs.start({ text: "what?", tier: "T2" });
   const end = await new Promise<RunEvent & { type: "status" }>((r) => { b.runs.subscribe(info.id, (e) => { if (e.type === "status") r(e); }); });
   assert.equal(end.status, "done", "the run still ran");
-  assert.ok(!b.runs.get(info.id)!.output.includes("superos-brain"), "without the brain");
+  assert.ok(!argvFromOutput(b.runs.get(info.id)!.output).join(" ").includes("superos-brain"), "without the brain");
 });
 
 test("the index is rebuilt only when missing or stale", () => {

@@ -15,6 +15,7 @@ import { loadConfig, pathsFor, saveConfig } from "../bridge/config.ts";
 import { makeVault } from "../bridge/fixture.ts";
 import { createBridge } from "../bridge/server.ts";
 import type { RunEvent } from "../bridge/runs.ts";
+import { argvFromOutput } from "../bridge/fake-argv.ts";
 
 const NY = "America/New_York";
 const at = (iso: string) => ({ timezone: NY, now: () => new Date(iso), vault: "" });
@@ -74,7 +75,7 @@ async function runOnce(vault: string): Promise<string[]> {
   try {
     const info = b.runs.start({ text: "what day is it?", tier: "T2" });
     await new Promise<void>((r) => { b.runs.subscribe(info.id, (e: RunEvent) => { if (e.type === "status") r(); }); });
-    return JSON.parse(/ARGV:(.*)/.exec(b.runs.get(info.id)!.output)![1]!) as string[];
+    return argvFromOutput(b.runs.get(info.id)!.output);
   } finally { b.runs.stopAll(); }
 }
 

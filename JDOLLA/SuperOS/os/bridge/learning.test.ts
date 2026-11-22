@@ -46,7 +46,7 @@ async function runAndSettle(b: Bridge, req: { text: string; tier?: "T2" | "T3"; 
   return b.learning.list();
 }
 const ledger = (logs: string) => JSON.parse(readFileSync(path.join(logs, "learning-ledger.json"), "utf8")) as { spend: Record<string, number>; seen: Record<string, string> };
-const info = (over: Partial<RunInfo>): RunInfo => ({ id: "x", tier: "T2", text: "t", dept: "general", status: "done", startedAt: "", endedAt: "", capUsd: 0.05, costUsd: 0.01, output: "", error: null, deliverables: [], denied: [], result: "", routine: null, skill: null, purpose: "run", ...over });
+const info = (over: Partial<RunInfo>): RunInfo => ({ id: "x", tier: "T2", text: "t", dept: "general", status: "done", startedAt: "", endedAt: "", capUsd: 0.05, costUsd: 0.01, output: "", error: null, deliverables: [], denied: [], result: "", routine: null, skill: null, purpose: "run", toolsUsed: [], notesOpened: [], ...over });
 
 test("failureKind: failed, cap, blocked make proposals; done, stopped and diagnosis runs don't", () => {
   assert.equal(failureKind(info({ status: "failed", error: "Stopped at the budget cap of $0.05." })), "budget");
