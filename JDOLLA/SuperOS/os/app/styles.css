@@ -155,3 +155,17 @@ body.editing .widget .tools { display: flex; }
 .pr .approve { border-color: var(--accent); color: var(--accent); }
 .pr .approve:disabled { opacity: 0.5; cursor: not-allowed; }
 .pr.approved, .pr.rejected { opacity: 0.6; }
+
+/* Proposals (10d): kind filter chips, the selected card, the "why" line and the y/n question. */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 2px; }
+.chips .chip { background: var(--surface-2); border: 1px solid var(--line); border-radius: 2px; padding: 3px 10px; color: var(--muted); font: inherit; font-size: 0.76rem; cursor: pointer; }
+.chips .chip b { color: var(--text); font-weight: 500; font-family: var(--mono); margin-left: 2px; }
+.chips .chip:hover { border-color: var(--accent); color: var(--text); }
+.chips .chip[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); box-shadow: 0 0 12px rgba(79, 125, 255, 0.25); }
+.chips .chip[aria-pressed="true"] b { color: var(--accent); text-shadow: 0 0 10px rgba(79, 125, 255, 0.5); }
+.keys { font-size: 0.72rem; color: var(--muted); }
+.pr.sel { box-shadow: inset 3px 0 0 var(--accent), 0 0 18px rgba(79, 125, 255, 0.12); background: var(--accent-dim); padding-left: 10px; }
+.pr .why { margin: 4px 0; font-size: 0.82rem; color: var(--accent); }
+.pr .ask { margin: 6px 0; padding: 6px 10px; border: 1px solid var(--accent); background: var(--accent-dim); font-size: 0.82rem; }
+.pr .ask b { font-family: var(--mono); color: var(--accent); }
+[data-widget="proposals"] .body:focus-visible, .proposals-body:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }

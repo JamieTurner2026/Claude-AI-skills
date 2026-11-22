@@ -257,6 +257,8 @@ Drafting each suggestion is a small read-only run that costs up to $0.05. All of
 - **Approve** saves the lesson to `wiki\_learnings\` and adds the rule at the end of the skill under "Learned rules". Nothing else in the skill changes.
 - **Reject** changes nothing.
 - Nothing is ever applied without your click.
+- Chips at the top filter the cards by kind, with counts. Suggested-change and uncited cards show a one-line **Why**.
+- Keys: click the widget, then `j`/`k` move between cards, `a` or `r` asks "Approve this?" or "Reject this?", and only `y` (or Enter) does it; `n` or Esc cancels.
 - A **question you ask that is answered from your notes without naming the note** also shows up here as an "Uncited answer" (it costs nothing). Approving it adds one rule to the skill, if the answer came from a skill. Turn it off with `"citations": { "enabled": false }` under `learning` in `os\config\os.config.json`.
 - To switch the loop off, set `"learning": { "enabled": false, ... }` under `engine` in `os\config\os.config.json` and restart the bridge.
 
