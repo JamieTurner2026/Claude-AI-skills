@@ -12,9 +12,10 @@
     "open": "node bridge/open.ts",
     "autostart": "node bridge/autostart.ts",
     "check": "tsc --noEmit",
-    "test": "node --test \"shared/*.test.ts\" \"bridge/*.test.ts\" \"brain/*.test.ts\" \"tools/*.test.ts\" \"vault/*.test.ts\"",
+    "test": "node --test \"shared/*.test.ts\" \"bridge/*.test.ts\" \"brain/*.test.ts\" \"tools/*.test.ts\" \"analysis/*.test.ts\" \"vault/*.test.ts\"",
     "brain": "node brain/cli.ts",
     "vault": "node vault/cli.ts",
+    "analyse:runs": "node analysis/cli.ts",
     "eval:router": "node shared/router-eval-cli.ts",
     "doctor": "node bridge/doctor.mjs"
   },

@@ -16,11 +16,26 @@ import type { RunInfo, RunManager } from "./runs.ts";
 import { NOTHING_NEW, localDate } from "./routine-runner.ts";
 import { moveIntoRaw } from "./inbox.ts";
 import type { Move } from "./inbox.ts";
+import type { Suggestion } from "../analysis/run-stats.ts";
 import { scanDepartments } from "../vault/generate.ts";
 
 export const PROPOSAL_ID = /^\d{4}-\d{2}-\d{2}_[a-z0-9-]{1,60}$/;
 const MAX_SKILL_BYTES = 64 * 1024;
 const LEARNED_HEADING = "## Learned rules";
+
+export const TUNES_PER_WEEK = 3;
+export const TUNE_QUIET_DAYS = 28;
+export const TUNE_NOTICE = "Approving only records your decision. It never changes config; you edit config yourself.";
+
+/** ISO week label ("2026-W47") of a YYYY-MM-DD date. */
+export function isoWeek(day: string): string {
+  const d = new Date(`${day}T00:00:00Z`);
+  const dow = (d.getUTCDay() + 6) % 7; // Monday = 0
+  d.setUTCDate(d.getUTCDate() - dow + 3); // the Thursday of this week decides the year
+  const jan4 = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  const wk = 1 + Math.round(((d.getTime() - jan4.getTime()) / 86_400_000 - 3 + ((jan4.getUTCDay() + 6) % 7)) / 7);
+  return `${d.getUTCFullYear()}-W${String(wk).padStart(2, "0")}`;
+}
 
 export type FailureKind = "budget" | "failed" | "blocked";
 
@@ -29,7 +44,7 @@ const ProposalSchema = z.object({
   createdAt: z.string(),
   status: z.enum(["pending", "approved", "rejected"]),
   decidedAt: z.string().nullable(),
-  kind: z.enum(["budget", "failed", "blocked", "move", "uncited"]),
+  kind: z.enum(["budget", "failed", "blocked", "move", "uncited", "tune"]),
   run: z.object({
     id: z.string(), tier: z.enum(["T2", "T3"]), dept: z.string(), skill: z.string().nullable(), routine: z.string().nullable(),
     status: z.string(), error: z.string().nullable(), denied: z.array(z.string()), costUsd: z.number().nullable(), capUsd: z.number(), prompt: z.string(),
@@ -42,6 +57,8 @@ const ProposalSchema = z.object({
   applied: z.object({ learningNote: z.string().nullable(), skillFile: z.string().nullable(), note: z.string() }).nullable(),
   /** Only for kind "move" (inbox triage): where the bridge would move a file from inbox/. Older proposal files have none. */
   move: z.object({ file: z.string().max(255), to: z.string().max(400), reason: z.string().max(400), movedTo: z.string().max(400).optional() }).nullable().default(null),
+  /** Only for kind "tune" (run analysis, 10b): the rule that fired. Approving records the decision and changes no config. */
+  tune: z.object({ key: z.string().max(120), kind: z.string().max(30), subject: z.string().max(80) }).nullable().default(null),
 });
 export type Proposal = z.infer<typeof ProposalSchema>;
 
@@ -196,7 +213,7 @@ export class LearningLoop {
       run: { id: info.id, tier: info.tier, dept: info.dept, skill: info.skill, routine: info.routine, status: info.status, error: info.error, denied: info.denied.slice(0, 10), costUsd: info.costUsd, capUsd: info.capUsd, prompt: info.text.slice(0, 500) },
       whatBroke: kind === "uncited" ? describeUncited(info) : describe(info, kind),
       diagnosis: { status: "skipped", note: "", runId: null, costUsd: null },
-      fix: "", learning: "", skillChange: null, applied: null, move: null,
+      fix: "", learning: "", skillChange: null, applied: null, move: null, tune: null,
     };
     // Keep only the last two weeks of dedup keys.
     for (const k of Object.keys(ledger.seen)) if (k.slice(0, 10) < localDate(new Date(now.getTime() - 14 * 86_400_000), this.tz())) delete ledger.seen[k];
@@ -318,7 +335,7 @@ export class LearningLoop {
         whatBroke: oneLine(`Suggested move: inbox/${m.file} to ${m.to}. ${m.reason}`, 700),
         diagnosis: { status: "skipped", note: "", runId: null, costUsd: null },
         fix: "", learning: "", skillChange: null, applied: null,
-        move: { file: m.file, to: m.to, reason: oneLine(m.reason, 400) },
+        move: { file: m.file, to: m.to, reason: oneLine(m.reason, 400) }, tune: null,
       });
       this.log({ kind: "proposal", id, runId: info.id, failure: "move", diagnosis: "skipped" });
       made++;
@@ -347,6 +364,49 @@ export class LearningLoop {
     return p;
   }
 
+  /**
+   * Run analysis (10b): each suggestion from analysis/run-stats.ts becomes a pending "tune" proposal. The text is fixed by
+   * the bridge's rules, so there is no diagnosis run and no cost. At most TUNES_PER_WEEK per ISO week, and a suggestion
+   * (same rule and subject) is not proposed again for TUNE_QUIET_DAYS, whatever Jay decided. Returns how many were created.
+   */
+  proposeTunes(suggestions: readonly Suggestion[], days: number): { created: number; skippedWeekly: number; skippedDuplicate: number } {
+    const now = this.now();
+    const day = localDate(now, this.tz());
+    const week = isoWeek(day);
+    const existing = this.list().filter((p) => p.kind === "tune" && p.tune);
+    let inWeek = existing.filter((p) => isoWeek(localDate(new Date(p.createdAt), this.tz())) === week).length;
+    const quietFrom = now.getTime() - TUNE_QUIET_DAYS * 86_400_000;
+    const recent = new Set(existing.filter((p) => Date.parse(p.createdAt) >= quietFrom).map((p) => p.tune!.key));
+    const out = { created: 0, skippedWeekly: 0, skippedDuplicate: 0 };
+    for (const g of suggestions) {
+      if (recent.has(g.key)) { out.skippedDuplicate++; continue; }
+      if (inWeek >= TUNES_PER_WEEK) { out.skippedWeekly++; continue; }
+      const base = `${day}_${slugify(`tune ${g.subject}`)}`.slice(0, 71);
+      let id = base;
+      for (let v = 2; existsSync(this.file(id)); v++) id = `${base.slice(0, 66)}-v${v}`;
+      this.save({
+        id, createdAt: now.toISOString(), status: "pending", decidedAt: null, kind: "tune",
+        run: { id: "analysis", tier: "T2", dept: "ai", skill: null, routine: null, status: "analysis", error: null, denied: [], costUsd: null, capUsd: 0, prompt: `Run analysis, last ${days} days` },
+        whatBroke: oneLine(g.observation, 700),
+        diagnosis: { status: "skipped", note: "", runId: null, costUsd: null },
+        fix: oneLine(g.fix, 1200), learning: "", skillChange: null, applied: null, move: null,
+        tune: { key: g.key.slice(0, 120), kind: g.kind, subject: oneLine(g.subject, 80) },
+      });
+      this.log({ kind: "proposal", id, runId: "analysis", failure: "tune", diagnosis: "skipped" });
+      recent.add(g.key); inWeek++; out.created++;
+    }
+    return out;
+  }
+
+  /** Approving a tune only records the decision. It never changes config, a skill or a routine: Jay edits config himself. */
+  private approveTune(p: Proposal): Proposal {
+    p.status = "approved"; p.decidedAt = this.now().toISOString();
+    p.applied = { learningNote: null, skillFile: null, note: "Decision recorded. Nothing was changed; edit the config yourself." };
+    this.save(p);
+    this.log({ kind: "proposal-approved", id: p.id, note: "tune", skill: null });
+    return p;
+  }
+
   reject(id: string): Proposal {
     const p = this.decidable(id);
     p.status = "rejected"; p.decidedAt = this.now().toISOString();
@@ -359,6 +419,7 @@ export class LearningLoop {
   approve(id: string): Proposal {
     const p = this.decidable(id);
     if (p.kind === "move") return this.approveMove(p);
+    if (p.kind === "tune") return this.approveTune(p);
     if (p.diagnosis.status === "running") throw new RunError(409, "The diagnosis is still running. Wait a moment and try again.");
     const now = this.now();
     const day = localDate(now, this.tz());

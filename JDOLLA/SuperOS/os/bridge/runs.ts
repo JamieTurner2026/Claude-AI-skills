@@ -65,6 +65,15 @@ export type ClaudeBin = { cmd: string; prefixArgs: string[] };
 export const LIMITS = { T2: 3, T3: 1 } as const;
 const MAX_TOOLS_USED = 30;
 const MAX_NOTES_OPENED = 10;
+
+export const LOG_REQUEST_CHARS = 80;
+
+/** What to write to router.jsonl as the request: the first 80 characters of what Jay typed, on one plain line, or null. */
+function logRequest(run: RunInfo): string | null {
+  if (run.purpose !== "run" || run.skill || run.routine || run.dept === "inbox") return null;
+  const t = run.text.replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, " ").replace(/\s+/g, " ").trim().slice(0, LOG_REQUEST_CHARS);
+  return t || null;
+}
 const MAX_OUTPUT = 200_000;
 const MAX_KEPT = 50;
 const MAX_DELIVERABLES = 20;
@@ -109,7 +118,11 @@ export class RunManager {
     return () => this.endListeners.delete(fn);
   }
 
-  constructor(opts: { paths: Paths; config: () => OsConfig; bin: () => ClaudeBin; log: (line: LogLine) => void; sandbox?: () => SandboxStatus; brain?: BrainLink | null }) {
+  /** `logDir` is where router.jsonl is written; the tools server is told, so run_stats can read it. */
+  private logDir: string;
+
+  constructor(opts: { paths: Paths; config: () => OsConfig; bin: () => ClaudeBin; log: (line: LogLine) => void; sandbox?: () => SandboxStatus; brain?: BrainLink | null; logDir?: string }) {
+    this.logDir = opts.logDir ?? "";
     this.paths = opts.paths; this.config = opts.config; this.bin = opts.bin; this.log = opts.log;
     this.sandbox = opts.sandbox ?? (() => detectSandbox());
     this.brain = opts.brain ?? null;
@@ -168,7 +181,7 @@ export class RunManager {
       const policy = loadPolicy(this.paths);
       const tools = t3Tools(policy, req.skill);
       const brain = config.engine.brain.enabled && this.brain?.ensureFresh() ? this.brain.server() : null;
-      const mcp = buildRunMcp({ brain, tools: config.engine.tools.enabled ? scriptToolsFor(policy, req.skill) : [], timezone: config.timezones[0] ?? "America/New_York", vault: this.paths.vault });
+      const mcp = buildRunMcp({ brain, tools: config.engine.tools.enabled ? scriptToolsFor(policy, req.skill) : [], timezone: config.timezones[0] ?? "America/New_York", vault: this.paths.vault, logDir: this.logDir });
       built = buildClaudeArgs({ tier: req.tier, text: req.text, budgetUsd: cap, vault: this.paths.vault, workDir, t3Tools: tools, deny: allDenyRules(this.paths.vault), sandbox: this.sandbox(), mcp }, config);
     } catch (e) {
       if (e instanceof PolicyError || e instanceof ContainmentError) throw new RunError(400, e.message);
@@ -270,7 +283,13 @@ export class RunManager {
       if (run.status === "done" && run.tier === "T3") run.deliverables = this.copyDeliverables(run);
       run.child = null;
       this.emit(run, { type: "status", status: run.status, costUsd: run.costUsd, error: run.error, deliverables: run.deliverables });
-      this.log({ kind: "result", id, tier: run.tier, status: run.status, costUsd: run.costUsd, capUsd: cap, ms: Date.parse(run.endedAt) - Date.parse(run.startedAt), exit: code ?? -1, denied: run.denied.length });
+      this.log({
+        kind: "result", id, tier: run.tier, status: run.status, costUsd: run.costUsd, capUsd: cap, ms: Date.parse(run.endedAt) - Date.parse(run.startedAt), exit: code ?? -1, denied: run.denied.length,
+        // For the cost and failure report (analysis/): who the run was for, and whether it stopped at its budget cap.
+        purpose: run.purpose, skill: run.skill, routine: run.routine, dept: run.dept, capHit: run.status === "failed" && /budget cap/i.test(run.error ?? ""),
+        // The first 80 characters of an ordinary typed request only. Skill, routine and inbox-triage prompts are built by the bridge, so they log no text.
+        request: logRequest(run),
+      });
       run.listeners.clear();
       const onEnd = run.onEnd;
       run.onEnd = null;

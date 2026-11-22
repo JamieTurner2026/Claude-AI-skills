@@ -17,7 +17,7 @@ const Stored = z.object({
   createdAt: z.string().datetime({ offset: true }),
   status: z.enum(["pending", "approved", "rejected"]),
   decidedAt: z.string().datetime({ offset: true }).nullable(),
-  kind: z.enum(["budget", "failed", "blocked", "move", "uncited"]),
+  kind: z.enum(["budget", "failed", "blocked", "move", "uncited", "tune"]),
   run: z.object({ skill: z.string().nullable(), routine: z.string().nullable().optional() }).passthrough(),
   skillChange: z.object({ skill: z.string(), rule: z.string() }).nullable().optional(),
 }).passthrough();

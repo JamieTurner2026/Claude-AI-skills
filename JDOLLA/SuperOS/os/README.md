@@ -90,6 +90,10 @@ Setting up on the PC: see `../docs/PC-SETUP.md`.
 - `GET /api/proposals`, `POST /api/proposals/:id/approve|reject` sit behind the same session, origin and header checks. Approving is append-only: a new `wiki/_learnings/<id>.md` and one bullet under `## Learned rules` in the skill.
 - Switch it off with `engine.learning.enabled: false`.
 
+## Run analysis (Phase 10b)
+- `npm run analyse:runs -- [--days 30]` (`analysis/cli.ts`) prints spend, failure rates, costliest requests (80 characters), blocked calls and cap hits from `router.jsonl`. Read-only. `analysis/run-stats.ts` is the pure core (tolerant reader, stats, suggestion rules); the `run_stats {days}` tool and `POST /api/analysis/suggest` use it.
+- Suggestions become `tune` proposals: fixed text, no model run, 3 a week, no repeats for 28 days. Approving records the decision only; edit config yourself.
+
 ## Vault tools (Phase 6d)
 - Four read-only tools beside `today`, one module and test each in `tools/`: `recent_changes`, `link_check`, `vault_stats`, `list_reports`. Inputs are zod `.strict()`; results are names, titles, dates and counts, capped, never a note body.
 - `tools/vault.ts` is the one place that touches the vault: known top-level folders only, links never followed, dot entries and `.env*` skipped, `os/`, `logs/`, `raw/sessions/` and `outputs/_work/` never scanned. A `dept` argument must match a real `depts/<slug>.md`; no tool takes a path. `link_check` looks targets up in the scanned file set, never on disk. It is self-contained (node and zod only), so the tools server starts light.

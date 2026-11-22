@@ -126,3 +126,10 @@ test("the shipped routine is valid, weekly on Sunday 17:00, T2 at $0.25, switche
   assert.deepEqual(parseSchedule(r.schedule), { ok: true, schedule: { kind: "weekly", day: 0, hour: 17, minute: 0 } });
   assert.ok(existsSync(path.join(vault, "skills/proposals-review/SKILL.md")));
 });
+
+test("a run-analysis 'tune' proposal is counted by kind, is not a failure, and is not skipped", () => {
+  const t = makeToolVault();
+  put(t.vault, "proposals/2026-11_t1.json", proposal({ id: "t1", createdAt: "2026-11-15T10:00:00Z", status: "pending", kind: "tune", skill: null }));
+  const r = run(t.ctx, 30);
+  assert.deepEqual([r.byKind["tune"], r.skipped, r.repeatedFailures.length], [1, 0, 0]);
+});
