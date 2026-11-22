@@ -45,5 +45,8 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm test
+        env:
+          # spec ends with a list of the failing tests, so a red job names them at the bottom of its log
+          NODE_OPTIONS: --test-reporter=spec
       - run: npm run eval:router
       - run: npm run smoke
