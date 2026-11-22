@@ -60,7 +60,7 @@ Blocked on the PC session.
 ## Phase 10: learning loop v2
 - ~~10a~~ A weekly review of approved and rejected proposals, written as a report. Built 2026-11-21: skill draft `skills/proposals-review`, routine `proposals-review` (Sundays 17:00, ships off), read-only tool `proposals_summary`.
 - ~~10b~~ `router.jsonl` analysis. Built 2026-11-22 (PR #31): `npm run analyse -- runs`, the read-only `run_stats` tool, and "tune" proposals. Approving a tune only records the decision; Jay edits config himself.
-- 10c Learning scorecard: `npm run analyse -- learning` gives proposals per kind (made, approved, rejected, pending), the median days to a decision, and the skills with the most learned rules. Branch 3, queued.
+- ~~10c~~ Learning scorecard. Built 2026-11-22: `npm run analyse:learning [-- --days N] [--json]` gives proposals per kind (made, approved, rejected, pending), the median days to a decision, and the skills with the most learned rules. The weekly proposals review gets the median as a new row.
 
 ## Jay's list to finish the build (on the PC)
 1. `git status` (it must be clean), then `git pull`, then `npm install` in `os/`.
