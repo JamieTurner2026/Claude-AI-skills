@@ -102,6 +102,9 @@ Setting up on the PC: see `../docs/PC-SETUP.md`.
 
 - The vault-cleanup report has a `## Backups` section from the read-only tool `backup_status` (last result, days since the last success, a warning after 3 days). `npm run doctor` has a `Vault backup` row (own repo, remote named, remote passes `checkRemote`; files only, no network).
 
+## Setup checklist
+- `GET /api/setup` and the **Setup checklist** widget: Jay's list for the PC as rows (done / todo / manual) with the PC-SETUP section to follow. Logic in `bridge/setup.ts`, widget in `app/widgets/setup.ts`. Reads the doctor's checks and a few file checks only; shows states, never paths or content. Manual ticks are per browser (localStorage).
+
 ## Status check (Phase 9b)
 - `GET /api/health` (session required) reports version, uptime, scheduler, routines on, spend vs cap, last run, brain index age, embeddings and pending proposals. `npm run status` prints it (exit 0 running, 1 not running, 2 unusable answer). The dashboard's Health strip shows it. Logic: `bridge/health.ts`, `bridge/status.ts`, `shared/health.ts`. No tray icon.
 
