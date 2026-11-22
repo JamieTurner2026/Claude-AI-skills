@@ -312,7 +312,10 @@ test("a remote that moved on is never forced: the push is refused, the remote's 
 
 test("a git that cannot sign in or does not know who you are gives a plain message", async () => {
   const noId = makeBackupVault({ identity: false });
-  const isolated = makeGit(noId.vault, { ...process.env, GIT_CONFIG_GLOBAL: os.devNull, GIT_CONFIG_NOSYSTEM: "1", HOME: tmp("nohome-"), USERPROFILE: tmp("nohome-"), EMAIL: "", GIT_AUTHOR_NAME: "", GIT_AUTHOR_EMAIL: "", GIT_COMMITTER_NAME: "", GIT_COMMITTER_EMAIL: "" });
+  // An empty global config file, not os.devNull: Git for Windows cannot open \\.\nul as a config file ("Invalid argument").
+  const emptyGlobal = path.join(tmp("noglobal-"), "gitconfig");
+  writeFileSync(emptyGlobal, "");
+  const isolated = makeGit(noId.vault, { ...process.env, GIT_CONFIG_GLOBAL: emptyGlobal, GIT_CONFIG_NOSYSTEM: "1", HOME: tmp("nohome-"), USERPROFILE: tmp("nohome-"), EMAIL: "", GIT_AUTHOR_NAME: "", GIT_AUTHOR_EMAIL: "", GIT_COMMITTER_NAME: "", GIT_COMMITTER_EMAIL: "" });
   const r = await runBackup(base(noId.vault, noId.remote, { git: isolated }));
   assert.equal(r.status, "failed");
   assert.match(r.message, /^git does not know who you are\./);
