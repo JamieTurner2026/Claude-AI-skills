@@ -193,7 +193,7 @@ test("findNpmCli: npm_execpath only when it is npm-cli.js, else next to node on 
 });
 
 test("the real runner never uses a shell, and npm is started through node, never npm.cmd", () => {
-  const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "update.ts"), "utf8");
+  const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "update.ts"), "utf8").replace(/\r\n/g, "\n"); // a Windows checkout has CRLF
   assert.match(src, /spawnSync\(cmd, \[\.\.\.args\], \{\n\s+cwd, shell: false,/);
   assert.ok(!/shell: true/.test(src));
   assert.ok(!/spawn(Sync)?\(\s*["']npm/.test(src) && !/["']npm\.cmd["']/i.test(src), "npm is never spawned by name, and npm.cmd is never named");
