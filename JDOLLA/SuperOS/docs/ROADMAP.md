@@ -16,9 +16,11 @@ How the build continues after Phase 5, and who builds what. The main session pla
 | 3 (part) | Search index and the `superos-brain` MCP server, wired into every run | `os/brain` |
 | 4 | Scheduler, routines, daily cap (now $2/day) | `os/bridge/routine-runner.ts` |
 | 5 | Learning loop (proposals Jay approves) and the safe tools layer (`today`) | `os/bridge/learning.ts`, `os/tools` |
+| 6 | Daily OS: vault generators, session import, skill runner, inbox triage, safe tools (PRs #13–#22) | `os/vault`, `os/bridge`, `os/tools` |
+| 7 | Sharper brain: brain and router evals (router 72/72), local meaning search (opt-in), freshness, sources under every claim (PRs #20–#30) | `os/brain`, `shared/router*`, `evals/` |
 | — | Seven department agents as inert skill drafts | `skills/` |
 
-## Phase 6: the daily OS (now)
+## Phase 6: the daily OS (done 2026-11-21)
 Make the vault keep itself current and let Jay use every skill from the dashboard.
 
 | Step | What | Builder | Folders |
@@ -29,7 +31,7 @@ Make the vault keep itself current and let Jay use every skill from the dashboar
 | 6d | **More safe tools**, each read-only with tests: `recent_changes` (notes changed in N days), `link_check` (broken `[[links]]`), `vault_stats` (counts, notes without sources), `list_reports` | Branch 2, after 6e | `os/tools/` only |
 | 6e | **Inbox triage:** a T2 run proposes where each `inbox/` file belongs. The proposals use the Phase 5 widget with a new "move" kind, and the bridge moves files only on Approve | Branch 2 (started) | `os/bridge/learning.ts`, `os/app` |
 
-## Phase 7: a sharper second brain (next; planned 2026-11-20)
+## Phase 7: a sharper second brain (done 2026-11-21)
 **Goal:** the brain finds the right note, shows a source under every claim, and proves with numbers that it is getting better.
 
 | Step | What | Builder | Done when |
@@ -47,20 +49,32 @@ The vault has only 26 notes today, so 7a's gain in the cloud will be small. The 
 - **8a Gmail, read-only:** only the "Brain" label, imported as untrusted `raw/` notes. Drafts only; nothing is sent.
 - **8b Google Calendar, read-only:** today's events go into the daily note and `plan-today`.
 - **8c Morning page:** `morning-intel` uses 8a and 8b. It stays report-only.
-Blocked until Jay names the label and connects Calendar.
+Prep (branch 2, started 2026-11-22): offline adapters that read feed files in `inbox/_feeds/`, a daily-note section and two read-only tools. No account is connected.
+Connecting is blocked until Jay names the label and connects Calendar.
 
 ## Phase 9: the PC
-- **9a Windows checks:** Jay runs PC-SETUP section 11; each result becomes a fix task.
-- **9b Start with Windows:** the bridge starts at login, with a tray or status check. Prep built 2026-11-22: `npm run autostart` (per-user Task Scheduler task, untested on Windows). Still open: the tray or status check.
+- **9a Windows checks:** Jay runs PC-SETUP section 11; each result becomes a fix task. Prep built 2026-11-22: `npm run doctor` prints pass/warn/fail with the PC-SETUP section to fix (PR #32).
+- **9b Start with Windows:** the bridge starts at login, with a tray or status check. Prep built 2026-11-22: `npm run autostart` (per-user Task Scheduler task, untested on Windows; PR #33). Still open: the tray or status check.
 - **9c Backups:** the vault's own private git repo, committed nightly by a routine; a vault note never goes into this public repo.
 Blocked on the PC session.
 
 ## Phase 10: learning loop v2
 - ~~10a~~ A weekly review of approved and rejected proposals, written as a report. Built 2026-11-21: skill draft `skills/proposals-review`, routine `proposals-review` (Sundays 17:00, ships off), read-only tool `proposals_summary`.
-- `router.jsonl` analysis: which tiers cost the most and which runs fail most, plus suggested routing and budget changes. These arrive as proposals and are never applied on their own.
+- ~~10b~~ `router.jsonl` analysis. Built 2026-11-22 (PR #31): `npm run analyse -- runs`, the read-only `run_stats` tool, and "tune" proposals. Approving a tune only records the decision; Jay edits config himself.
+- 10c Learning scorecard: `npm run analyse -- learning` gives proposals per kind (made, approved, rejected, pending), the median days to a decision, and the skills with the most learned rules. Branch 3, queued.
+
+## Jay's list to finish the build (on the PC)
+1. `git status` (it must be clean), then `git pull`, then `npm install` in `os/`.
+2. `npm run doctor`; fix each fail at the PC-SETUP section it names.
+3. `npm run check` and `npm test`; send the pass count (that is 9a).
+4. `npm run brain -- index --embeddings` (opt-in, about 420 MB), then `npm run brain -- eval`.
+5. Session import (PC-SETUP 5b), then run the eval again.
+6. `npm run autostart`, then follow its two printed steps.
+7. Decide three things: the private Brain repo name; the Gmail "Brain" label and Calendar connect; whether the cloud allowlist keeps the huggingface hosts.
 
 ## Queue
-- **Branch 2:** ~~6a~~ → ~~6c~~ → 6e (now) → 6d → 7d → 7e
-- **Branch 3:** ~~6b~~ → 7b → 7a → 7c (waiting for Jay's OK in its chat)
+- **Branch 2:** Phase 8 prep (offline Gmail and Calendar adapters), now
+- **Branch 3:** q30 "what should I do today" fix (waiting for Jay's go in its chat) → 10c
+- **Branch 4:** `npm run smoke` and the PC-SETUP rewrite
 - **Main session:** review and merge each PR, keep this file and the Brain page current
-- **Waiting on Jay:** Phase 8 (Gmail label, Calendar), Phase 9 (PC session), the private Brain repo name, PR #1
+- **Waiting on Jay:** Phase 8 (Gmail label, Calendar), Phase 9 (PC session: doctor, tests, embeddings, session import, autostart), the private Brain repo name, the cloud allowlist's huggingface hosts, PR #1
