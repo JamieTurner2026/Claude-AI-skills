@@ -133,3 +133,16 @@ test("a run-analysis 'tune' proposal is counted by kind, is not a failure, and i
   const r = run(t.ctx, 30);
   assert.deepEqual([r.byKind["tune"], r.skipped, r.repeatedFailures.length], [1, 0, 0]);
 });
+
+test("the weekly review gets the median days to a decision and learned-rule counts (counts only)", () => {
+  const { vault, ctx } = setup();
+  put(vault, "skills/plan-today/SKILL.md", "# Plan\n## Learned rules\n- PROPSECRET rule\n- second\n## Next\n- not counted\n");
+  const r = proposalsSummary.run(proposalsSummary.input.parse({ days: 30 }), ctx) as { medianDaysToDecision: number | null; learnedRules: { skill: string; rules: number }[] };
+  // Decided in the window: p2 (1 h), p3 (4 h), p4 (1 h), p6 (1 h) -> median 1 h = 0.04 d -> 0
+  assert.equal(r.medianDaysToDecision, 0);
+  assert.deepEqual(r.learnedRules, [{ skill: "plan-today", rules: 2 }]);
+  assert.ok(!JSON.stringify(r).includes("PROPSECRET"));
+  const { ctx: empty } = makeToolVault();
+  assert.equal((proposalsSummary.run({ days: 7 }, empty) as { medianDaysToDecision: number | null }).medianDaysToDecision, null);
+});
+

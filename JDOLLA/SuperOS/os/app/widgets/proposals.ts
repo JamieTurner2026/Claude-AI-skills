@@ -3,6 +3,7 @@
 // everything as it is. The bridge does the writing; this widget only asks.
 import type { InboxView, ProposalView, ProposalsView } from "../../shared/types.ts";
 import { h } from "../dom.ts";
+import { KINDS, KIND_LABEL, START, countByKind, ignoreKey, onKey, visible, whyLine, type Filter, type KeyState } from "../../shared/proposals-view.ts";
 import type { Widget } from "./_template.ts";
 
 const money = (n: number) => `$${n.toFixed(2)}`;
@@ -17,6 +18,11 @@ export const proposals: Widget = {
   render(body, ctx) {
     let alive = true;
     let timer: ReturnType<typeof setTimeout> | null = null;
+    // 10d: the chosen filter chip and the keyboard state survive each reload of the list.
+    let filter: Filter = "all";
+    let keys: KeyState = START;
+    let last: { v: ProposalsView; inbox: InboxView | null } | null = null;
+    let shown: ProposalView[] = [];
     const load = () => Promise.all([ctx.api.proposals(), ctx.api.inbox().catch(() => null)]).then(([v, inbox]) => draw(v, inbox), (e: unknown) => { if (alive) body.replaceChildren(h("p", { class: "empty" }, e instanceof Error ? e.message : "Could not load proposals.")); });
     const sort = () => void ctx.api.sortInbox().then(
       () => { ctx.toast("Sorting the inbox (up to $0.05). Suggested moves will appear here."); void load(); },
@@ -36,8 +42,24 @@ export const proposals: Widget = {
       },
       (e: unknown) => { ctx.toast(e instanceof Error ? e.message : "Could not do that."); void load(); });
 
+    const redraw = () => { if (last) draw(last.v, last.inbox); };
+    body.setAttribute("tabindex", "0");
+    body.setAttribute("aria-keyshortcuts", "j k a r y n Escape");
+    const onKeydown = (ev: KeyboardEvent) => {
+      const t = ev.target as HTMLElement | null;
+      if (ignoreKey({ key: ev.key, ctrlKey: ev.ctrlKey, metaKey: ev.metaKey, altKey: ev.altKey, targetTag: t?.tagName ?? "", editable: Boolean(t?.isContentEditable) })) return;
+      const r = onKey(keys, ev.key, shown.map((p) => ({ id: p.id, pending: p.status === "pending", busy: p.diagnosis.status === "running" })));
+      if (!r.handled) return;
+      ev.preventDefault();
+      keys = r.state;
+      const p = r.decide ? shown.find((x) => x.id === r.decide?.id) : undefined;
+      if (p && r.decide) decide(p, r.decide.decision); else redraw();
+    };
+    body.addEventListener("keydown", onKeydown);
+
     function draw(v: ProposalsView, inbox: InboxView | null): void {
       if (!alive) return;
+      last = { v, inbox };
       if (timer) { clearTimeout(timer); timer = null; }
       body.replaceChildren();
       if (inbox) {
@@ -60,12 +82,26 @@ export const proposals: Widget = {
         body.append(h("p", { class: "empty" }, "No proposals. When a run fails, gets blocked or hits its cap, a suggested fix shows up here for you to approve or reject."));
         return;
       }
-      const ordered = [...v.proposals.filter((p) => p.status === "pending"), ...v.proposals.filter((p) => p.status !== "pending")];
-      for (const p of ordered) {
+      const counts = countByKind(v.proposals);
+      if (filter !== "all" && counts[filter] === 0) filter = "all";
+      const chips = h("div", { class: "chips", role: "toolbar", "aria-label": "Filter proposals by kind" });
+      for (const f of ["all", ...KINDS] as Filter[]) {
+        if (f !== "all" && counts[f] === 0) continue;
+        const chip = h("button", { type: "button", class: "chip", "aria-pressed": String(filter === f), "data-kind": f,
+          click: () => { filter = f; keys = START; redraw(); } }, f === "all" ? "All " : `${KIND_LABEL[f]} `, h("b", {}, String(counts[f])));
+        chips.append(chip);
+      }
+      body.append(chips);
+      shown = visible(v.proposals, filter);
+      keys = { index: Math.max(0, Math.min(shown.length - 1, keys.index)), ask: keys.ask && shown.some((x) => x.id === keys.ask?.id) ? keys.ask : null };
+      body.append(h("p", { class: "meta keys" }, "Keys (click here first): j/k move · a approve · r reject · each asks y/n first"));
+      shown.forEach((p, i) => {
         const subject = p.move ? p.move.file : p.run.routine ?? p.run.skill ?? `${p.run.tier} ${p.run.tier === "T2" ? "question" : "work"}`;
-        const item = h("div", { class: `pr ${p.status}` },
+        const item = h("div", { class: `pr ${p.status}${i === keys.index ? " sel" : ""}`, "data-id": p.id, click: () => { if (keys.index !== i) { keys = { index: i, ask: null }; redraw(); body.focus(); } } },
           h("div", { class: "prtop" }, h("span", { class: "nm" }, `${KIND[p.kind]}: ${subject}`), h("span", { class: "meta" }, when(p.createdAt))),
           h("p", { class: "what" }, p.move ? `Move inbox/${p.move.file} to ${p.move.movedTo ?? p.move.to}${p.move.reason ? `. ${p.move.reason}` : ""}` : p.whatBroke));
+        const why = whyLine(p);
+        if (why) item.append(h("p", { class: "why" }, why));
         if (p.kind === "tune") item.append(h("p", { class: "meta" }, TUNE_NOTICE));
         if (p.diagnosis.status === "running") item.append(h("p", { class: "meta" }, "Drafting a fix..."));
         if (p.fix) item.append(h("p", {}, h("b", {}, "Fix: "), p.fix));
@@ -73,6 +109,10 @@ export const proposals: Widget = {
         if (p.skillChange) item.append(h("p", {}, h("b", {}, `Add to /${p.skillChange.skill}: `), p.skillChange.rule));
         if (p.diagnosis.note) item.append(h("p", { class: "meta" }, p.diagnosis.note));
         if (p.diagnosis.costUsd !== null) item.append(h("p", { class: "meta" }, `Diagnosis cost ${money(p.diagnosis.costUsd)}`));
+        if (keys.ask?.id === p.id) {
+          item.append(h("div", { class: "ask", role: "alert" },
+            h("span", {}, `${keys.ask.decision === "approve" ? "Approve" : "Reject"} this? `), h("b", {}, "y"), " yes · ", h("b", {}, "n"), " no"));
+        }
         if (p.status === "pending") {
           const approve = h("button", { type: "button", class: "runnow approve", click: () => decide(p, "approve") }, "Approve");
           if (p.diagnosis.status === "running") (approve as HTMLButtonElement).disabled = true;
@@ -81,11 +121,12 @@ export const proposals: Widget = {
           item.append(h("p", { class: "meta" }, `${p.status === "approved" ? "Approved" : "Rejected"} ${p.decidedAt ? when(p.decidedAt) : ""}${p.applied?.note ? ` · ${p.applied.note}` : ""}`));
         }
         body.append(item);
-      }
+      });
+      if (!shown.length) body.append(h("p", { class: "empty" }, "Nothing of this kind."));
     }
 
     body.append(h("p", { class: "empty" }, "Loading proposals..."));
     void load();
-    return () => { alive = false; if (timer) clearTimeout(timer); };
+    return () => { alive = false; if (timer) clearTimeout(timer); body.removeEventListener("keydown", onKeydown); };
   },
 };

@@ -13,6 +13,13 @@ export const VECTORS_SQL = `CREATE TABLE IF NOT EXISTS vectors (
 export const RRF_K = 60;
 /** How deep each list goes before fusion. */
 const DEPTH = 50;
+/**
+ * A vector match below this cosine similarity gets no vote in the fusion. Without it, the top 50 vector
+ * matches always vote, even when every one of them is near noise (all-MiniLM-L6-v2 puts unrelated
+ * sentences around 0 to 0.2), and those weak votes can push a strong keyword hit out of the results.
+ * 0.15: the highest floor at which no eval question got worse (sweep in docs/STATUS.md, 2026-11-22).
+ */
+export const MIN_SIMILARITY = 0.15;
 
 interface DocRow { id: number; path: string; heading: string; dept: string; type: string; title: string; updated: string; trusted: number; text: string }
 
@@ -75,7 +82,7 @@ export function vectorCoverage(db: DatabaseSync, model: string): number {
 }
 
 /** Chunks ranked by cosine similarity to the query vector (vectors are normalised, so dot = cosine). */
-export function vectorRank(db: DatabaseSync, model: string, query: Float32Array, input: SearchInput): { row: DocRow; score: number }[] {
+export function vectorRank(db: DatabaseSync, model: string, query: Float32Array, input: SearchInput, minSimilarity = MIN_SIMILARITY): { row: DocRow; score: number }[] {
   if (!hasVectorTable(db)) return [];
   const p = SearchInput.parse(input);
   const vecs = new Map((db.prepare("SELECT key, vec FROM vectors WHERE model = ?").all(model) as { key: string; vec: Uint8Array }[]).map((r) => [r.key, r.vec]));
@@ -85,7 +92,9 @@ export function vectorRank(db: DatabaseSync, model: string, query: Float32Array,
     if (p.dept && r.dept !== p.dept) continue;
     if (p.trustedOnly && Number(r.trusted) !== 1) continue;
     const b = vecs.get(vectorKey(model, embedText(r)));
-    if (b) out.push({ row: r, score: dot(query, fromBlob(b)) });
+    if (!b) continue;
+    const score = dot(query, fromBlob(b));
+    if (score >= minSimilarity) out.push({ row: r, score });
   }
   return out.sort((a, b) => b.score - a.score).slice(0, DEPTH);
 }
@@ -103,11 +112,11 @@ const snippetOf = (text: string): string => text.replace(/\s+/g, " ").slice(0, 2
  * Hybrid search. With no query vector (no model, or a failure loading it) this is exactly keyword search.
  * Same filters and same SearchHit shape as search(), so callers and fencing do not change.
  */
-export function hybridSearch(db: DatabaseSync, raw: SearchInput, query: { model: string; vector: Float32Array } | null): SearchHit[] {
+export function hybridSearch(db: DatabaseSync, raw: SearchInput, query: { model: string; vector: Float32Array } | null, minSimilarity = MIN_SIMILARITY): SearchHit[] {
   const input = SearchInput.parse(raw);
   const kw = search(db, { ...input, limit: DEPTH });
   if (!query) return kw.slice(0, input.limit);
-  const vr = vectorRank(db, query.model, query.vector, input);
+  const vr = vectorRank(db, query.model, query.vector, input, minSimilarity);
   if (!vr.length) return kw.slice(0, input.limit);
   const byId = new Map<number, SearchHit>(kw.map((h) => [h.id, h]));
   for (const { row, score } of vr) {

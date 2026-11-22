@@ -18,8 +18,10 @@
     "backup": "node backup/cli.ts",
     "vault": "node vault/cli.ts",
     "analyse:runs": "node analysis/cli.ts",
+    "analyse:learning": "node analysis/learning-cli.ts",
     "eval:router": "node shared/router-eval-cli.ts",
-    "doctor": "node bridge/doctor.mjs"
+    "doctor": "node bridge/doctor.mjs",
+    "smoke": "node bridge/smoke-cli.ts"
   },
   "dependencies": {
     "zod": "^3.25.0"

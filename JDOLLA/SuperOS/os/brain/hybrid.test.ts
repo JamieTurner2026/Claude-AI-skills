@@ -209,3 +209,41 @@ describe("eval: keyword vs hybrid", () => {
     assert.match(partial.note, /cover 0%/);
   });
 });
+
+describe("similarity floor", () => {
+  // Query vector e1. Notes about "plan" sit at cosine 0.1 (noise); the directives note is orthogonal (0).
+  const QUERY = "plan today";
+  const weak: Embedder = {
+    id: "weak@1", dimensions: 2,
+    embed: async (texts) => texts.map((t) => t === QUERY ? new Float32Array([1, 0]) : /plan/i.test(t) ? new Float32Array([0.1, Math.sqrt(1 - 0.01)]) : new Float32Array([0, 1])),
+  };
+  function vaultWithNoise() {
+    const { vault, dir } = makeBrainVault();
+    const w = (rel: string, text: string) => { const f = path.join(vault, rel); mkdirSync(path.dirname(f), { recursive: true }); writeFileSync(f, text); };
+    w("wiki/directives.md", "# Directives\nToday's checklist.\n");
+    for (let i = 0; i < 6; i++) w(`wiki/strategy/plan${i}.md`, `# Plan ${i}\nA long plan about plan number ${i} and more plan words here.\n`);
+    const dbPath = path.join(dir, "index.sqlite");
+    rebuildIndex(vault, dbPath);
+    return dbPath;
+  }
+  it("near-noise vector matches get no vote, so a strong keyword hit keeps its place", async () => {
+    const dbPath = vaultWithNoise();
+    await embedAll(dbPath, weak);
+    const [v] = await weak.embed([QUERY]);
+    const db = openReadOnly(dbPath);
+    try {
+      const kwRank = search(db, { query: QUERY, limit: 50 }).findIndex((h) => h.path === "wiki/directives.md");
+      assert.ok(kwRank >= 0, "fixture: keyword search finds the directives note");
+      const floored = hybridSearch(db, { query: QUERY, limit: 50 }, { model: weak.id, vector: v! }).findIndex((h) => h.path === "wiki/directives.md");
+      const unfloored = hybridSearch(db, { query: QUERY, limit: 50 }, { model: weak.id, vector: v! }, 0).findIndex((h) => h.path === "wiki/directives.md");
+      assert.equal(floored, kwRank, "with the floor, noise votes are ignored: keyword order stands");
+      assert.ok(unfloored > floored, `control: without the floor the noise votes push it down (${unfloored} vs ${floored})`);
+    } finally { db.close(); }
+  });
+  it("matches above the floor still vote", async () => {
+    const { dbPath } = setup();
+    const e = new FakeEmbedder();
+    await embedAll(dbPath, e);
+    assert.equal((await hybrid(dbPath, e, "automobile"))[0]?.path, "wiki/software/garage.md");
+  });
+});

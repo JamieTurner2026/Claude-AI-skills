@@ -9,6 +9,7 @@ npm run open    # opens the dashboard in your browser, signed in
 npm run check   # type check
 npm test        # tests
 npm run doctor  # is this PC ready? PASS/WARN/FAIL per check, each with the PC-SETUP section that fixes it
+npm run smoke   # after every update: the real bridge on a temp copy of the vault, fake CLI, no cost, PASS/FAIL per step
 ```
 
 - `shared/` contract types and the three-tier router (no dependencies).
@@ -91,7 +92,7 @@ Setting up on the PC: see `../docs/PC-SETUP.md`.
 - Switch it off with `engine.learning.enabled: false`.
 
 ## Vault backup (Phase 9c prep)
-- `backup/` commits an allowlist of vault content to the vault's own git repo and pushes it to the one private GitHub repo named in `engine.backup.remote`. Off until Jay sets it up (PC-SETUP 10h). `npm run backup -- --dry-run` lists what would go. Refuses the public repo and any vault inside a repo that points at it. Routine `vault-backup` is a built-in routine kind: no model, $0.
+- `backup/` commits an allowlist of vault content to the vault's own git repo and pushes it to the one private GitHub repo named in `engine.backup.remote`. Off until Jay sets it up (PC-SETUP §10.1). `npm run backup -- --dry-run` lists what would go. Refuses the public repo and any vault inside a repo that points at it. Routine `vault-backup` is a built-in routine kind: no model, $0.
 
 ## Status check (Phase 9b)
 - `GET /api/health` (session required) reports version, uptime, scheduler, routines on, spend vs cap, last run, brain index age, embeddings and pending proposals. `npm run status` prints it (exit 0 running, 1 not running, 2 unusable answer). The dashboard's Health strip shows it. Logic: `bridge/health.ts`, `bridge/status.ts`, `shared/health.ts`. No tray icon.
