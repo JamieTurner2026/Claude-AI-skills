@@ -328,6 +328,11 @@ test("git missing from the PC: a plain message, nothing else", async () => {
   const { vault, remote } = makeBackupVault();
   const r = await runBackup(base(vault, remote, { git: async () => ({ code: null, stdout: "", stderr: "git could not be started" }) }));
   assert.deepEqual([r.status, /not installed/.test(r.message)], ["failed", true]);
+  // A git that starts but fails is not "not installed": its own first error line is shown instead.
+  const broken = await runBackup(base(vault, remote, { git: async () => ({ code: 128, stdout: "", stderr: "fatal: bad config line 1 in file C:/x\nmore" }) }));
+  assert.equal(broken.status, "failed");
+  assert.equal(/not installed/.test(broken.message), false);
+  assert.match(broken.message, /^git did not start cleanly: fatal: bad config line 1 in file C:\/x\. Nothing was committed or pushed\.$/);
 });
 
 test("the last result is recorded for the Health strip (not for a dry run), and a damaged record reads as none", () => {
