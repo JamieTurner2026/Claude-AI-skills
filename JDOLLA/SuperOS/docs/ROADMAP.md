@@ -53,7 +53,7 @@ The vault has only 26 notes today, so 7a's gain in the cloud will be small. The 
 
 ## Phase 9: the PC
 - **9a Windows checks:** Jay runs PC-SETUP section 11; each result becomes a fix task. Prep built 2026-11-22: `npm run doctor` prints pass/warn/fail with the PC-SETUP section to fix (PR #32).
-- **9b Start with Windows:** the bridge starts at login, with a tray or status check. Prep built 2026-11-22: `npm run autostart` (per-user Task Scheduler task, untested on Windows; PR #33). Still open: the tray or status check.
+- **9b Start with Windows:** the bridge starts at login, with a tray or status check. Prep built 2026-11-22: `npm run autostart` (per-user Task Scheduler task, untested on Windows; PR #33). Status check built 2026-11-22: `GET /api/health`, `npm run status` and a Health strip on the dashboard (PR in review). Still open: a tray icon (Windows-only, cannot be built or tested in the cloud).
 - **9c Backups:** the vault's own private git repo, committed nightly by a routine; a vault note never goes into this public repo.
 Blocked on the PC session.
 

@@ -10,6 +10,7 @@
   "scripts": {
     "start": "node bridge/server.ts",
     "open": "node bridge/open.ts",
+    "status": "node bridge/status.ts",
     "autostart": "node bridge/autostart.ts",
     "check": "tsc --noEmit",
     "test": "node --test \"shared/*.test.ts\" \"bridge/*.test.ts\" \"brain/*.test.ts\" \"tools/*.test.ts\" \"analysis/*.test.ts\" \"sources/*.test.ts\" \"vault/*.test.ts\"",
