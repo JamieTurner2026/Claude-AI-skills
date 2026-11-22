@@ -16,6 +16,7 @@
   "layout": [
     { "widget": "directives", "span": 2 },
     { "widget": "clock", "span": 1 },
+    { "widget": "setup", "span": 3 },
     { "widget": "departments", "span": 2 },
     { "widget": "routines", "span": 1 },
     { "widget": "skills", "span": 3 },

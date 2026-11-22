@@ -189,6 +189,8 @@ npm run open
 
 Your browser opens the dashboard, already signed in. The sign-in lasts 24 hours; run `npm run open` again after that. If no browser opens, see Troubleshooting.
 
+**The Setup checklist.** Near the top of the dashboard, a **Setup checklist** widget lists the steps still left on this PC: doctor passes, tests run, meaning search on, sessions imported, autostart registered, backup set up, mail and calendar feeds present. Each row says done, to do, or (for the tests, which the dashboard cannot see) a box for you to tick; the `PC-SETUP §…` button opens this file. Ticks are kept in this browser only. The widget hides itself when every row is done. Optional steps (meaning search, sessions, backup, feeds) stay "to do" until you do them. If the widget is missing from an older layout, add `{ "widget": "setup", "span": 3 }` to `layout` in `os\config\os.config.json`.
+
 ## 8. First real question (costs up to $0.05)
 
 Type a question about your notes in the command bar, for example *"What are my seven departments?"*, and press Enter. It routes as T2 and starts at once. You should see:

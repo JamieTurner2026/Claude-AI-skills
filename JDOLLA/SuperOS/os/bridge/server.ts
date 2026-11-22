@@ -26,7 +26,12 @@ import { buildAll } from "../vault/generate.ts";
 import { usagePathFor } from "../brain/usage.ts";
 import { SKILL_SLUG, findSkill } from "./skills.ts";
 import { statsFromLogDir, suggestChanges } from "../analysis/run-stats.ts";
-import { buildHealth } from "./health.ts";
+import { autostartFact, buildSetup, countSessionNotes, feedFacts } from "./setup.ts";
+import { brainHealth, buildHealth } from "./health.ts";
+import { defaultDeps as doctorDeps } from "./doctor-cli.ts";
+import { runDoctor } from "./doctor.ts";
+import type { Check } from "./doctor.ts";
+import { defaultEnv as autostartEnv } from "./autostart.ts";
 import { runBackup } from "../backup/backup.ts";
 import type { BackupOptions } from "../backup/backup.ts";
 import { readBackupRecord, writeBackupRecord } from "../backup/record.ts";
@@ -57,10 +62,11 @@ export type Bridge = { server: http.Server; secret: string; paths: Paths; mint: 
 
 const VAULT_EVERY_MS = 30 * 60_000;
 
-export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line: string) => void; claudeBin?: ClaudeBin; logDir?: string; sandbox?: () => SandboxStatus; schedulerOn?: boolean; brainDbPath?: string; now?: () => Date; /** Tests only: never from config. */ backupOptions?: Pick<BackupOptions, "allowFileRemote" | "publicRepos" | "spy"> } = {}): Bridge {
+export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line: string) => void; claudeBin?: ClaudeBin; logDir?: string; sandbox?: () => SandboxStatus; schedulerOn?: boolean; brainDbPath?: string; now?: () => Date; /** Tests only: never from config. */ backupOptions?: Pick<BackupOptions, "allowFileRemote" | "publicRepos" | "spy">; /** Tests only: swap what the Setup checklist reads. */ setup?: { doctor?: () => Promise<Check[]>; autostartStateFile?: string; platform?: string } } = {}): Bridge {
   const paths = pathsFor(osDir);
   const secret = loadOrCreateSecret(paths);
   const startedAtMs = Date.now();
+  let setupDoctorCache: { at: number; checks: Check[] } | null = null;
   const version = (() => { try { return z.object({ version: z.string().max(40) }).parse(JSON.parse(readFileSync(path.join(paths.os, "package.json"), "utf8"))).version; } catch { return "unknown"; } })();
   const opener = opts.opener ?? systemOpener;
   const log = opts.log ?? (() => undefined);
@@ -201,6 +207,23 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
       const stats = statsFromLogDir(opts.logDir ?? logDir(paths), (opts.now ?? (() => new Date()))(), days);
       const found = suggestChanges(stats, { routineMaxBudgetUsd: cfg.engine.routines.maxBudgetUsd, dailyCapUsd: cfg.engine.routines.dailyCapUsd, t2CapUsd: cfg.engine.t2.maxBudgetUsd });
       return send(res, 200, { days, found: found.length, ...learning.proposeTunes(found, days) });
+    }
+    // Setup checklist: one row per step of Jay's list. Reads only: the doctor's own checks (cached for a minute), file
+    // and folder existence, the brain index and the autostart state file. No network. A foreign Origin is refused too.
+    if (url.pathname === "/api/setup") {
+      if (req.method !== "GET") throw new HttpError(405, "Method not allowed.");
+      const origin = req.headers.origin;
+      if (origin && !ownOrigins().some((o) => origin === `http://${o}`)) throw new HttpError(403, "Wrong origin.");
+      let doctor: Check[] | null = null;
+      if (setupDoctorCache && Date.now() - setupDoctorCache.at < 60_000) doctor = setupDoctorCache.checks;
+      else {
+        try { doctor = await (opts.setup?.doctor ?? (() => runDoctor(doctorDeps(paths.os))))(); setupDoctorCache = { at: Date.now(), checks: doctor }; } catch { doctor = null; }
+      }
+      const platform = opts.setup?.platform ?? process.platform;
+      return send(res, 200, buildSetup({
+        doctor, embeddings: brainHealth(brain.dbPath, Date.now()).embeddings, sessions: countSessionNotes(paths.vault),
+        autostart: autostartFact(opts.setup?.autostartStateFile ?? autostartEnv().stateFile, platform), feeds: feedFacts(paths.vault),
+      }));
     }
     // Health (9b): counts, states and times only. Same session check as every API call; a foreign Origin is refused too.
     if (url.pathname === "/api/health") {

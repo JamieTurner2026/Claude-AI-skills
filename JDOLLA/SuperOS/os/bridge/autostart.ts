@@ -153,9 +153,21 @@ export function planHash(env: Env): string {
 function shownPlan(env: Env): string | null {
   try { return (JSON.parse(readFileSync(env.stateFile, "utf8")) as { shown?: string }).shown ?? null; } catch { return null; }
 }
-function rememberPlan(env: Env, hash: string): void {
+function readState(env: Env): Record<string, unknown> {
+  try { const v = JSON.parse(readFileSync(env.stateFile, "utf8")) as unknown; return typeof v === "object" && v !== null && !Array.isArray(v) ? v as Record<string, unknown> : {}; } catch { return {}; }
+}
+function writeState(env: Env, state: Record<string, unknown>): void {
   mkdirSync(path.dirname(env.stateFile), { recursive: true });
-  writeFileSync(env.stateFile, JSON.stringify({ shown: hash, at: new Date().toISOString() }) + "\n");
+  writeFileSync(env.stateFile, JSON.stringify(state) + "\n");
+}
+function rememberPlan(env: Env, hash: string): void {
+  writeState(env, { ...readState(env), shown: hash, at: new Date().toISOString() });
+}
+/** After Task Scheduler accepted the task: the Setup checklist reads this (no process, no probing). Removed again by `remove`. */
+function rememberInstalled(env: Env, on: boolean): void {
+  const state = readState(env);
+  if (on) state["installed"] = true; else delete state["installed"];
+  writeState(env, state);
 }
 
 /** UTF-16 LE with a byte-order mark: the encoding schtasks /XML reads reliably. */
@@ -196,6 +208,7 @@ export function runAutostart(argv: string[], env: Env = defaultEnv(), run: Runne
     const args = windowsArgs("remove", env);
     if (dry) { out(`DRY RUN, nothing changed. Would run:\n  ${showCmd(schtasks, args)}`); return 0; }
     const r = run(schtasks, args);
+    if (r.status === 0) { try { rememberInstalled(env, false); } catch { /* the task is gone either way */ } }
     out(r.status === 0 ? `Removed the task "${TASK_NAME}". The bridge no longer starts at logon.` : `No task named "${TASK_NAME}" was removed: ${(r.stderr || r.stdout).trim().slice(0, 300)}`);
     return r.status === 0 ? 0 : 1;
   }
@@ -226,6 +239,7 @@ export function runAutostart(argv: string[], env: Env = defaultEnv(), run: Runne
   try {
     const r = run(schtasks, args);
     if (r.status !== 0) { out(`Task Scheduler refused: ${(r.stderr || r.stdout).trim().slice(0, 300)}`); return 1; }
+    try { rememberInstalled(env, true); } catch { /* the task is installed either way */ }
     out(`Installed "${TASK_NAME}". The bridge starts 30 seconds after you log in. Check with: npm run autostart -- status`);
     return 0;
   } finally { rmSync(xmlFile(env), { force: true }); }

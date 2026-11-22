@@ -6,6 +6,7 @@ import { directives } from "./directives.ts";
 import { proposals } from "./proposals.ts";
 import { routines } from "./routines.ts";
 import { runs } from "./runs.ts";
+import { setup } from "./setup.ts";
 import { skills } from "./skills.ts";
 
-export const registry: Record<string, Widget> = { directives, departments, routines, skills, clock, runs, proposals };
+export const registry: Record<string, Widget> = { directives, departments, routines, skills, clock, runs, proposals, setup };
