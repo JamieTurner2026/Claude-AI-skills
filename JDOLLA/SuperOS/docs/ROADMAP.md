@@ -51,7 +51,7 @@ Blocked until Jay names the label and connects Calendar.
 
 ## Phase 9: the PC
 - **9a Windows checks:** Jay runs PC-SETUP section 11; each result becomes a fix task.
-- **9b Start with Windows:** the bridge starts at login, with a tray or status check.
+- **9b Start with Windows:** the bridge starts at login, with a tray or status check. Prep built 2026-11-22: `npm run autostart` (per-user Task Scheduler task, untested on Windows). Still open: the tray or status check.
 - **9c Backups:** the vault's own private git repo, committed nightly by a routine; a vault note never goes into this public repo.
 Blocked on the PC session.
 
