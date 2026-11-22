@@ -3,6 +3,7 @@
 // only receives what ToolContext hands it. To add a tool: write tools/<name>.ts with a test, add it
 // to TOOLS below, and allow it by name in os/config/skills.policy.json ("scriptTools").
 import type { z } from "zod";
+import { backupStatus } from "./backup_status.ts";
 import { calendarToday } from "./calendar_today.ts";
 import { linkCheck } from "./link_check.ts";
 import { listReports } from "./list_reports.ts";
@@ -26,8 +27,8 @@ export type ScriptTool = {
   run: (input: unknown, ctx: ToolContext) => unknown;
 };
 
-export const TOOLS: readonly ScriptTool[] = [today, recentChanges, linkCheck, vaultStats, listReports, proposalsSummary, runStats, calendarToday, mailBrain];
-export const SCRIPT_TOOL_NAMES = ["today", "recent_changes", "link_check", "vault_stats", "list_reports", "proposals_summary", "run_stats", "calendar_today", "mail_brain"] as const;
+export const TOOLS: readonly ScriptTool[] = [today, recentChanges, linkCheck, vaultStats, listReports, proposalsSummary, runStats, calendarToday, mailBrain, backupStatus];
+export const SCRIPT_TOOL_NAMES = ["today", "recent_changes", "link_check", "vault_stats", "list_reports", "proposals_summary", "run_stats", "calendar_today", "mail_brain", "backup_status"] as const;
 export type ScriptToolName = (typeof SCRIPT_TOOL_NAMES)[number];
 export const TOOLS_SERVER = "superos-tools";
 export const mcpToolName = (name: string) => `mcp__${TOOLS_SERVER}__${name}`;

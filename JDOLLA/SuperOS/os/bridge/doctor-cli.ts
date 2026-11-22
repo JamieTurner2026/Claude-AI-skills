@@ -19,6 +19,7 @@ export function defaultDeps(osDir: string): DoctorDeps {
     claudeBinFromConfig: () => { try { return loadConfig(paths).engine.claudeBin; } catch { return undefined; } },
     brainIndexPath: () => brainIndexPath(),
     embeddingsRuntime: () => { try { return runtimeInstalled(); } catch { return false; } },
+    backupRemote: () => { try { return loadConfig(paths).engine.backup.remote; } catch { return null; } },
   });
 }
 

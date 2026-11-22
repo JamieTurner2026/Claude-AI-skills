@@ -1,12 +1,12 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readdirSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync } from "node:fs";
 import { createServer, type AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import {
-  checkClaude, checkLogDir, checkPort, checkSandbox, checkScheduler, cleanVersion, findOnPath, formatDoctor, logDirFor,
+  checkBackup, checkClaude, checkLogDir, checkPort, checkSandbox, checkScheduler, cleanVersion, findOnPath, formatDoctor, logDirFor,
   readSafeEnv, realDeps, runDoctor, type DoctorDeps,
 } from "./doctor.ts";
 import { brainIndexPath, main } from "./doctor-cli.ts";
@@ -20,8 +20,9 @@ function fake(over: Partial<DoctorDeps> & { files?: Record<string, string>; dirs
   const files: Record<string, string> = over.files ?? {
     "/v/CLAUDE.md": "#", "/v/routines/routines.json": "[]", "/v/os/.env": `SUPEROS_PORT=4317\nAPI_KEY=${SECRET}\n`,
     "/usr/bin/claude": "", "/home/jay/.superos/brain/index.sqlite": "",
+    "/v/.git/config": "[core]\n\trepositoryformatversion = 0\n[remote \"origin\"]\n\turl = https://github.com/jay/brain.git\n",
   };
-  const dirs = new Set(over.dirs ?? ["/v/depts", "/v/wiki", "/v/logs"]);
+  const dirs = new Set(over.dirs ?? ["/v/depts", "/v/wiki", "/v/logs", "/v/.git"]);
   return {
     platform: "linux", env: { PATH: "/usr/local/bin:/usr/bin", HOME: "/home/jay" }, nodeVersion: "v22.18.0", vault, osDir: `${vault}/os`,
     now: new Date("2026-11-22T12:00:00Z"),
@@ -34,6 +35,7 @@ function fake(over: Partial<DoctorDeps> & { files?: Record<string, string>; dirs
     portFree: async () => true,
     probeWrite: () => ({ ok: true }),
     claudeBinFromConfig: () => undefined,
+    backupRemote: () => "https://github.com/jay/brain.git",
     brainIndexPath: () => "/home/jay/.superos/brain/index.sqlite",
     embeddingsRuntime: () => true,
     sandboxHas: () => true,
@@ -47,8 +49,8 @@ describe("doctor checks", () => {
     const code = await main([], fake(), (s) => lines.push(s));
     assert.equal(code, 0);
     const checks = await runDoctor(fake());
-    assert.deepEqual(checks.map((c) => c.status), Array(10).fill("pass"), JSON.stringify(checks.filter((c) => c.status !== "pass")));
-    assert.match(lines.join("\n"), /10 pass, 0 warn, 0 fail/);
+    assert.deepEqual(checks.map((c) => c.status), Array(11).fill("pass"), JSON.stringify(checks.filter((c) => c.status !== "pass")));
+    assert.match(lines.join("\n"), /11 pass, 0 warn, 0 fail/);
   });
 
   it("every non-pass row names the PC-SETUP section that fixes it", async () => {
@@ -196,13 +198,65 @@ describe("vault, logs, port, brain", () => {
   });
 });
 
+describe("vault backup row", () => {
+  const row = async (over: Partial<DoctorDeps> & { files?: Record<string, string>; dirs?: string[] }) => (await runDoctor(fake(over))).find((c) => c.id === "backup")!;
+  const files = (cfg: string): Record<string, string> => ({ "/v/CLAUDE.md": "#", "/v/routines/routines.json": "[]", "/v/os/.env": "", "/usr/bin/claude": "", "/home/jay/.superos/brain/index.sqlite": "", "/v/.git/config": cfg });
+  const PRIVATE_CFG = '[remote "origin"]\n\turl = https://github.com/jay/brain.git\n';
+
+  it("own repo, a remote that passes the backup's own check: pass (control)", async () => {
+    const c = await row({});
+    assert.equal(c.status, "pass");
+    assert.match(c.detail, /own git repo: yes; remote: set, passes the check/);
+  });
+  it("no remote named: warn, optional, with the PC-SETUP step", async () => {
+    const c = await row({ backupRemote: () => "" });
+    assert.equal(c.status, "warn");
+    assert.match(c.detail, /^not set up \(optional\); own git repo: yes; remote: not set$/);
+    assert.match(c.fix ?? "", /§10\.1/);
+  });
+  it("a remote that fails the check (wrong spelling, file path, the public repo) warns with the reason; an unreadable config warns", async () => {
+    for (const [remote, re] of [["http://github.com/a/b.git", /must look like https:\/\/github\.com/], ["/tmp/x.git", /must look like/], ["https://github.com/JamieTurner2026/Claude-AI-skills.git", /public code repo/]] as const) {
+      const c = await row({ backupRemote: () => remote });
+      assert.equal(c.status, "warn", remote);
+      assert.match(c.detail, re, remote);
+      assert.ok(!c.detail.includes(remote), "the URL itself is never printed");
+    }
+    assert.equal((await row({ backupRemote: () => null })).status, "warn");
+  });
+  it("the vault is not its own git repo: warn with the git init step", async () => {
+    const c = await row({ files: files(""), dirs: ["/v/depts", "/v/wiki", "/v/logs"] });
+    assert.equal(c.status, "warn");
+    assert.match(c.detail, /own git repo: no; remote: set, passes the check/);
+    assert.match(c.fix ?? "", /git init/);
+  });
+  it("the vault's own git config points at the public repo: fail, in any spelling, and the URL is not printed", async () => {
+    for (const url of ["https://github.com/JamieTurner2026/Claude-AI-skills.git", "git@github.com:jamieturner2026/claude-ai-skills.git", "https://tok:secret@github.com/JamieTurner2026/Claude-AI-skills"]) {
+      const c = await row({ files: files(`[remote "origin"]\n\turl = ${url}\n`) });
+      assert.equal(c.status, "fail", url);
+      assert.match(c.detail, /points at the public code repo/);
+      assert.ok(!JSON.stringify(c).includes("secret") && !c.detail.includes("github.com"), "no URL or token in the output");
+    }
+    assert.equal((await row({ files: files(PRIVATE_CFG) })).status, "pass", "control: a private origin");
+  });
+  it("it never contacts the network and starts no process: no runVersion call and nothing but file reads", async () => {
+    const calls: string[] = [];
+    const d = fake({ runVersion: (cmd) => { calls.push(cmd); return { ok: true, out: "x" }; }, portFree: async () => { calls.push("port"); return true; } });
+    const c = checkBackup(d);
+    assert.equal(c.status, "pass");
+    assert.deepEqual(calls, [], "checkBackup touched neither a process nor a socket");
+    const src = readFileSync(path.join(import.meta.dirname, "doctor.ts"), "utf8");
+    const body = src.slice(src.indexOf("export function checkBackup"), src.indexOf("export async function runDoctor"));
+    assert.ok(!/fetch\(|node:http|node:net|spawn|execFile|execSync|child_process|runVersion|git ls-remote/.test(body.replace(/\/\*[\s\S]*?\*\//g, "")), "no process or network call in the backup check");
+  });
+});
+
 describe("npm run doctor", () => {
   const launcher = path.join(import.meta.dirname, "doctor.mjs");
   it("--json prints parseable rows; a bad argument exits 2", () => {
     const r = spawnSync(process.execPath, [launcher, "--json"], { encoding: "utf8" });
     assert.ok(r.status === 0 || r.status === 1, r.stderr);
     const j = JSON.parse(r.stdout);
-    assert.equal(j.checks.length, 10);
+    assert.equal(j.checks.length, 11);
     assert.equal(j.fails, j.checks.filter((c: { status: string }) => c.status === "fail").length);
     assert.equal(spawnSync(process.execPath, [launcher, "--fix"], { encoding: "utf8" }).status, 2);
   });
