@@ -30,10 +30,11 @@ async function setup(log: string | null = fixtureLog()) {
   const proposals = async () => ((await (await fetch(base + "/api/proposals", { headers: { authorization: `Bearer ${token}` } })).json()) as { proposals: P[] }).proposals;
   return { b, vault, logs, clock, post, proposals, close: () => { b.runs.stopAll(); b.server.close(); } };
 }
+/** Every file under dir keyed by its vault path with "/" separators (path.relative gives "\\" on Windows). */
 function tree(dir: string, base = dir, out: Record<string, string> = {}): Record<string, string> {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
     const f = path.join(dir, e.name);
-    if (e.isDirectory()) tree(f, base, out); else out[path.relative(base, f)] = `${statSync(f).size}:${readFileSync(f, "utf8").length}:${readFileSync(f, "utf8")}`;
+    if (e.isDirectory()) tree(f, base, out); else out[path.relative(base, f).split(path.sep).join("/")] = `${statSync(f).size}:${readFileSync(f, "utf8").length}:${readFileSync(f, "utf8")}`;
   }
   return out;
 }
