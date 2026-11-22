@@ -4,6 +4,7 @@
 // JSON in FAKE_TRIAGE_ANSWER. BRAINANSWER (and friends, see below) emits brain tool_use events and then an answer. A learning-loop
 // diagnosis prompt gets a JSON answer, junk (BADDIAG), a failure (DIAGFAIL), a never-ending answer (DIAGSLOW) or
 // text trying to break out of its fields (DIAGEVIL). It writes its arguments to a file named in its output (ARGVFILE:) so tests can check them.
+import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -64,6 +65,38 @@ if (text.startsWith("You are sorting files that Jay dropped")) {
   out({ type: "assistant", message: { content: [{ type: "tool_use", id: "t1", name: "Read", input: { file_path: "os/.env" } }] } });
   out({ type: "user", message: { content: [{ type: "tool_result", tool_use_id: "t1", is_error: true, content: "<tool_use_error>File is in a directory that is denied by your permission settings.</tool_use_error>" }] } });
   out({ type: "result", subtype: "success", is_error: false, total_cost_usd: 0.002, result: "I could not read that file." });
+} else if (text.includes("FAKECALLTOOLS")) {
+  // Plays the model: starts the exact superos-tools server named in --mcp-config, asks it what it offers, calls every offered
+  // tool (and one that is not offered), and writes a brief that quotes the answers, so a test sees what a model would see.
+  const cfg = JSON.parse(args[args.indexOf("--mcp-config") + 1] ?? "{}") as { mcpServers?: Record<string, { command: string; args: string[]; env?: Record<string, string> }> };
+  const srv = cfg.mcpServers?.["superos-tools"];
+  if (!srv) out({ type: "result", subtype: "success", is_error: false, total_cost_usd: 0.001, result: "No tools server was configured." });
+  else {
+    const child = spawn(srv.command, srv.args, { env: { ...process.env, ...srv.env }, stdio: ["pipe", "pipe", "ignore"] });
+    const replies = new Map<number, { result?: { tools?: Array<{ name: string }>; content?: Array<{ text: string }>; isError?: boolean }; error?: { message: string } }>();
+    let buf = "";
+    child.stdout.on("data", (d: Buffer) => { buf += d.toString(); let i; while ((i = buf.indexOf("\n")) >= 0) { const m = JSON.parse(buf.slice(0, i)) as { id: number }; replies.set(m.id, m as never); buf = buf.slice(i + 1); } });
+    const send = (id: number, method: string, params?: object) => child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id, method, ...(params ? { params } : {}) }) + "\n");
+    const wait = async (id: number) => { for (let i = 0; i < 200 && !replies.has(id); i++) await new Promise((r) => setTimeout(r, 25)); return replies.get(id); };
+    send(1, "tools/list");
+    const names = ((await wait(1))?.result?.tools ?? []).map((t) => t.name);
+    out({ type: "assistant", message: { content: [{ type: "text", text: "TOOLS:" + names.join(",") }] } });
+    const ARGS: Record<string, object> = { recent_changes: { days: 7 }, list_reports: { limit: 5 }, proposals_summary: { days: 30 }, mail_brain: { days: 2 } };
+    const answers: Record<string, string> = {};
+    let id = 10;
+    for (const name of names) {
+      send(id, "tools/call", { name, arguments: ARGS[name] ?? {} });
+      answers[name] = (await wait(id))?.result?.content?.[0]?.text ?? "(no answer)";
+      out({ type: "assistant", message: { content: [{ type: "tool_use", id: `t${id}`, name: `mcp__superos-tools__${name}`, input: ARGS[name] ?? {} }] } });
+      id++;
+    }
+    send(99, "tools/call", { name: "link_check", arguments: {} }); // never offered to this run
+    const refused = await wait(99);
+    out({ type: "assistant", message: { content: [{ type: "text", text: "UNOFFERED:" + (refused?.error?.message ?? refused?.result?.content?.[0]?.text ?? "") }] } });
+    child.kill();
+    const brief = ["# Morning brief", "", "## Facts that came in", answers["calendar_today"] ?? "", answers["mail_brain"] ?? "", "", "## Waiting for Jay's yes", answers["proposals_summary"] ?? "", "", "## Filed or drafted overnight", answers["recent_changes"] ?? ""].join("\n");
+    out({ type: "result", subtype: "success", is_error: false, total_cost_usd: 0.01, result: brief });
+  }
 } else if (text.includes("NOTHINGNEWTEST")) {
   out({ type: "result", subtype: "success", is_error: false, total_cost_usd: 0.004, result: "NOTHING_NEW" });
 } else if (text.includes("CRASH")) {

@@ -95,7 +95,7 @@ test("policy: the default script tools stay [today]; each skill is given exactly
   const want: Record<string, string[]> = {
     "vault-cleanup": ["link_check", "vault_stats", "backup_status"],
     "plan-today": ["recent_changes", "list_reports", "calendar_today", "mail_brain"],
-    "morning-intel": ["recent_changes", "list_reports", "calendar_today", "mail_brain"],
+    "morning-intel": ["recent_changes", "list_reports", "proposals_summary", "calendar_today", "mail_brain"],
     "project-intelligence": ["recent_changes", "vault_stats"],
     "knowledge-improvement": ["recent_changes", "run_stats"],
   };
@@ -122,7 +122,7 @@ test("through the bridge: a skill's run is allowed exactly its tools, and the to
   const cases: Array<[string | undefined, string[]]> = [
     ["vault-cleanup", ["today", "link_check", "vault_stats", "backup_status"]],
     ["plan-today", ["today", "recent_changes", "list_reports", "calendar_today", "mail_brain"]],
-    ["morning-intel", ["today", "recent_changes", "list_reports", "calendar_today", "mail_brain"]],
+    ["morning-intel", ["today", "recent_changes", "list_reports", "proposals_summary", "calendar_today", "mail_brain"]],
     ["project-intelligence", ["today", "recent_changes", "vault_stats"]],
     ["knowledge-improvement", ["today", "recent_changes", "run_stats"]],
     ["code-quality", ["today"]],

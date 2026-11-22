@@ -241,6 +241,8 @@ Money limits:
 - Each time slot runs at most once, even if the PC restarts.
 - Routines only run on their own while the bridge is running. If the PC was off, a missed slot runs once when the bridge comes back.
 
+**Turning on the morning brief.** The **Morning intel** routine (weekdays 07:30, up to $0.40) writes `reports\YYYY-MM-DD_morning-intel.md`, or nothing when nothing is new. It is most useful once the calendar and mail feed files are in place (§13.2). Then switch it on in the Routines widget (or press **Run now** once to see what it writes) and leave `SUPEROS_SCHEDULER=on`. It only reads: it never sends, replies to or drafts any message, and it treats every mail subject and calendar title as quoted data.
+
 To stop everything scheduled at once, set `SUPEROS_SCHEDULER=off` in `os\.env` and restart the bridge.
 
 ### 10.1 Back up the vault to a private repo (optional, off until you set it up)
