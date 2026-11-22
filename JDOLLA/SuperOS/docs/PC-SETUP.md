@@ -4,7 +4,7 @@ How to get the Super OS running on Jay's Windows PC, start to finish. About 20 m
 
 Nothing here sends, buys, deletes or publishes anything. The only step that costs money is the first question (§8), capped at $0.05.
 
-**Order:** §1–§9 once, top to bottom. After that, every time you pull an update: §2, `npm install`, then `npm run smoke` (§9.1). §9.2 is the status check, §10–§13 explain the widgets and feed files; §14 is the one-time Windows checks.
+**Order:** §1–§9 once, top to bottom. After that, every time you update: `npm run update` in `os\` (§2), which pulls, installs, runs the doctor and the smoke check (§9.1). §9.2 is the status check, §10–§13 explain the widgets and feed files; §14 is the one-time Windows checks.
 
 ## 1. What you need first
 
@@ -34,15 +34,25 @@ Nothing here sends, buys, deletes or publishes anything. The only step that cost
 
 The newest version is on `main` in `JamieTurner2026/Claude-AI-skills`, folder `JDOLLA/SuperOS/`.
 
-**If the PC folder is a git clone of that repo:**
+**If the PC folder is a git clone of that repo**, update with one command, in `<vault>\os`:
 
 ```powershell
-cd <your clone>
-git status
+npm run update
 ```
 
-- If it says `nothing to commit, working tree clean`, update with `git pull`.
-- If it lists changed files, those are your PC work. **Don't pull over them.** Commit them on a branch first (`git switch -c pc-work`, `git add -A`, `git commit -m "PC work"`), then `git switch main` and `git pull`. Ask Claude to merge `pc-work` in afterwards.
+Stop the bridge first (files in `node_modules` that are in use cannot be replaced on Windows). It runs these steps in order, prints one PASS or FAIL line for each, and stops at the first FAIL:
+
+1. **Clean tree.** If `git status` shows any changed or new file, it stops with "You have local changes: commit or stash them first. Nothing was changed."
+2. **`git pull --ff-only`.** It only ever moves forward to what is on GitHub. It never merges, rebases, resets or forces. If your clone and GitHub have both changed, it stops and changes nothing.
+3. **`npm ci`.** Installs exactly the locked dependencies.
+4. **`npm run doctor`.** See §3.2.
+5. **`npm run smoke`.** See §9.1.
+
+It never touches `.env`, your notes or the brain index. When every line says PASS, start the bridge (§6). Exit code 0 means everything passed; 1 means it stopped.
+
+If it says you have local changes, those are your PC work. **Don't throw them away.** Commit them on a branch first (`git switch -c pc-work`, `git add -A`, `git commit -m "PC work"`), then `git switch main` and run `npm run update` again. Ask Claude to merge `pc-work` in afterwards. If it says your copy and GitHub have both changed, your PC has commits GitHub doesn't: don't reset anything; ask Claude to merge them.
+
+The first time, before `npm run update` exists on your PC, update by hand: `git status` must say `nothing to commit, working tree clean`, then `git pull --ff-only`.
 
 **If the PC folder is a plain copy (no git), or you're not sure:** don't copy anything over it. Clone `main` into a **new** folder next to it and open both in a Claude Code session. Ask it to compare them and merge your PC changes into the new copy. Delete the old folder only after you've checked the result.
 
@@ -201,10 +211,9 @@ Type a question about your notes in the command bar, for example *"What are my s
 
 ### 9.1 `npm run smoke`
 
-Each time you pull new code (§2), run in `os\`:
+`npm run update` (§2) runs this for you as its last step. To run it on its own, in `os\`:
 
 ```powershell
-npm install
 npm run smoke
 ```
 
