@@ -104,13 +104,14 @@ test("an empty or missing proposals/ folder is a zero summary, not an error", ()
   assert.deepEqual([r.total, r.repeatedFailures, r.mostRejected, r.approvedRules, r.skipped], [0, [], [], [], 0]);
 });
 
-test("the real policy offers proposals_summary to the proposals-review skill only", async () => {
+test("the real policy offers proposals_summary to the proposals-review and morning-intel skills only", async () => {
   const { loadPolicy, scriptToolsFor } = await import("../bridge/policy.ts");
   const { pathsFor } = await import("../bridge/config.ts");
   const policy = loadPolicy(pathsFor(path.resolve(import.meta.dirname, "..")));
   assert.ok(scriptToolsFor(policy, "proposals-review").includes("proposals_summary"), "control: the skill gets it");
+  assert.ok(scriptToolsFor(policy, "morning-intel").includes("proposals_summary"), "control: the morning brief lists what waits for Jay's yes");
   assert.ok(!scriptToolsFor(policy).includes("proposals_summary"), "a typed request does not");
-  for (const other of Object.keys(policy.skills).filter((s) => s !== "proposals-review")) {
+  for (const other of Object.keys(policy.skills).filter((s) => s !== "proposals-review" && s !== "morning-intel")) {
     assert.ok(!scriptToolsFor(policy, other).includes("proposals_summary"), other);
   }
 });
