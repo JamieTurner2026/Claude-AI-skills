@@ -308,6 +308,19 @@ The daily note and the `plan-today` and `morning-intel` skills can show today's 
 
 Only messages whose `labels` include `Brain` are used. Only names, dates and subjects reach the daily note and the tools; a snippet is read but never shown, and anything else in the file (such as a body) is ignored. Files over 1 MB, links, and bad JSON are ignored (the daily note says so in one line). These two files are git-ignored: never commit them. Nothing connects to Gmail or Calendar; that is a later step you approve.
 
+**Put Brain mail into the second brain (optional):**
+
+```powershell
+npm run brain -- import-mail --dry-run
+npm run brain -- import-mail
+npm run brain -- index
+```
+
+- Each message labelled Brain in `mail.json` becomes one note in `raw\mail\YYYY-MM\`, with its date, subject and the sender's **name** only (never the address). The note holds the snippet only; the feed has no full message.
+- Before anything is written, email addresses, phone numbers, long numbers (accounts, cards) and anything that looks like a key are masked. Each note says how many things were masked.
+- The notes are untrusted: search shows them as quoted data, never instructions.
+- Running it again skips messages already imported (the list of imported ids, hashed, is in the log folder, `%LOCALAPPDATA%\JDOLLA\logs\mail-import.json`). Nothing is overwritten. `--dry-run` writes nothing.
+
 ## 14. Windows checks (never tested on Windows; please do these once)
 
 These all passed on Linux in the cloud. Windows is untested. Tell Claude the result of each one.
