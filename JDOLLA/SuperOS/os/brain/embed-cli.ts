@@ -1,6 +1,6 @@
 // CLI paths that touch embeddings: index --embeddings (the only one that may download), search --hybrid, eval --compare.
 import { DatabaseSync } from "node:sqlite";
-import { embeddingsDir, installRuntime, loadLocalEmbedder, runtimeInstalled, tryLoadEmbedder, type Embedder } from "./embeddings.ts";
+import { embeddingsDir, installRuntime, installedRuntimeVersion, loadLocalEmbedder, pinnedRuntimeVersion, runtimeState, tryLoadEmbedder, type Embedder } from "./embeddings.ts";
 import { formatReport, indexedPaths, keywordRanker, runEval, type EvalFile, type EvalReport } from "./eval.ts";
 import { embedIndex, hybridSearch, vectorCoverage } from "./hybrid.ts";
 import { rebuildIndex } from "./indexer.ts";
@@ -13,7 +13,9 @@ export async function indexWithEmbeddings(vault: string, dbPath: string, embedde
   console.log(`indexed ${s.files} files, ${s.chunks} chunks${s.recreated ? " [new index]" : ""}`);
   const base = embeddingsDir();
   if (!embedder) {
-    if (!runtimeInstalled(base)) { console.log(`installing the embedding runtime into ${base} (one time, a few hundred MB)`); installRuntime(base); }
+    const state = runtimeState(base);
+    if (state === "outdated") { console.log(`updating the embedding runtime in ${base} from transformers ${installedRuntimeVersion(base)} to ${pinnedRuntimeVersion()} (a few hundred MB; vectors from the old runtime are replaced, never mixed)`); installRuntime(base); }
+    else if (state === "missing") { console.log(`installing the embedding runtime into ${base} (one time, a few hundred MB)`); installRuntime(base); }
     console.log("loading the local model (first time: downloads about 23 MB)");
     embedder = await loadLocalEmbedder({ allowDownload: true, base });
   }

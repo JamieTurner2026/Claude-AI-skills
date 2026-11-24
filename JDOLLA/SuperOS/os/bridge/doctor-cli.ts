@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadConfig, pathsFor } from "./config.ts";
 import { formatDoctor, realDeps, runDoctor, type DoctorDeps } from "./doctor.ts";
-import { runtimeInstalled } from "../brain/embeddings.ts";
+import { runtimeState } from "../brain/embeddings.ts";
 
 /** Same rule as brain/indexer.ts defaultIndexPath(), without loading SQLite just to print a path. */
 export function brainIndexPath(env: NodeJS.ProcessEnv = process.env): string {
@@ -18,7 +18,7 @@ export function defaultDeps(osDir: string): DoctorDeps {
   return realDeps(paths.vault, paths.os, {
     claudeBinFromConfig: () => { try { return loadConfig(paths).engine.claudeBin; } catch { return undefined; } },
     brainIndexPath: () => brainIndexPath(),
-    embeddingsRuntime: () => { try { return runtimeInstalled(); } catch { return false; } },
+    embeddingsRuntime: () => { try { const s = runtimeState(); return s === "ok" ? true : s === "outdated" ? "outdated" : false; } catch { return false; } },
     backupRemote: () => { try { return loadConfig(paths).engine.backup.remote; } catch { return null; } },
   });
 }

@@ -34,6 +34,7 @@ One rule each, with its evidence.
 - **A library's default can change meaning between majors.** Evidence: 2026-11-24, zod 4's `.default(v)` returns `v` as-is where zod 3 parsed it, so a config with no `learning` section would have lost the inner `citations` default and every typecheck and test still passed. Sections that rely on parsing now use `.prefault`, and `bridge/zod4.test.ts` fails if one goes back to `.default`.
 - **A live region that rewrites itself re-reads everything.** Evidence: 2026-11-24, the Runs output replaced its whole text on each streamed chunk and the Health strip redrew every poll, so marking either `aria-live` as it was would have read the whole output, or the uptime, again and again. The output now appends text as a `role="log"`, and a separate hidden line says the health warnings once when they change.
 - **"Has text" is not "has a name".** Evidence: 2026-11-24, the first version of the static button check passed the layout buttons on their `‹` and `›` glyphs alone; removing their `aria-label` would have left a screen reader with nothing to say. Symbol-only buttons now need an `aria-label`, and removing one fails the test.
+- **Same model, new runtime, different numbers.** Evidence: 2026-11-24, all-MiniLM-L6-v2 q8 under transformers 4.3.2 gave vectors with cosine 0.993 to 0.999 against 3.8.1's. The eval did not move (hit@5 0.933, MRR 0.883), but the cache keyed vectors by model name alone and would have mixed both runtimes in one index. The vector id now names the runtime version too.
 
 ## Red team, 2026-11-24 (11a)
 
