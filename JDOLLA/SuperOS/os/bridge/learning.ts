@@ -69,7 +69,7 @@ export const DiagnosisSchema = z.object({
   skillRule: z.string().min(1).max(300).nullable().optional(),
 });
 
-const LedgerSchema = z.object({ spend: z.record(z.number()).default({}), seen: z.record(z.string()).default({}) });
+const LedgerSchema = z.object({ spend: z.record(z.string(), z.number()).default({}), seen: z.record(z.string(), z.string()).default({}) });
 type Ledger = z.infer<typeof LedgerSchema>;
 
 function writeAtomic(file: string, text: string): void {

@@ -18,21 +18,21 @@ export const ConfigSchema = z.object({
     t2: z.object({ model: z.string(), effort: z.string(), maxBudgetUsd: z.number().positive().max(5).default(0.05) }),
     t3: z.object({ model: z.string(), effort: z.string(), permissionMode: z.string(), maxBudgetUsd: z.number().positive().max(100) }),
     /** Scheduled routines: total spend per day (owner's time zone) and the most one routine run may cost. */
-    routines: z.object({ dailyCapUsd: z.number().positive().max(100), maxBudgetUsd: z.number().positive().max(100) }).default({ dailyCapUsd: 1, maxBudgetUsd: 1 }),
+    routines: z.object({ dailyCapUsd: z.number().positive().max(100), maxBudgetUsd: z.number().positive().max(100) }).prefault({ dailyCapUsd: 1, maxBudgetUsd: 1 }),
     /** Give runs read-only search over the vault through the second brain (superos-brain MCP server). */
-    brain: z.object({ enabled: z.boolean() }).default({ enabled: true }),
+    brain: z.object({ enabled: z.boolean() }).prefault({ enabled: true }),
     /** Give runs the safe script tools in os/tools/ (allowed by name in skills.policy.json). */
-    tools: z.object({ enabled: z.boolean() }).default({ enabled: true }),
+    tools: z.object({ enabled: z.boolean() }).prefault({ enabled: true }),
     /** Learning loop: a run that fails, is blocked or hits its cap gets a proposal, drafted by a small read-only diagnosis run. */
     learning: z.object({
       enabled: z.boolean(),
       diagnosisBudgetUsd: z.number().positive().max(1),
       dailyCapUsd: z.number().positive().max(10),
       /** A T2 answer that used the brain but names no vault note gets a proposal (no diagnosis run, no cost). */
-      citations: z.object({ enabled: z.boolean() }).default({ enabled: true }),
-    }).default({ enabled: true, diagnosisBudgetUsd: 0.05, dailyCapUsd: 0.25 }),
+      citations: z.object({ enabled: z.boolean() }).prefault({ enabled: true }),
+    }).prefault({ enabled: true, diagnosisBudgetUsd: 0.05, dailyCapUsd: 0.25 }),
     /** Vault backup (Phase 9c): the one private GitHub repo the vault may be pushed to. Empty means no backup (the routine refuses). */
-    backup: z.object({ remote: z.string().max(300).default(""), branch: z.string().refine(isValidBranch, MSG_BAD_BRANCH).default("main") }).default({ remote: "", branch: "main" }),
+    backup: z.object({ remote: z.string().max(300).default(""), branch: z.string().refine(isValidBranch, MSG_BAD_BRANCH).default("main") }).prefault({ remote: "", branch: "main" }),
     /** Optional path to the Claude Code CLI. Default: "claude" ("claude.exe" on Windows), found on PATH. */
     claudeBin: z.string().min(1).max(260).optional(),
   }),

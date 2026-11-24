@@ -37,9 +37,9 @@ export const RoutineSchema = z.object({
 export type Routine = z.infer<typeof RoutineSchema>;
 
 const LedgerSchema = z.object({
-  lastRunAt: z.record(z.string()).default({}),
-  lastResult: z.record(z.object({ at: z.string(), status: z.string(), costUsd: z.number().nullable(), runId: z.string().nullable(), note: z.string() })).default({}),
-  spend: z.record(z.number()).default({}),
+  lastRunAt: z.record(z.string(), z.string()).default({}),
+  lastResult: z.record(z.string(), z.object({ at: z.string(), status: z.string(), costUsd: z.number().nullable(), runId: z.string().nullable(), note: z.string() })).default({}),
+  spend: z.record(z.string(), z.number()).default({}),
 });
 export type Ledger = z.infer<typeof LedgerSchema>;
 

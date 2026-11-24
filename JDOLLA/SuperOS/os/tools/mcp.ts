@@ -7,7 +7,7 @@ import { TOOLS, TOOLS_SERVER } from "./registry.ts";
 import type { ScriptTool, ToolContext } from "./registry.ts";
 
 const PROTOCOL = "2024-11-05";
-const Rpc = z.object({ jsonrpc: z.literal("2.0"), id: z.union([z.string(), z.number()]).optional(), method: z.string().max(100), params: z.record(z.unknown()).optional() });
+const Rpc = z.object({ jsonrpc: z.literal("2.0"), id: z.union([z.string(), z.number()]).optional(), method: z.string().max(100), params: z.record(z.string(), z.unknown()).optional() });
 type Reply = { jsonrpc: "2.0"; id: string | number | null; result?: unknown; error?: { code: number; message: string } };
 const ok = (id: Reply["id"], result: unknown): Reply => ({ jsonrpc: "2.0", id, result });
 const err = (id: Reply["id"], code: number, message: string): Reply => ({ jsonrpc: "2.0", id, error: { code, message } });
