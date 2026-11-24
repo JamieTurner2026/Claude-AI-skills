@@ -91,6 +91,9 @@ Setting up on the PC: see `../docs/PC-SETUP.md`.
 - `GET /api/proposals`, `POST /api/proposals/:id/approve|reject` sit behind the same session, origin and header checks. Approving is append-only: a new `wiki/_learnings/<id>.md` and one bullet under `## Learned rules` in the skill.
 - Switch it off with `engine.learning.enabled: false`.
 
+## Red team (11a)
+- `bridge/redteam.test.ts` pushes one hostile fixture (`shared/hostile.ts`) through every untrusted door and checks it stays inert; `npm run redteam:ui` checks the dashboard in Chromium. Door-by-door results: `docs/LEARNINGS.md`.
+
 ## Update (9a)
 - `npm run update`: clean git tree, then `git pull --ff-only` (never merge, rebase, reset or force), then `npm ci`, `npm run doctor`, `npm run smoke`; one PASS/FAIL line per step, stops at the first FAIL. No shell; npm runs as `node npm-cli.js`. Logic: `bridge/update.ts`. PC-SETUP §2.
 

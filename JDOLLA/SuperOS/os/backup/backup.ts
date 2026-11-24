@@ -34,7 +34,7 @@ export type BackupOptions = {
 const MAX_LISTED = 200;
 
 const result = (status: BackupStatus, message: string, files: BackupFile[] = [], committed = false, pushed = false, skipped = 0): BackupResult => ({ status, message, files, committed, pushed, skipped });
-const clip = (s: string, n: number): string => s.replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
+const clip = (s: string, n: number): string => s.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, " ").replace(/\s+/g, " ").trim().slice(0, n);
 
 function change(x: string, y: string): BackupFile["change"] {
   if (x === "D" || y === "D") return "removed";

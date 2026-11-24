@@ -71,7 +71,7 @@ export const LOG_REQUEST_CHARS = 80;
 /** What to write to router.jsonl as the request: the first 80 characters of what Jay typed, on one plain line, or null. */
 function logRequest(run: RunInfo): string | null {
   if (run.purpose !== "run" || run.skill || run.routine || run.dept === "inbox") return null;
-  const t = run.text.replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, " ").replace(/\s+/g, " ").trim().slice(0, LOG_REQUEST_CHARS);
+  const t = run.text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, " ").replace(/\s+/g, " ").trim().slice(0, LOG_REQUEST_CHARS);
   return t || null;
 }
 const MAX_OUTPUT = 200_000;

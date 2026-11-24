@@ -22,7 +22,8 @@
     "eval:router": "node shared/router-eval-cli.ts",
     "doctor": "node bridge/doctor.mjs",
     "smoke": "node bridge/smoke-cli.ts",
-    "update": "node bridge/update-cli.ts"
+    "update": "node bridge/update-cli.ts",
+    "redteam:ui": "node bridge/redteam-ui.ts"
   },
   "dependencies": {
     "zod": "^3.25.0"
