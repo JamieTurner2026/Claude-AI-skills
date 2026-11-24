@@ -1,6 +1,6 @@
 # Status
 
-Updated 2026-11-23. Built and tested in the cloud: every PR runs `npm run check`, `npm test`, `npm run eval:router` and `npm run smoke` on Linux and Windows (`.github/workflows/superos.yml`), with a fake Claude only. History lives in git and `docs/LEARNINGS.md`; what to run on the PC is in `START-HERE.md`.
+Updated 2026-11-23. Built and tested in the cloud: every PR runs `npm run check`, `npm test`, `npm run eval:router` and `npm run smoke` on Linux and Windows (`.github/workflows/superos.yml`), with a fake Claude only. Version 1.0.0 (2026-11-24); what changed, phase by phase, is in `CHANGELOG.md`. History lives in git and `docs/LEARNINGS.md`; what to run on the PC is in `START-HERE.md`.
 
 ## What works now
 
