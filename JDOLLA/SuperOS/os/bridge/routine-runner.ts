@@ -28,8 +28,8 @@ export const RoutineSchema = z.object({
   schedule: z.string().max(120),
   enabled: z.boolean(),
   skill: z.string().regex(SLUG).optional(),
-  /** A routine the bridge runs itself, with no model and no cost (for example the vault backup). */
-  builtin: z.enum(["vault-backup"]).optional(),
+  /** A routine the bridge runs itself, with no model and no cost (the vault backup, the monthly cost report). */
+  builtin: z.enum(["vault-backup", "month-costs"]).optional(),
   tier: z.enum(["T2", "T3"]).default("T2"),
   budgetUsd: z.number().positive().max(100).optional(),
 }).passthrough();
@@ -255,7 +255,7 @@ export class RoutineRunner {
     this.log({ kind: "routine-start", id: r.id, why, builtin: r.builtin as string, budgetUsd: 0, tier: "T1" });
     const done = (res: BuiltinResult): void => {
       this.builtinRunning.delete(r.id);
-      const status = res.status === "pushed" || res.status === "nothing" ? "done" : res.status === "refused" ? "skipped" : "failed";
+      const status = res.status === "pushed" || res.status === "nothing" || res.status === "done" ? "done" : res.status === "refused" ? "skipped" : "failed";
       const l = this.loadLedger();
       l.lastResult[r.id] = { at: new Date().toISOString(), status, costUsd: 0, runId: null, note: res.message.slice(0, 300) };
       this.saveLedger(l);

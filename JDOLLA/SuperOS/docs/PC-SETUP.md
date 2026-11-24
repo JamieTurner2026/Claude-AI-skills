@@ -292,6 +292,7 @@ Drafting each suggestion is a small read-only run that costs up to $0.05. All of
 
 **Run analysis:**
 - `cd os` then `npm run analyse:runs -- --days 30` prints where the money went and what keeps failing, from `%LOCALAPPDATA%\JDOLLA\logs\router.jsonl`. Nothing is changed.
+- `npm run analyse:runs -- --month` (or `--month 2026-11`) totals one calendar month in your time zone: spend by tier, routine and skill, the learning diagnoses, your highest day against the $2 daily cap, how many days the cap was hit, and a pace projection. Costs and counts only, never a prompt. The **Monthly costs** routine (1st of each month at 08:10, no model, $0, off until you switch it on in the Routines widget) writes last month's report to `reports\YYYY-MM_costs.md` and never overwrites one. The Health strip shows "This month $x".
 - On the Proposals card, **Suggest changes** adds up to 3 "Suggested change" cards a week. Approve only records your decision; **you edit `os\config\os.config.json` or the routine yourself**.
 - New typed requests are logged as their first 80 characters in `router.jsonl` (on this PC only).
 

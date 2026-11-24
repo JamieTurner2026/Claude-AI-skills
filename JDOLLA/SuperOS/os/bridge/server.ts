@@ -34,6 +34,8 @@ import type { Check } from "./doctor.ts";
 import { defaultEnv as autostartEnv } from "./autostart.ts";
 import { runBackup } from "../backup/backup.ts";
 import type { BackupOptions } from "../backup/backup.ts";
+import { writeMonthReport } from "../analysis/month-report.ts";
+import { monthSpend } from "../analysis/month.ts";
 import { readBackupRecord, writeBackupRecord } from "../backup/record.ts";
 import { InboxTriage } from "./inbox.ts";
 import type { BuildResult } from "../vault/generate.ts";
@@ -91,6 +93,12 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
         const c = loadConfig(paths);
         const r = await runBackup({ vault: paths.vault, remote: c.engine.backup.remote, branch: c.engine.backup.branch, timezone: c.timezones[0] ?? "America/New_York", now, ...(opts.backupOptions ?? {}) });
         writeBackupRecord(opts.logDir ?? logDir(paths), r, now);
+        return { status: r.status, message: r.message };
+      },
+      // The monthly cost report: last month's totals from the run log and the ledgers, written to reports/. No model, $0.
+      "month-costs": async (now) => {
+        const c = loadConfig(paths);
+        const r = writeMonthReport({ vault: paths.vault, logDir: opts.logDir ?? logDir(paths), timezone: c.timezones[0] ?? "America/New_York", now, caps: { routineDailyCapUsd: c.engine.routines.dailyCapUsd, learningDailyCapUsd: c.engine.learning.dailyCapUsd } });
         return { status: r.status, message: r.message };
       },
     } });
@@ -193,7 +201,7 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
           routines.setEnabled(id, enabled);
           return send(res, 200, routines.status());
         }
-        return send(res, 202, { run: routines.runNow(id) }); // null for a built-in routine (no model run)
+        return send(res, 202, { run: routines.runNow(id, (opts.now ?? (() => new Date()))()) }); // null for a built-in routine (no model run)
       } catch (e) {
         if (e instanceof RunError) throw new HttpError(e.status, e.message);
         throw e;
@@ -235,6 +243,7 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
         version, startedAtMs, now, routines: routines.status(), runs: runs.list(), brainDb: brain.dbPath,
         pendingProposals: learning.list().filter((p) => p.status === "pending").length,
         backup: readBackupRecord(opts.logDir ?? logDir(paths)),
+        monthUsd: monthSpend(opts.logDir ?? logDir(paths), now, config.timezones[0] ?? "America/New_York"),
       }));
     }
     if (url.pathname === "/api/routines" && req.method === "GET") return send(res, 200, routines.status());

@@ -78,6 +78,7 @@ async function drawHealth(): Promise<void> {
       chip("Bridge", `up ${formatAge(v.uptimeSec)}`, false),
       chip("Scheduler", v.scheduler.on ? `on, ${v.scheduler.routinesOn}/${v.scheduler.routinesTotal} routines` : "OFF", !v.scheduler.on),
       chip("Spend", `$${v.spend.todayUsd.toFixed(2)} / $${v.spend.capUsd.toFixed(2)}`, v.spend.pct > 80),
+      chip("This month", `$${v.month.spendUsd.toFixed(2)}`, false),
       chip("Last run", v.lastRun ? `${v.lastRun.status}, ${formatAge((Date.now() - Date.parse(v.lastRun.at)) / 1000)} ago` : "none", false),
       chip("Index", !v.brain.present ? "not built" : v.brain.stale ? "stale" : `${formatAge(v.brain.indexAgeSec ?? 0)} old`, v.brain.indexAgeSec !== null && v.brain.indexAgeSec > 86_400),
       chip("Embeddings", v.brain.embeddings ? "present" : "off", false),

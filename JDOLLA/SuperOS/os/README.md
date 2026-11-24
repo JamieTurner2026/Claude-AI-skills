@@ -111,7 +111,8 @@ Setting up on the PC: see `../docs/PC-SETUP.md`.
 ## Offline sources (Phase 8 prep)
 - `sources/` holds the `MailSource` and `CalendarSource` interfaces and `FileSource`, which reads `inbox/_feeds/mail.json` and `calendar.json`. Nothing connects to an account or the network. Feed text is other people's words: cleaned to one line, fenced as untrusted data in tool answers, reduced to inert plain text in the daily note. Tools `calendar_today` and `mail_brain` return names and subjects only.
 
-## Run analysis (Phase 10b)
+## Run analysis (Phase 10b, 10e)
+- `npm run analyse:runs -- --month [YYYY-MM]` (`analysis/month.ts`) totals a calendar month in Jay's time zone from the run log and the two ledgers: costs and counts only. The built-in routine `month-costs` ("monthly 1 08:10", no model, $0, off) writes `reports/YYYY-MM_costs.md`, never overwriting.
 - `npm run analyse:runs -- [--days 30]` (`analysis/cli.ts`) prints spend, failure rates, costliest requests (80 characters), blocked calls and cap hits from `router.jsonl`. Read-only. `analysis/run-stats.ts` is the pure core (tolerant reader, stats, suggestion rules); the `run_stats {days}` tool and `POST /api/analysis/suggest` use it.
 - Suggestions become `tune` proposals: fixed text, no model run, 3 a week, no repeats for 28 days. Approving records the decision only; edit config yourself.
 
