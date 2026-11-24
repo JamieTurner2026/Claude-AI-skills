@@ -10,6 +10,7 @@ node brain/mcp.ts                      # read-only MCP server "superos-brain" (s
 npm run brain -- index --embeddings                              # opt-in: set up local meaning search (one-time download)
 npm run brain -- eval --compare                                  # keyword vs hybrid, same questions
 npm run brain -- eval --k 5                                      # retrieval eval: hit@k and MRR (evals/brain/questions.json)
+npm run brain -- import-mail --dry-run                           # Brain-labelled mail from inbox/_feeds/mail.json into raw/mail/ (redacted, untrusted)
 npm run brain -- import-sessions --dry-run                       # Claude Code sessions (~/.claude/projects)
 npm run brain -- import-sessions --claude-ai conversations.json  # a claude.ai data export
 ```
