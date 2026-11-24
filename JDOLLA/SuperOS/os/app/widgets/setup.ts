@@ -42,7 +42,7 @@ export const setup: Widget = {
         const ok = isDone(r, ticks);
         const mark = r.state === "manual"
           ? h("input", { type: "checkbox", class: "su-box", "aria-label": `${r.label}: done`, ...(ok ? { checked: true } : {}), change: (ev: Event) => { const t = readTicks(); if ((ev.target as HTMLInputElement).checked) t[r.id] = true; else delete t[r.id]; writeTicks(t); draw(v); } })
-          : h("span", { class: ok ? "su-mark ok" : "su-mark", "aria-label": ok ? "done" : "to do" }, ok ? "✓" : "○");
+          : h("span", { class: ok ? "su-mark ok" : "su-mark", role: "img", "aria-label": `${r.label}: ${ok ? "done" : "to do"}` }, ok ? "✓" : "○");
         body.append(h("div", { class: ok ? "su-row ok" : "su-row", "data-state": r.state },
           mark,
           h("div", { class: "su-main" }, h("span", { class: "su-label" }, r.label), h("span", { class: "su-hint" }, r.hint)),

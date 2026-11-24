@@ -68,6 +68,9 @@ function draw(): void {
 }
 
 const healthEl = $("health");
+/** Says the health warnings aloud once, when they change; the strip itself redraws every poll and would repeat. */
+const healthLive = $("health-live");
+let lastWarnings = "";
 /** The Health strip: one line of state chips. A chip turns the warning colour when healthWarnings() says so. */
 async function drawHealth(): Promise<void> {
   try {
@@ -85,6 +88,8 @@ async function drawHealth(): Promise<void> {
       chip("Backup", v.backup ? `${v.backup.status}, ${formatAge((Date.now() - Date.parse(v.backup.at)) / 1000)} ago` : "never run", v.backup?.status === "failed" || v.backup?.status === "refused"));
     healthEl.classList.toggle("warning", warns.length > 0);
     healthEl.title = warns.join(". ");
+    const said = warns.length ? `Health: ${warns.join(". ")}.` : lastWarnings ? "Health: all clear." : "";
+    if (said !== lastWarnings) { healthLive.textContent = said; lastWarnings = said; }
     healthEl.hidden = false;
   } catch { healthEl.hidden = true; } // signed out or the bridge is down: the main view already says so
 }
