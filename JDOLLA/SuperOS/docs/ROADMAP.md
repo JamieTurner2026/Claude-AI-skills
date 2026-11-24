@@ -66,9 +66,9 @@ Blocked on the PC session.
 1. `git status` (it must be clean), then `git pull`, then `npm install` in `os/`.
 2. `npm run doctor`; fix each fail at the PC-SETUP section it names.
 3. `npm run check` and `npm test`; send the pass count (that is 9a).
-4. `npm run brain -- index --embeddings` (opt-in, about 420 MB), then `npm run brain -- eval`.
+4. `npm run brain -- index --embeddings` (opt-in, about 520 MB), then `npm run brain -- eval`.
 5. Session import (PC-SETUP 5b), then run the eval again.
-6. `npm run autostart`, then follow its two printed steps.
+6. `npm run autostart -- install`, then follow its two printed steps.
 7. Decide three things: the private Brain repo name; the Gmail "Brain" label and Calendar connect; whether the cloud allowlist keeps the huggingface hosts.
 
 ## Queue

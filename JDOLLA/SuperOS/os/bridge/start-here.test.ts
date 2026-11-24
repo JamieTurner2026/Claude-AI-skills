@@ -2,7 +2,10 @@
 // real heading in PC-SETUP.md, it must stay one screen, and the pages that should link to it must.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { runAutostart, type Env } from "./autostart.ts";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -68,4 +71,38 @@ test("Home.md and docs/_index.md link to START-HERE, and STATUS has the three se
   const heads = [...status.matchAll(/^## (.+)$/gm)].map((m) => m[1]);
   assert.deepEqual(heads.slice(0, 3), ["What works now", "Untested on Windows or the PC", "Waits on Jay"]);
   for (const must of ["private Brain repo", "Gmail", "Calendar", "huggingface"]) assert.ok(status.includes(must), must);
+});
+
+// Found by the PC rehearsal (.github/workflows/pc-rehearsal.yml): START-HERE said `npm run autostart`, which only prints
+// the usage line; the download size and the test's last line did not match what really happens.
+/** The exit code `npm run autostart -- <args>` gives, on a non-Windows Env so nothing can be installed. 2 = usage. */
+function autostartExit(args: string[]): number {
+  const env: Env = { platform: "linux", osDir, nodePath: process.execPath, user: "u", domain: "", systemRoot: "C:\\Windows", home: tmpdir(), stateFile: path.join(mkdtempSync(path.join(tmpdir(), "as-")), "a.json"), tmp: tmpdir() };
+  return runAutostart(args, env, () => { throw new Error("nothing may run"); }, () => undefined);
+}
+
+test("every `npm run autostart` the PC reads (START-HERE, PC-SETUP, the Setup checklist) is a command autostart accepts", () => {
+  const texts = [START, read(vault, "docs", "PC-SETUP.md"), read(osDir, "bridge", "setup.ts")];
+  const found = texts.flatMap((t) => [...t.matchAll(/npm run autostart((?: -- [a-z-]+(?: --[a-z-]+)*)?)/g)].map((m) => (m[1] ?? "").replace(/^ -- /, "").split(" ").filter(Boolean)));
+  assert.ok(found.length >= 5, `control: found ${found.length}`);
+  for (const args of found) assert.equal(autostartExit(args), 0, `npm run autostart ${args.length ? "-- " + args.join(" ") : ""} only prints the usage line`);
+  assert.equal(autostartExit([]), 2, "control: plain `npm run autostart` is refused with the usage line");
+});
+
+test("START-HERE's download size is PC-SETUP §5.2's runtime plus model", () => {
+  const start = Number(/about (\d+) MB, once/.exec(START)?.[1]);
+  const sec = read(vault, "docs", "PC-SETUP.md").split("### 5.2")[1]!.split("### 5.3")[0]!;
+  const runtime = Number(/runtime \(about (\d+) MB\)/.exec(sec)?.[1]), model = Number(/model \(about (\d+) MB\)/.exec(sec)?.[1]);
+  assert.ok(runtime > 0 && model > 0, "control: PC-SETUP §5.2 names both sizes");
+  assert.ok(Math.abs(start - (runtime + model)) <= 10, `START-HERE says ${start} MB, PC-SETUP ${runtime} + ${model} MB`);
+});
+
+test("the last line the docs promise for npm test is what node --test prints in a terminal (the spec reporter)", () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "spec-"));
+  writeFileSync(path.join(dir, "one.test.mjs"), 'import { test } from "node:test"; test("one", () => {});\n');
+  const r = spawnSync(process.execPath, ["--test", "--test-reporter=spec", "one.test.mjs"], { cwd: dir, encoding: "utf8", env: { ...Object.fromEntries(Object.entries(process.env).filter(([k]) => k !== "NODE_TEST_CONTEXT")), NODE_OPTIONS: "", NO_COLOR: "1" } }); // a nested runner would report to this one
+  assert.match(r.stdout, /^ℹ fail 0$/m, "node --test in a terminal ends with ℹ fail 0");
+  assert.doesNotMatch(r.stdout, /^# fail 0$/m, "control: not the TAP line");
+  assert.match(START, /`ℹ fail 0`/);
+  assert.match(read(vault, "docs", "PC-SETUP.md"), /`npm test` end with `ℹ fail 0`/);
 });

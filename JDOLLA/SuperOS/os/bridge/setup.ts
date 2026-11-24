@@ -37,7 +37,7 @@ export function buildSetup(f: SetupFacts): SetupView {
   row("sessions", "Sessions imported", f.sessions > 0 ? "done" : "todo", "§5.3", f.sessions > 0 ? "Imported sessions are in raw/sessions." : "Optional: import your Claude Code sessions into the brain.");
   if (f.autostart === "not-windows") row("autostart", "Autostart registered", "manual", "§6b", "Windows only. Tick this once you have done it on the PC.");
   else row("autostart", "Autostart registered", f.autostart === "installed" ? "done" : "todo", "§6b",
-    f.autostart === "installed" ? "The logon task is installed." : f.autostart === "shown" ? "The plan was shown. Run npm run autostart again to install it." : "Run npm run autostart, then follow its steps.");
+    f.autostart === "installed" ? "The logon task is installed." : f.autostart === "shown" ? "The plan was shown. Run npm run autostart -- install again to install it." : "Run npm run autostart -- install, then follow its steps.");
   const backup = f.doctor?.find((c) => c.id === "backup");
   row("backup", "Backup set up", backup?.status === "pass" ? "done" : "todo", "§10.1",
     backup?.status === "pass" ? "The vault has its own repo and a private remote that passes the check." : backup?.status === "fail" ? "The vault's git points at the public repo. Fix this first." : "Give the vault its own git repo and name a private remote (optional).");
