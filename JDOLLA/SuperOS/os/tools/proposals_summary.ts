@@ -23,7 +23,7 @@ const Stored = z.object({
 }).passthrough();
 export type Stored = z.infer<typeof Stored>;
 
-const oneLine = (s: string, max: number): string => s.replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+const oneLine = (s: string, max: number): string => s.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, " ").replace(/\s+/g, " ").trim().slice(0, max);
 const skillOf = (p: Stored): string => (p.run.skill && SLUG.test(p.run.skill) ? p.run.skill : "(typed request)");
 const isFailure = (p: Stored): boolean => p.kind === "budget" || p.kind === "failed" || p.kind === "blocked";
 

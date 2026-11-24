@@ -8,7 +8,7 @@ import { GuardError } from "../bridge/guards.ts";
 import { defaultIndexPath, parseFrontmatter } from "./indexer.ts";
 import { readBrainFile } from "./files.ts";
 import { UNTRUSTED_NOTE, fence } from "./present.ts";
-import { SearchInput, openReadOnly, search } from "./search.ts";
+import { SearchInput, openReadOnly, search, type SearchHit } from "./search.ts";
 import { isTrusted, toVaultRel } from "./files.ts";
 import { hybridSearch } from "./hybrid.ts";
 import { searchQueryVector, type QueryVectors } from "./query-vectors.ts";
@@ -66,6 +66,23 @@ const err = (id: Reply["id"], code: number, message: string): Reply => ({ jsonrp
 const ok = (id: Reply["id"], result: unknown): Reply => ({ jsonrpc: "2.0", id, result });
 const toolText = (text: string, isError = false) => ({ content: [{ type: "text", text }], isError });
 
+/** One line of a note's own metadata (title, heading). An untrusted note's metadata is its author's words: fenced like its text. */
+function metaText(text: string, trusted: boolean, source: string): string {
+  const line = text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, " ").replace(/\s+/g, " ").trim().slice(0, 200);
+  return trusted || !line ? line : fence(line, false, source);
+}
+/** A frontmatter value we expect to be a short word (dept, type, date); anything else from an untrusted note is dropped. */
+const word = (v: string, trusted: boolean): string => (trusted || /^[\w.:+-]{0,40}$/.test(v) ? v : "");
+
+function presentHit(h: SearchHit): SearchHit {
+  return {
+    ...h,
+    title: metaText(h.title, h.trusted, h.path), heading: metaText(h.heading, h.trusted, h.path),
+    dept: word(h.dept, h.trusted), type: word(h.type, h.trusted), updated: word(h.updated, h.trusted),
+    snippet: fence(h.snippet, h.trusted, h.path),
+  };
+}
+
 function runTool(ctx: Ctx, name: string, args: unknown): unknown {
   try {
     if (name === "search") {
@@ -73,7 +90,7 @@ function runTool(ctx: Ctx, name: string, args: unknown): unknown {
       const db = openReadOnly(ctx.dbPath); // missing/corrupt: tell the user to rebuild; this server never writes
       try {
         const q = ctx.vectors?.get(input.query) ?? null;
-        const hits = (q ? hybridSearch(db, input, q) : search(db, input)).map((h) => ({ ...h, snippet: fence(h.snippet, h.trusted, h.path) }));
+        const hits = (q ? hybridSearch(db, input, q) : search(db, input)).map(presentHit);
         return toolText(JSON.stringify({ note: UNTRUSTED_NOTE, count: hits.length, hits }, null, 2));
       } finally { db.close(); }
     }
@@ -86,7 +103,7 @@ function runTool(ctx: Ctx, name: string, args: unknown): unknown {
     // Only the resolved note path and the time; never the query, the arguments or the text (7c).
     if (ctx.usageFile) recordUse(ctx.usageFile, vaultRel);
     return toolText(JSON.stringify({
-      note: UNTRUSTED_NOTE, path: vaultRel, trusted, title: front.title ?? path.basename(vaultRel), truncated: clipped,
+      note: UNTRUSTED_NOTE, path: vaultRel, trusted, title: metaText(front.title ?? path.basename(vaultRel), trusted, vaultRel), truncated: clipped,
       text: fence(clipped ? body.slice(0, MAX_NOTE_CHARS) : body, trusted, vaultRel),
     }, null, 2));
   } catch (e) {

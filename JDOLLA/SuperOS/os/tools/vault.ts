@@ -135,7 +135,7 @@ export function parseFront(head: string): Front {
 
 /** One plain line of copied text: no control characters and no markup that could pass for a link or tag. */
 export function clean(text: string, max = 120): string {
-  const t = text.replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, " ").replace(/<[^>]*>/g, " ").replace(/\[\[|\]\]/g, "").replace(/[<>`|]/g, "").replace(/\s+/g, " ").trim();
+  const t = text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, " ").replace(/<[^>]*>/g, " ").replace(/\[\[|\]\]/g, "").replace(/[<>`|]/g, "").replace(/\s+/g, " ").trim();
   return t.length > max ? `${t.slice(0, max - 1)}…` : t;
 }
 
