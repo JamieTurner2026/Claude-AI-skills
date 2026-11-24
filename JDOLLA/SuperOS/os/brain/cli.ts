@@ -8,11 +8,12 @@ import { fence } from "./present.ts";
 import { indexCounts, openReadOnly, search } from "./search.ts";
 import { isTrusted } from "./files.ts";
 import { runImportCommand } from "./import-cli.ts";
+import { runMailCommand } from "./mail-cli.ts";
 import { compareEval, formatComparison, hybridSearchCli, indexWithEmbeddings } from "./embed-cli.ts";
 import { formatReport, indexedPaths, keywordRanker, loadEvalFile, runEval } from "./eval.ts";
 import { formatUsage, readUsage, summarizeUsage, usagePathFor } from "./usage.ts";
 
-const USAGE = `usage: brain <index|search|get|stats|eval|usage|import-sessions> [args]
+const USAGE = `usage: brain <index|search|get|stats|eval|usage|import-sessions|import-mail> [args]
   index [--embeddings]   rebuild the index from wiki/ and raw/; --embeddings also sets up local meaning
                          search (one-time download, files in ~/.superos/brain/embeddings)
   search <query> [--dept d] [--limit n] [--trusted] [--json] [--hybrid]
@@ -22,10 +23,13 @@ const USAGE = `usage: brain <index|search|get|stats|eval|usage|import-sessions> 
   usage [--json]         which notes runs opened (get_note), and wiki notes never opened; reads only
   import-sessions [--claude-code <dir>] [--claude-ai <conversations.json>] [--dry-run]
                          import past sessions into raw/sessions/ (redacted, never overwritten)
+  import-mail [--dry-run]
+                         Brain-labelled mail from inbox/_feeds/mail.json into raw/mail/ (redacted, untrusted)
   --vault <dir>  --db <file>   (defaults: this vault, ~/.superos/brain/index.sqlite)`;
 
 async function main(argv: string[]): Promise<number> {
   if (argv[0] === "import-sessions") return runImportCommand(argv.slice(1));
+  if (argv[0] === "import-mail") return runMailCommand(argv.slice(1));
   const { values, positionals } = parseArgs({
     args: argv, allowPositionals: true,
     options: { vault: { type: "string" }, db: { type: "string" }, dept: { type: "string" }, limit: { type: "string" }, trusted: { type: "boolean" }, json: { type: "boolean" }, k: { type: "string" }, questions: { type: "string" }, embeddings: { type: "boolean" }, hybrid: { type: "boolean" }, compare: { type: "boolean" } },

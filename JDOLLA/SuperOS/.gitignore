@@ -6,6 +6,7 @@ node_modules/
 os/.cache/
 outputs/_work/
 raw/sessions/
+raw/mail/
 /daily/
 /inbox/_feeds/
 /projects/

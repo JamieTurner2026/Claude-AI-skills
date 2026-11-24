@@ -147,23 +147,28 @@ function freeName(dir: string, base: string, taken: Set<string>): string {
 const lstatExists = (p: string): boolean => { try { lstatSync(p); return true; } catch { return false; } };
 
 /** Creates raw/sessions/<source>/ and checks it really sits inside the vault (no link out). */
-function ensureSessionDir(vault: string, source: SessionSource): string {
+/** Creates <vault>/<rel> one folder at a time, refusing a link or a file anywhere on the way. Returns the real path. */
+export function ensureVaultDir(vault: string, rel: string): string {
   const root = realpathSync(vault);
-  const dir = path.join(root, SESSIONS_DIR, source);
+  const segs = rel.split("/").filter(Boolean);
+  if (!segs.length || segs.some((x) => x === "." || x === ".." || x.startsWith("."))) throw new Error(`Bad vault folder: ${rel}`);
+  const dir = path.join(root, ...segs);
   // Step down one folder at a time and refuse a link before creating anything beneath it.
   let cur = root;
-  for (const seg of [...SESSIONS_DIR.split("/"), source]) {
+  for (const seg of segs) {
     cur = path.join(cur, seg);
     if (existsSync(cur) || lstatExists(cur)) {
       const st = lstatSync(cur);
-      if (st.isSymbolicLink() || !st.isDirectory()) throw new Error(`${SESSIONS_DIR}/${source} resolves outside the vault; refusing to write.`);
+      if (st.isSymbolicLink() || !st.isDirectory()) throw new Error(`${rel} resolves outside the vault; refusing to write.`);
     } else mkdirSync(cur);
   }
   const real = realpathSync(dir);
   const same = process.platform === "win32" ? real.toLowerCase() === dir.toLowerCase() : real === dir;
-  if (!same) throw new Error(`${SESSIONS_DIR}/${source} resolves outside the vault; refusing to write.`);
+  if (!same) throw new Error(`${rel} resolves outside the vault; refusing to write.`);
   return dir;
 }
+
+const ensureSessionDir = (vault: string, source: SessionSource): string => ensureVaultDir(vault, `${SESSIONS_DIR}/${source}`);
 
 export function importSessions(o: ImportOptions): ImportItem[] {
   const ledger = loadLedger(o.ledgerPath);

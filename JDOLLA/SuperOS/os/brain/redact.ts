@@ -3,7 +3,7 @@
 
 export type RedactionKind =
   | "private-key" | "api-key" | "github-token" | "aws-key" | "slack-token" | "bearer" | "jwt"
-  | "password" | "env-value" | "email" | "phone" | "hex-secret" | "base64-secret";
+  | "password" | "env-value" | "email" | "phone" | "long-number" | "hex-secret" | "base64-secret";
 
 export interface RedactResult { text: string; counts: Partial<Record<RedactionKind, number>>; total: number }
 
@@ -42,6 +42,9 @@ const RULES: Rule[] = [
   { kind: "email", re: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b/g },
   // Phone numbers: +CC international, or North American (555) 123-4567 / 555-123-4567 / 555.123.4567
   { kind: "phone", re: /(?<![\w+-])(?:\+\d{1,3}[ .-]?(?:\(?\d{1,4}\)?[ .-]?){2,4}\d{2,4}|(?:\+?1[ .-]?)?\(?\d{3}\)?[ .-]\d{3}[ .-]\d{4})(?![\w-])/g },
+  // Account, card and reference numbers: 9 or more digits, alone or in groups split by single spaces or dashes.
+  // Dates (8 digits), years, ports and short codes stay.
+  { kind: "long-number", re: /(?<![\w.-])\d(?:[ -]?\d){8,}(?![\w.-])/g },
   { kind: "hex-secret", re: /\b[0-9a-fA-F]{32,}\b/g },
   { kind: "base64-secret", re: /(?<![A-Za-z0-9+/_=-])[A-Za-z0-9+/_-]{40,}={0,2}(?![A-Za-z0-9+/_=-])/g, keep: (m) => !looksLikeBase64Secret(m) },
 ];

@@ -129,6 +129,7 @@ const CASES: { kind: string; secret: string; control: string; leak?: string }[] 
   { kind: "env-value", secret: "DATABASE_URL=postgres://u:fakepw@db.local/app", control: "MAX_RETRIES = 3 in the code", leak: "fakepw" },
   { kind: "email", secret: "write to jay.fake@example.com today", control: "install @types/node and user@localhost", leak: "jay.fake@example.com" },
   { kind: "phone", secret: "call (555) 010-4477 or +44 20 7946 0958", control: "on 2026-11-20 at 14:05, version 1.2.3, error 404, port 4317", leak: "010-4477" },
+  { kind: "long-number", secret: "account 4111 1111 1111 1111 and ref 123456789012", control: "on 2026-11-22, order 12345678, port 4317, version 1.2.3", leak: "1111 1111" },
   { kind: "hex-secret", secret: `secret ${FAKE.hex}`, control: "short sha d2ebb11 and color #ff00aa", leak: FAKE.hex },
   { kind: "base64-secret", secret: `blob ${FAKE.b64}`, control: "path /home/user/Claude-AI-skills/JDOLLA/SuperOS/os/brain and aVeryLongCamelCaseFunctionNameWithNoDigitsAtAll", leak: FAKE.b64 },
   { kind: "private-key", secret: j("-----BEGIN ", "RSA PRIVATE KEY-----\nMIIfakekeymaterial\n-----END ", "RSA PRIVATE KEY-----"), control: "a public key fingerprint", leak: "MIIfakekeymaterial" },
