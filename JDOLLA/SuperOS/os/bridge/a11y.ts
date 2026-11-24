@@ -16,6 +16,7 @@ type Violation = { id: string; impact: string | null; help: string; nodes: Array
 type Page = {
   goto(u: string): Promise<unknown>; waitForTimeout(ms: number): Promise<void>; addScriptTag(o: { content: string }): Promise<unknown>;
   evaluate<T, A = undefined>(f: (a: A) => T | Promise<T>, a?: A): Promise<T>; keyboard: { press(k: string): Promise<void> };
+  screenshot(o: { path: string }): Promise<unknown>;
   on(e: string, f: (m: { type(): string; text(): string }) => void): void;
 };
 type Context = { newPage(): Promise<Page>; close(): Promise<void> };
@@ -88,6 +89,28 @@ async function main(): Promise<number> {
         const noOutline = seen.filter((s) => s.tag !== "body" && !s.outline);
         if (noOutline.length) failures.push(`keyboard: ${noOutline.length} focused element(s) without a visible outline, e.g. ${noOutline.slice(0, 3).map((s) => `${s.tag} "${s.name}"`).join(", ")}`);
         for (const w of ["directives", "routines", "skills", "runs", "proposals"]) if (!widgets.includes(w)) failures.push(`keyboard: Tab never reached the ${w} widget`);
+        // A11Y_SHOT=<file.png>: a picture of the page with the directive Add button focused, to look at the focus ring.
+        if (process.env["A11Y_SHOT"]) {
+          await page.evaluate(() => { (document.querySelector(".add button") as HTMLElement | null)?.focus({ focusVisible: true } as FocusOptions); });
+          await page.screenshot({ path: process.env["A11Y_SHOT"] });
+        }
+        // The Proposals keys still work: focus the list, "a" asks, Escape cancels (a key alone never decides).
+        const keys = await page.evaluate(() => {
+          const body = document.querySelector('[data-widget="proposals"] .body') as HTMLElement | null;
+          body?.focus();
+          return { focused: document.activeElement === body, items: document.querySelectorAll('[data-widget="proposals"] .pr.pending').length };
+        });
+        if (!keys.focused || keys.items === 0) failures.push(`keyboard: could not focus the Proposals list (pending items: ${keys.items})`);
+        else {
+          await page.keyboard.press("a");
+          await page.waitForTimeout(200);
+          const asked = await page.evaluate(() => document.querySelectorAll('[data-widget="proposals"] .ask').length);
+          await page.keyboard.press("Escape");
+          await page.waitForTimeout(200);
+          const after = await page.evaluate(() => document.querySelectorAll('[data-widget="proposals"] .ask').length);
+          console.log(`keyboard: Proposals "a" asked (${asked}), Escape cancelled (${after} left)`);
+          if (asked !== 1 || after !== 0) failures.push(`keyboard: Proposals a/Escape did not ask and cancel (asked ${asked}, left ${after})`);
+        }
       }
       await ctx.close();
     }

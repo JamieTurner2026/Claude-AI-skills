@@ -91,6 +91,9 @@ Setting up on the PC: see `../docs/PC-SETUP.md`.
 - `GET /api/proposals`, `POST /api/proposals/:id/approve|reject` sit behind the same session, origin and header checks. Approving is append-only: a new `wiki/_learnings/<id>.md` and one bullet under `## Learned rules` in the skill.
 - Switch it off with `engine.learning.enabled: false`.
 
+## Accessibility (11b)
+- `npm run a11y` runs axe-core in Chromium (desktop and phone) on a temp vault copy and walks the page with the keyboard; `A11Y_SHOT=<file.png>` also saves a picture with a control focused. `bridge/a11y-static.test.ts` keeps button names, input labels, polite live regions and AA text colours in the source.
+
 ## Red team (11a)
 - `bridge/redteam.test.ts` pushes one hostile fixture (`shared/hostile.ts`) through every untrusted door and checks it stays inert; `npm run redteam:ui` checks the dashboard in Chromium. Door-by-door results: `docs/LEARNINGS.md`.
 

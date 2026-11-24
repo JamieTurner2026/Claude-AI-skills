@@ -15,7 +15,9 @@ export const runs: Widget = {
     const list = h("div", { class: "body-list" });
     body.append(list);
     const card = (r: RunView) => {
-      const out = h("pre", {});
+      const out = h("pre", { role: "log", "aria-live": "polite", "aria-relevant": "additions", tabindex: "0", "aria-label": `Output of ${r.routine ? `routine ${r.routine}` : r.skill ? `skill ${r.skill}` : "run"} ${r.id.slice(0, 8)}` });
+      /** Adds streamed text at the end (a screen reader reads only what is new) and drops the oldest past 6000 characters. */
+      const add = (t: string) => { out.append(document.createTextNode(t)); while ((out.textContent ?? "").length > 6000 && out.firstChild && out.childNodes.length > 1) out.firstChild.remove(); };
       const head = h("div", { class: "head" },
         h("span", { class: `pill ${r.tier}` }, r.tier), h("span", { class: `pill ${r.status}` }, r.status),
         h("span", {}, `cost ${money(r.costUsd)} of ${money(r.capUsd)}`), h("span", {}, new Date(r.startedAt).toLocaleTimeString()));
@@ -26,9 +28,9 @@ export const runs: Widget = {
         sources.push(es);
         es.onmessage = (ev) => {
           const e = JSON.parse(String(ev.data)) as { type: string; text?: string; name?: string };
-          if (e.type === "text" && e.text) out.textContent = ((out.textContent ?? "") + e.text).slice(-6000);
-          if (e.type === "tool" && e.name) out.textContent = ((out.textContent ?? "") + `[${e.name}]\n`).slice(-6000);
-          if (e.type === "denied") out.textContent = ((out.textContent ?? "") + `[blocked: ${(e as { tool?: string }).tool ?? "tool"}]\n`).slice(-6000);
+          if (e.type === "text" && e.text) add(e.text);
+          if (e.type === "tool" && e.name) add(`[${e.name}]\n`);
+          if (e.type === "denied") add(`[blocked: ${(e as { tool?: string }).tool ?? "tool"}]\n`);
           if (e.type === "status") { es.close(); if (alive) void ctx.refresh(); }
           out.scrollTop = out.scrollHeight;
         };
