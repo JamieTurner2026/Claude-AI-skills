@@ -33,13 +33,16 @@ For a machine diagram from `video-knowledge` entries: one node per component, li
 ## Writing a custom scene
 A scene file defines `build(args)` and optionally `animate(frame, total, args)`. Import helpers with `from lib.bl_helpers import *`: `material`, `assign`, `set_background`, `add_lights`, `add_primitive`, `add_text`, `import_model`, `link_between`, `add_camera_fit` (frames everything, call it **last**), `bounds`. Animate by setting object transforms in `animate()` per frame (no keyframes needed).
 
+## Craft guides (`references/`)
+Read the matching one before writing a non-trivial scene: `bpy.md` (version-proof scripts; read first if unsure), `scene.md` (scale, camera, light), `materials.md` (real-looking values), `animation.md` (keyframes with render.py, loops), `rigging.md` (mechanical rigs for robots/servos first), `retopology.md` (cleanup, triangle budgets, baking), `level-design.md` (game levels, Unreal/FBX export). `references/README.md` maps the live-Blender checks to headless previews.
+
 ## Workflow
 1. Preview first: `--width 640 --height 360 --samples 8-16`. 2. Read the PNG and check framing, readability, colours. 3. Fix and repeat. 4. Final render at the requested size/samples. 5. Give the user the file path(s) in an allowed output folder.
 Never claim a visual is done without having viewed it (for video, view 2-3 frames from `OUT/frames/`).
 
 ## Pitfalls
 - Always call `add_camera_fit` after creating everything (text bounds are measured after a scene update, already handled).
-- bpy 5.x removed `action.fcurves`; don't edit keyframe interpolation, drive motion in `animate()`.
+- bpy 5.x removed `action.fcurves`; drive simple motion in `animate()`, or key in `build()` and call `scene.frame_set(1 + i)` in `animate()` (see `references/animation.md` for fcurves on any version).
 - Text is the built-in font; keep it short. Labels should face the camera (rotate X by 90° for a front-facing view).
 - Don't import untrusted `.blend`/scripts: scene scripts run arbitrary Python.
 - Render time scales with pixels × samples; 1280x720 at 32 samples takes seconds for simple scenes, minutes for complex ones.

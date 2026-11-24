@@ -10,11 +10,12 @@ def hex_rgba(h, a=1.0):
 
 def material(name, color="#cccccc", metallic=0.0, roughness=0.5, emission=0.0):
     m = bpy.data.materials.new(name); m.use_nodes = True
-    b = m.node_tree.nodes["Principled BSDF"]
+    b = next(n for n in m.node_tree.nodes if n.type == "BSDF_PRINCIPLED")  # by type: node names are localized
     b.inputs["Base Color"].default_value = hex_rgba(color)
     b.inputs["Metallic"].default_value = metallic; b.inputs["Roughness"].default_value = roughness
     if emission:
-        b.inputs["Emission Color"].default_value = hex_rgba(color); b.inputs["Emission Strength"].default_value = emission
+        (b.inputs.get("Emission Color") or b.inputs.get("Emission")).default_value = hex_rgba(color)  # renamed in 4.0
+        b.inputs["Emission Strength"].default_value = emission
     return m
 
 
@@ -24,7 +25,7 @@ def assign(obj, mat):
 
 def set_background(color="#101418", strength=1.0):
     w = bpy.data.worlds.new("World"); w.use_nodes = True; bpy.context.scene.world = w
-    bg = w.node_tree.nodes["Background"]
+    bg = next(n for n in w.node_tree.nodes if n.type == "BACKGROUND")
     bg.inputs["Color"].default_value = hex_rgba(color); bg.inputs["Strength"].default_value = strength
 
 
