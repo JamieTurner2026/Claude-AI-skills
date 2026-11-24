@@ -3,6 +3,7 @@ title: Blender skills from outside repos
 dept: gamedev
 type: concept
 sources:
+  - raw/gamedev/blender-skills/blender-agent-skills/2026-11-24_repo-snapshot.md
   - raw/gamedev/blender-skills/mcp-for-blender/2026-11-24_repo-snapshot.md
   - raw/gamedev/blender-skills/mcp-for-blender/guides/bpy.md
   - raw/gamedev/blender-skills/mcp-for-blender/guides/scene.md
@@ -34,6 +35,55 @@ Source: [[raw/gamedev/blender-skills/mcp-for-blender/2026-11-24_repo-snapshot]]
 | AI model generators, World Labs worlds | No | Paid keys or paid Premium. Left out until Jay asks. |
 
 Where it went: the seven guides are adapted for headless use in the `blender-visuals` skill (`references/`), with the MCP tool calls swapped for preview renders. The originals stay unchanged in `raw/`.
+
+## Blender Agent Skills (v1.3.3, MIT, 28 skills)
+Source: [[raw/gamedev/blender-skills/blender-agent-skills/2026-11-24_repo-snapshot]]
+
+Ready-made, tested skills for Blender 5.2 LTS+ (verified on 5.3). They run without a Blender window and print JSON results; with the MCP above they also run in a live Blender. Start point: `blender-core`. Every geometry job ends with `blender-asset-qa`. Jay chose 19 to switch on and 9 to file for later (2026-11-24).
+
+### On (in `.claude/skills/`)
+| Skill | How it helps |
+|---|---|
+| `blender-core` | Runs Blender scripts, routes to the right skill, 5.x API rules |
+| `blender-asset-qa` | Catches z-fighting, floating parts, bad normals and scale; multi-angle review sheets |
+| `blender-scene-setup` | Real-world units, `SM_/T_/M_` naming, collections, clean files before handoff |
+| `blender-hardsurface-modeling` | Car parts, props, machine parts: bevels, booleans, weighted normals |
+| `blender-retopology-uv` | Light game meshes and clean UVs, texel density, lightmap UV2 |
+| `blender-pbr-materials` | Correct metal/roughness materials, texture sets, DirectX normals for Unreal |
+| `blender-texturing` | Edge wear, grime, dust, decals, trim sheets |
+| `blender-texture-baking` | High-to-low normal, AO and curvature maps, ORM packing |
+| `blender-game-optimization` | Triangle/material budgets per platform, LOD chains, draw calls |
+| `blender-export-pipelines` | MIDNIGHT REIGN export to Unreal (FBX, UCX collision, Nanite); also Unity, Godot, web, Roblox |
+| `blender-rendering` | Cycles/EEVEE settings, colour management, batch renders |
+| `blender-lighting-lookdev` | Studio and product lighting, HDRI, cameras, turntables for training material |
+| `blender-environment-kits` | Terrain, scatter, modular kits for tracks and city blocks |
+| `blender-animation` | Actions, loops, mocap retargeting, root motion, clip export |
+| `blender-time-of-day` | Night city glow, golden hour, fog: MIDNIGHT REIGN moods |
+| `blender-weather-fx` | Rain, wet streets, puddles, lightning |
+| `blender-pipeline-automation` | Batch convert and check folders of models |
+| `blender-video-editing` | Cut renders into training videos, titles, music |
+| `blender-workflow-recipes` | Full playbooks: game prop, environment, turntable, rainy night shot |
+
+### Filed, off (in `raw/gamedev/blender-skills/blender-agent-skills/skills/`)
+| Skill | When it would help |
+|---|---|
+| `blender-character-rigging` | Rigging drivers or characters (Rigify, game skeletons) |
+| `blender-facial-shapekeys` | Face expressions and lip-sync |
+| `blender-clothing` | Clothes on characters |
+| `blender-hair-grooming` | Hair and fur |
+| `blender-sculpting` | Organic shapes |
+| `blender-stylized-npr` | Toon/anime looks and outlines |
+| `blender-simulation` | Cloth, rigid bodies, fluids |
+| `blender-geometry-nodes` | Procedural modeling from JSON |
+| `blender-addon-development` | Writing Blender add-ons |
+
+### Turn one on later
+In the Claude-AI-skills repo: `cp -r JDOLLA/SuperOS/raw/gamedev/blender-skills/blender-agent-skills/skills/blender-<name> .claude/skills/`, then `./install.sh` on the PC. Also remove its "(filed, off*)" mark in `.claude/skills/blender-core/SKILL.md`.
+
+### What it needs
+- PC: Blender 5.2 LTS or newer (5.3 recommended) installed; the scripts find it.
+- Cloud sessions: the Blender download is blocked, but `pip install bpy` (5.3) runs the scripts by importing them.
+- Tested 2026-11-24 in the cloud with pip `bpy` 5.3.0: the repo's suite gave 73 passed, 1 failed, 5 skipped. The failure (add-on validate) needs the Blender program, not the Python module; the skips need a GPU. A crate run end to end (modifier stack, QA, LODs, Unreal FBX export) worked, and QA caught a planted floating part and z-fighting. `review_shots.py` contact sheets need a GPU, so on cloud sessions check visuals with a `blender-visuals` Cycles render instead.
 
 ## Related
 - Department: [[depts/gamedev]] · Charter: [[wiki/gamedev/charter]] · Project: [[wiki/gamedev/midnight-reign]]

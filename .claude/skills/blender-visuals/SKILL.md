@@ -5,6 +5,8 @@ description: Create images, animations and 3D models with Blender, driven headle
 
 # Blender Visuals
 
+For quick visuals: diagrams, title cards, turntables, simple models. For real game or production assets (modeling, UVs, baking, LODs, export to Unreal/Unity/Godot, QA), use `blender-core` and the `blender-*` skills it routes to.
+
 Claude writes a small Python scene script; `scripts/render.py` runs it in headless Blender and writes PNG / MP4 / model files. You then **look at the result** (Read the PNG) and iterate.
 
 ## Setup (once per session)
@@ -24,7 +26,7 @@ Outputs are listed as `OUTPUT <path>`. CPU Cycles is the default (works headless
 | goal | scene | key args |
 |---|---|---|
 | title card / label | `title_card.py` | `title=`, `subtitle=`, `bg=`, `color=` |
-| rotating object video | `turntable.py` with `--frames 48 --mp4` | `shape=monkey\|cube\|sphere\|torus\|cone` or `model=file.glb/.obj/.stl`, `color=` |
+| rotating object video | `turntable.py` with `--frames 48 --mp4` | `shape=monkey\|cube\|sphere\|torus\|cone` or `model=file.glb/.obj/.stl/.fbx`, `color=` |
 | machine / station diagram | `machine_diagram.py` | `spec=spec.json` (nodes with id/label/kind/pos/size/color, links); see `assets/examples/servo_station.json` |
 | build + export a model | `model_export.py --export part.stl` | `shape=`, `size=` |
 

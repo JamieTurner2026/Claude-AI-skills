@@ -24,7 +24,7 @@ Outputs are listed as `OUTPUT <path>`. CPU Cycles is the default (works headless
 | goal | scene | key args |
 |---|---|---|
 | title card / label | `title_card.py` | `title=`, `subtitle=`, `bg=`, `color=` |
-| rotating object video | `turntable.py` with `--frames 48 --mp4` | `shape=monkey\|cube\|sphere\|torus\|cone` or `model=file.glb/.obj/.stl`, `color=` |
+| rotating object video | `turntable.py` with `--frames 48 --mp4` | `shape=monkey\|cube\|sphere\|torus\|cone` or `model=file.glb/.obj/.stl/.fbx`, `color=` |
 | machine / station diagram | `machine_diagram.py` | `spec=spec.json` (nodes with id/label/kind/pos/size/color, links); see `assets/examples/servo_station.json` |
 | build + export a model | `model_export.py --export part.stl` | `shape=`, `size=` |
 
@@ -38,6 +38,7 @@ A scene file defines `build(args)` and optionally `animate(frame, total, args)`.
 Never claim a visual is done without having viewed it (for video, view 2-3 frames from `OUT/frames/`).
 
 ## Craft guides
+For real game or production assets (modeling, UVs, baking, LODs, engine export, QA), use the `blender-core` skill and the `blender-*` skills it routes to; this module is for quick visuals.
 `references/` holds guides for version-proof bpy, scene, materials, animation, rigging, retopology and level design (game export). Start with `references/README.md`.
 
 ## Pitfalls

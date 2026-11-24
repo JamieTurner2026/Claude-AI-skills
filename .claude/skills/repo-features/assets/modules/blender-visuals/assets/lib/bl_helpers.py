@@ -79,7 +79,8 @@ def import_model(path):
     if p.endswith((".glb", ".gltf")): bpy.ops.import_scene.gltf(filepath=path)
     elif p.endswith(".obj"): bpy.ops.wm.obj_import(filepath=path)
     elif p.endswith(".stl"): bpy.ops.wm.stl_import(filepath=path)
-    else: raise ValueError("supported imports: .glb .gltf .obj .stl")
+    elif p.endswith(".fbx"): bpy.ops.import_scene.fbx(filepath=path)
+    else: raise ValueError("supported imports: .glb .gltf .obj .stl .fbx")
     return [o for o in bpy.data.objects if o not in before]
 
 
