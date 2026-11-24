@@ -8,12 +8,13 @@
 </head>
 <body>
   <header class="top">
-    <div class="brand"><span id="brand">JDOLLA$</span><span class="sub">Super OS</span></div>
+    <h1 class="brand"><span id="brand">JDOLLA$</span><span class="sub">Super OS</span></h1>
     <div class="counts" id="counts" aria-live="polite"></div>
     <button type="button" id="edit" class="ghost" aria-pressed="false">Edit layout</button>
   </header>
 
-  <section class="health" id="health" aria-label="Bridge health" aria-live="polite" hidden></section>
+  <section class="health" id="health" aria-label="Bridge health" hidden></section>
+  <p class="sr" id="health-live" aria-live="polite"></p>
 
   <section class="command" aria-label="Command bar">
     <label for="cmd" class="sr">Type a request</label>

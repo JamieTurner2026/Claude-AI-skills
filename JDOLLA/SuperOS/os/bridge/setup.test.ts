@@ -220,7 +220,7 @@ test("the widget is registered, laid out, styled in the neon blue theme and hide
   assert.match(readFileSync(path.join(app, "widgets", "registry.ts"), "utf8"), /setup/);
   assert.ok(JSON.parse(readFileSync(path.join(here, "..", "config", "os.config.json"), "utf8")).layout.some((l: { widget: string }) => l.widget === "setup"));
   const css = readFileSync(path.join(app, "styles.css"), "utf8");
-  assert.ok(/\.su-mark\.ok\s*\{[^}]*var\(--accent\)/.test(css) && /\.su-sec\s*\{[^}]*var\(--accent\)/.test(css) && /\.widget\[hidden\]\s*\{\s*display:\s*none/.test(css));
+  assert.ok(/\.su-mark\.ok\s*\{[^}]*var\(--accent(?:-text)?\)/.test(css) && /\.su-sec\s*\{[^}]*var\(--accent(?:-text)?\)/.test(css) && /\.widget\[hidden\]\s*\{\s*display:\s*none/.test(css));
   const src = readFileSync(path.join(app, "widgets", "setup.ts"), "utf8");
   assert.ok(/sec\.hidden = done === v\.rows\.length/.test(src) && !/innerHTML/.test(src));
   assert.ok(/ctx\.api\.open\("docs\/PC-SETUP\.md"\)/.test(src), "the § opens the local PC-SETUP through the bridge");
