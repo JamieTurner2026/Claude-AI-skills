@@ -31,6 +31,7 @@ One rule each, with its evidence.
 - **Quoted text must not be able to forge the structure around it.** Evidence: 2026-11-24, red team: an imported session message containing `### Jay` became a third speaker turn in the note. Heading and setext lines in message bodies are now escaped.
 - **Every writer goes through the same path guard.** Evidence: 2026-11-24, red team: the vault generator refused a `reports/` folder that is a link out of the vault, but the routine report writer didn't check and would have written through it. Reports now use the generator's guard.
 - **The page's own policy is a second wall; test the first one anyway.** Evidence: 2026-11-24, with the runs widget broken on purpose to use `innerHTML`, hostile `<img onerror>` elements were created but the bridge's Content Security Policy blocked the inline handler. The browser check still failed it, as it should: one wall is not enough.
+- **A library's default can change meaning between majors.** Evidence: 2026-11-24, zod 4's `.default(v)` returns `v` as-is where zod 3 parsed it, so a config with no `learning` section would have lost the inner `citations` default and every typecheck and test still passed. Sections that rely on parsing now use `.prefault`, and `bridge/zod4.test.ts` fails if one goes back to `.default`.
 
 ## Red team, 2026-11-24 (11a)
 
@@ -49,5 +50,5 @@ One hostile fixture (`os/shared/hostile.ts`: a fake closing fence, `&lt;/untrust
 | Report writers | **Leak (needs local access).** A `reports/` folder linked out of the vault was written through. | Reports go through the vault guard; the name must be a date plus a skill slug. |
 
 `npm audit --omit=dev`, 2026-11-24:
-- **zod 3.25.76: high**, GHSA-mrhx-c7xc-m3w5 (memory on oversized constrained collections). The only fix is zod 4.6.7, a major version. Installing it gave 41 type errors (API changes such as two-argument `z.record`), so it was not upgraded. Exposure is small because every input is size-capped before zod sees it: HTTP bodies 64 KB, feeds 1 MB, brain reads 512 KB, plus array maximums. Upgrade as its own task.
+- **zod 3.25.76: high**, GHSA-mrhx-c7xc-m3w5 (memory on oversized constrained collections). The only fix is zod 4.6.7, a major version. Installing it gave 41 type errors (API changes such as two-argument `z.record`), so it was not upgraded here. Exposure was small because every input is size-capped before zod sees it: HTTP bodies 64 KB, feeds 1 MB, brain reads 512 KB, plus array maximums. Migrated to zod 4.6.7 the same day as its own change; `npm audit --omit=dev` is now clean.
 - **`brain/embed-runtime` (optional meaning search): high** via `sharp` in `@huggingface/transformers`. The fix is transformers 4.3.2, a major version, not done here. It only runs once Jay sets up meaning search (PC-SETUP §5.2), on his own notes.

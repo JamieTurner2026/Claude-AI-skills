@@ -64,7 +64,7 @@ Updated 2026-11-23. Built and tested in the cloud: every PR runs `npm run check`
 - LEGEND OF DOOM has its own repo, but its Vercel project still builds from a `car-finder-app` branch. Repointing it is Jay's call.
 
 ## Known gaps
-- `npm audit --omit=dev` (2026-11-24): zod 3.25.76 has a high advisory (GHSA-mrhx-c7xc-m3w5, memory on oversized collections); the fix is zod 4, which needs a migration. Inputs are size-capped before zod sees them. The optional meaning-search runtime pulls `sharp` with a high advisory; its fix is a major `@huggingface/transformers` upgrade, not done.
+- `npm audit --omit=dev`: clean since zod moved to 4.6.7 (2026-11-24, clears GHSA-mrhx-c7xc-m3w5). The optional meaning-search runtime (`brain/embed-runtime`, own lockfile) still pulls `sharp` with a high advisory; its fix is a major `@huggingface/transformers` upgrade, not done.
 - The blueprint assumes a Mac. On Windows the sync hook, log path and sandbox need adapting.
 - Seven departments, against the blueprint's suggested 3 to 6. The Business Strategy department has only a draft skill.
 - Project notes were written from README, package files and file listings, not a full code read. Security and Strategy have no project notes.
