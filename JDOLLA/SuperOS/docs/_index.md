@@ -1,6 +1,7 @@
 # Docs index
 
-- What runs right now, and what needs Jay: [[docs/STATUS]]
+- The commands to run on the PC, in order (one screen): [[START-HERE]]
+- What works now, what is untested, and what waits on Jay: [[docs/STATUS]]
 - What gets built next, and by which session: [[docs/ROADMAP]]
 - The original phase plan: [[docs/EVOLUTION]]
 - Rules learned, with evidence: [[docs/LEARNINGS]]

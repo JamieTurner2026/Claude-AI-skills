@@ -1,6 +1,6 @@
 # JDOLLA$
 
-Jay's second brain. Start here.
+Jay's second brain. On the PC: [[START-HERE]] (the exact commands, in order).
 
 - Today: [[wiki/directives]]
 - All notes: [[wiki/_master-index]]
