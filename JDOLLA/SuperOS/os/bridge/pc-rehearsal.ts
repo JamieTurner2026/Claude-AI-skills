@@ -175,7 +175,16 @@ export async function rehearse(source: string, work: string, out: string): Promi
   const wrapper = path.join(fakeDir, "cli.mjs");
   writeFileSync(wrapper, `// Stand-in for the Claude Code CLI's cli.js (PC rehearsal only).\nawait import(${JSON.stringify(pathToFileURL(path.join(ctx.osDir, "bridge", "fake-claude.ts")).href)});\n`);
   writeFileSync(path.join(ctx.osDir, "config", "os.local.json"), JSON.stringify({ claudeBin: wrapper }, null, 2) + "\n");
-  ctx.steps.push({ n: "0b", name: "stub the Claude CLI: claudeBin in os/config/os.local.json points at the fake", doc: "PC-SETUP §1", result: "PASS", exit: null, seconds: 0, notes: ["STUB: the fake CLI stands in for Claude Code; no question is asked (§8 costs money)."] });
+  // A signed-in Claude Code has ~/.claude/projects; the stub gives it one past session holding an email, so step 5 has
+  // something to import and redact.
+  const proj = path.join(home, ".claude", "projects", "rehearsal-project");
+  mkdirSync(proj, { recursive: true });
+  writeFileSync(path.join(proj, "rehearsal-0001.jsonl"), [
+    { type: "summary", summary: "Rehearsal session" },
+    { type: "user", sessionId: "rehearsal-0001", timestamp: "2026-11-01T14:00:00Z", message: { role: "user", content: "How do I reset the servo alarm? Mail me at rehearsal.fake@example.com" } },
+    { type: "assistant", sessionId: "rehearsal-0001", timestamp: "2026-11-01T14:00:05Z", message: { role: "assistant", content: [{ type: "text", text: "Clear the fault, then press reset." }] } },
+  ].map((l) => JSON.stringify(l)).join("\n") + "\n");
+  ctx.steps.push({ n: "0b", name: "stub the Claude CLI: claudeBin in os/config/os.local.json points at the fake", doc: "PC-SETUP §1", result: "PASS", exit: null, seconds: 0, notes: ["STUB: the fake CLI stands in for Claude Code, with one made-up past session in ~/.claude/projects; no question is asked (§8 costs money)."] });
   const nodeV = sh(ctx, "node --version").stdout.trim();
   run(ctx, "0c", "npm install", "START-HERE 0, PC-SETUP §3.1", (_o, exit) => [
     [exit === 0, `it exits 0 (got ${exit})`],
@@ -227,8 +236,18 @@ export async function rehearse(source: string, work: string, out: string): Promi
   skip(ctx, "4", "npm run brain -- index --embeddings", "START-HERE 4, PC-SETUP §5.2", "STUB: skipped on purpose, it downloads a ~500 MB runtime and a 23 MB model. The runtime's pin and the outdated-runtime path are covered by brain/embed-runtime.test.ts.");
 
   // Step 5: import sessions (none on a fresh runner), then the index.
-  run(ctx, "5a", "npm run brain -- import-sessions --dry-run", "START-HERE 5, PC-SETUP §5.3", (_o, exit) => [[exit === 0, `exit 0 (got ${exit})`], clean(ctx)]);
-  run(ctx, "5b", "npm run brain -- import-sessions", "START-HERE 5, PC-SETUP §5.3", (_o, exit) => [[exit === 0, `exit 0 (got ${exit})`], clean(ctx)]);
+  run(ctx, "5a", "npm run brain -- import-sessions --dry-run", "START-HERE 5, PC-SETUP §5.3", (o, exit) => [
+    [exit === 0, `exit 0 (got ${exit})`],
+    [/would write \S+/.test(o), "it prints the file it would write"],
+    [/redacted [1-9]/.test(o), "it counts what it would redact (the email)"],
+    [/DRY RUN, nothing written/.test(o), "it writes nothing"],
+    [!existsSync(path.join(ctx.clone, "JDOLLA", "SuperOS", "raw", "sessions")), "raw/sessions/ was not created"],
+  ]);
+  run(ctx, "5b", "npm run brain -- import-sessions", "START-HERE 5, PC-SETUP §5.3", (o, exit) => [
+    [exit === 0, `exit 0 (got ${exit})`], [/\b1 new\b/.test(o), "it imported the one session"],
+    [!/rehearsal\.fake@example\.com/.test(o), "the email is not printed"], clean(ctx),
+  ]);
+  run(ctx, "5b2", "npm run brain -- import-sessions", "PC-SETUP §5.3 (running it again is safe)", (o, exit) => [[exit === 0, `exit 0 (got ${exit})`], [/0 new, 1 already imported/.test(o), "the second run skips it"]]);
   run(ctx, "5c", "npm run brain -- index", "START-HERE 5, PC-SETUP §5.1", (o, exit) => [
     [exit === 0, `exit 0 (got ${exit})`],
     [/indexed \d+ files, \d+ chunks/.test(o), "it prints `indexed N files, M chunks` (PC-SETUP §5.1)"],
@@ -236,7 +255,7 @@ export async function rehearse(source: string, work: string, out: string): Promi
 
   // Step 6: autostart, plan only. --dry-run always only prints; afterwards no task may exist.
   run(ctx, "6", "npm run autostart -- install --dry-run", "START-HERE 6, PC-SETUP §6b", (o, exit) => {
-    const checks: Array<[boolean, string]> = [[exit === 0, `exit 0 (got ${exit})`], [/nothing changed/i.test(o), "it says nothing changed"]];
+    const checks: Array<[boolean, string]> = [[exit === 0, `exit 0 (got ${exit})`], [/nothing (was )?changed/i.test(o), "it says nothing changed"]];
     if (win) {
       checks.push([/schtasks\.exe/i.test(o) && /JDOLLA SuperOS bridge/.test(o), "it shows the schtasks.exe command and the task name"]);
       const q = spawnSync("schtasks.exe", ["/Query", "/TN", "JDOLLA SuperOS bridge"], { encoding: "utf8" });
