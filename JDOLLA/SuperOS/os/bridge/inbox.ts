@@ -26,7 +26,7 @@ const TOPIC = /^[a-z0-9][a-z0-9-]{0,39}$/;
 /** A file name we are willing to triage and move: one plain name, no dot-files (.env*), nothing Windows would mangle. */
 export function isTriageName(name: unknown): name is string {
   return typeof name === "string" && name.length >= 1 && name.length <= 200
-    && !/[\u0000-\u001f\u007f\\/:*?"<>|]/.test(name)
+    && !/[\u0000-\u001f\u007f\\/:*?"<>|]/.test(name) && !/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u.test(name)
     && !name.startsWith(".") && !/[ .]$/.test(name)
     && name.toLowerCase() !== "readme.md"; // inbox/README.md explains the folder; it stays
 }
@@ -117,7 +117,7 @@ export type Move = { file: string; dept: string; topic: string; to: string; reas
 
 /** One plain line: no control characters, no markup. */
 export function cleanReason(text: string, max = 200): string {
-  return text.replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, " ").replace(/<[^>]*>/g, " ").replace(/\[\[|\]\]/g, "").replace(/[<>`|]/g, "").replace(/\s+/g, " ").trim().slice(0, max);
+  return text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, " ").replace(/<[^>]*>/g, " ").replace(/\[\[|\]\]/g, "").replace(/[<>`|]/g, "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
 /**

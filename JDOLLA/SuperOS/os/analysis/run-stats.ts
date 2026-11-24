@@ -127,7 +127,7 @@ function finish(b: Bucket): Bucket {
 
 /** Clean one-line text for display: no control characters, markup or links, cut to 80 characters. */
 export function plain(text: string, max = REQUEST_CHARS): string {
-  return text.replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, " ").replace(/<[^>]*>/g, " ").replace(/\[\[|\]\]/g, "").replace(/[<>`|]/g, "").replace(/\s+/g, " ").trim().slice(0, max);
+  return text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, " ").replace(/<[^>]*>/g, " ").replace(/\[\[|\]\]/g, "").replace(/[<>`|]/g, "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
 /** The numbers for the last `days` days (by the timestamps in the log) as of `now`. */

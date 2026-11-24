@@ -72,8 +72,19 @@ export function slugify(s: string): string {
   return s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50).replace(/-+$/, "") || "session";
 }
 
-const oneLine = (s: string, max: number): string => s.replace(/[\r\n\t]+/g, " ").replace(/["\\]/g, "'").replace(/\s+/g, " ").trim().slice(0, max);
+const oneLine = (s: string, max: number): string => s.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, " ").replace(/["\\]/g, "'").replace(/\s+/g, " ").trim().slice(0, max);
 const isoDate = (s?: string): string => { const d = s ? new Date(s) : null; return d && !isNaN(d.getTime()) ? d.toISOString().slice(0, 10) : "undated"; };
+
+/** Controls that hide, reorder or break text (NUL, escape codes, NEL, bidi overrides); newlines and tabs stay. */
+const BODY_CONTROLS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u0085\u202a-\u202e\u2066-\u2069]/g;
+/**
+ * A message body as quoted text: a line that would be a Markdown heading (`### Jay`), or a setext underline (`---`, `===`)
+ * that turns the line above into one, gets a backslash so it shows literally. A message can't forge another speaker's
+ * turn or a section of the note.
+ */
+export function quoteBody(text: string): string {
+  return text.replace(BODY_CONTROLS, "").replace(/^( {0,3})(#{1,6}(?:\s|$)|-{2,}\s*$|={2,}\s*$)/gm, "$1\\$2");
+}
 
 export interface Rendered { title: string; dept: string; date: string; slug: string; parts: string[]; messages: number; redactions: number; counts: Partial<Record<RedactionKind, number>>; truncated: number }
 
@@ -89,7 +100,7 @@ export function renderSession(s: Session, importedOn: string): Rendered {
     addCounts(counts, r.counts);
     total += r.total;
     const who = m.role === "user" ? "Jay" : "Claude";
-    blocks.push(`### ${who}${m.at ? ` · ${oneLine(m.at, 40)}` : ""}\n\n${r.text.trim()}${text !== m.text ? "\n\n[…message truncated on import]" : ""}\n`);
+    blocks.push(`### ${who}${m.at ? ` · ${oneLine(m.at, 40)}` : ""}\n\n${quoteBody(r.text).trim()}${text !== m.text ? "\n\n[…message truncated on import]" : ""}\n`);
   }
   const firstUser = s.messages.find((m) => m.role === "user")?.text ?? "";
   const rawTitle = s.title?.trim() || firstUser.split(/\s+/).slice(0, 10).join(" ") || "Untitled session";

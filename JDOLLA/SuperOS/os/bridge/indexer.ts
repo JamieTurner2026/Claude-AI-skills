@@ -69,7 +69,7 @@ const RoutineSchema = z.object({
 });
 const AppSchema = z.object({ id: z.string().min(1).max(60), name: z.string().min(1).max(120), url: z.string().max(500).default("") });
 
-function readJsonArray<T>(file: string, schema: z.ZodType<T, z.ZodTypeDef, unknown>, label: string, warnings: string[]): T[] {
+function readJsonArray<T>(file: string, schema: z.ZodType<T>, label: string, warnings: string[]): T[] {
   if (!existsSync(file)) return [];
   try {
     return z.array(schema).max(500).parse(JSON.parse(readText(file)));

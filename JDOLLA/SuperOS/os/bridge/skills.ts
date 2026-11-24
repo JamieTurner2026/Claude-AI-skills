@@ -53,7 +53,7 @@ export function parseSkill(name: string, text: string): SkillEntry {
   if (!budgetKnown) problems.push('no readable "budget: **$0.25" line');
   return {
     name,
-    description: description.replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, 400),
+    description: description.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, " ").trim().slice(0, 400),
     tier: t === "T3" ? "T3" : UNKNOWN_TIER,
     tierKnown: t !== undefined,
     budgetUsd: budgetKnown ? budget : UNKNOWN_BUDGET_USD,
