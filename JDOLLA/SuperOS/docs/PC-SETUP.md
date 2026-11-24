@@ -117,7 +117,8 @@ Keyword search misses notes that say the same thing in other words. This adds a 
 npm run brain -- index --embeddings
 ```
 
-- The first time, it installs a pinned runtime (about 400 MB) and downloads the model (about 23 MB) into `%USERPROFILE%\.superos\brain\embeddings\`. Nothing goes into the vault. This is the only command that downloads anything; runs never do.
+- The first time, it installs a pinned runtime (about 500 MB) and downloads the model (about 23 MB) into `%USERPROFILE%\.superos\brain\embeddings\`. Nothing goes into the vault. This is the only command that downloads anything; runs never do.
+- **If you set this up before 2026-11-24**, run the same command once after updating. The runtime moved to transformers 4.3.2, and the old runtime pulls in an image library (`sharp`) with a security advisory. Until you do, search says "embedding runtime is 3.8.1, this version needs 4.3.2" and uses keywords only. The command replaces the runtime and gives every note a new vector (the model is kept, so nothing is downloaded but the runtime). Old and new vectors are never mixed.
 - Then it gives every note a vector. That takes a few seconds and later runs reuse the vectors.
 - Check it worked: `npm run brain -- eval --compare` prints keyword and hybrid scores side by side.
 - New or changed notes get their vectors on their own: while the bridge runs, the rebuild before each run embeds them in the background (at most 5 s of work per rebuild, without holding up the run). `npm run brain -- index --embeddings` still does them all at once.

@@ -4,7 +4,7 @@ Jay's second brain. On the PC: [[START-HERE]] (the exact commands, in order).
 
 - Today: [[wiki/directives]]
 - All notes: [[wiki/_master-index]]
-- Status: [[docs/STATUS]] · Plan: [[docs/EVOLUTION]] · Lessons: [[docs/LEARNINGS]]
+- Status: [[docs/STATUS]] · What changed: [[CHANGELOG]] · Plan: [[docs/EVOLUTION]] · Lessons: [[docs/LEARNINGS]]
 
 ## Departments
 - [[depts/software]]: Software Engineering & Development

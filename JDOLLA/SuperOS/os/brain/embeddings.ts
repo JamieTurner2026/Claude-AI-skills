@@ -2,7 +2,7 @@
 // `npm run brain -- index --embeddings`, and only that command may download anything.
 // Runtime and model files live outside the vault: ~/.superos/brain/embeddings/{runtime,models}.
 import { spawnSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -16,8 +16,22 @@ export interface Embedder {
 
 /** The one supported model: small, CPU-only, about 23 MB quantized, 384 dimensions. */
 export const LOCAL_MODEL = { name: "Xenova/all-MiniLM-L6-v2", dtype: "q8", dimensions: 384 } as const;
-export const LOCAL_MODEL_ID = `${LOCAL_MODEL.name}@${LOCAL_MODEL.dtype}`;
 const RUNTIME_PKG = "@huggingface/transformers";
+const RUNTIME_SRC = path.join(import.meta.dirname, "embed-runtime");
+
+/** The transformers version os/brain/embed-runtime pins (exact). */
+export function pinnedRuntimeVersion(): string {
+  const pkg = JSON.parse(readFileSync(path.join(RUNTIME_SRC, "package.json"), "utf8")) as { dependencies: Record<string, string> };
+  return pkg.dependencies[RUNTIME_PKG] ?? "";
+}
+
+/**
+ * The id stored with every vector. It names the runtime version as well as the model: the same model gives slightly
+ * different numbers under another transformers/onnxruntime (3.8.1 vs 4.3.2: cosine 0.993 to 0.999), so vectors
+ * from two runtimes must never be mixed. A new id makes `index --embeddings` re-embed everything and prune the rest,
+ * and makes search fall back to keywords (saying why) until it has.
+ */
+export const localModelId = (runtimeVersion: string): string => `${LOCAL_MODEL.name}@${LOCAL_MODEL.dtype}+transformers@${runtimeVersion}`;
 
 export function embeddingsDir(): string {
   if (process.env["SUPEROS_EMBED_DIR"]) return process.env["SUPEROS_EMBED_DIR"];
@@ -27,8 +41,21 @@ export function embeddingsDir(): string {
 const runtimeDir = (base: string): string => path.join(base, "runtime");
 const modelsDir = (base: string): string => path.join(base, "models");
 
+/** The transformers version installed in the runtime folder, or null when none is. */
+export function installedRuntimeVersion(base = embeddingsDir()): string | null {
+  try {
+    return (JSON.parse(readFileSync(path.join(runtimeDir(base), "node_modules", ...RUNTIME_PKG.split("/"), "package.json"), "utf8")) as { version?: string }).version ?? null;
+  } catch { return null; }
+}
+export type RuntimeState = "missing" | "outdated" | "ok";
+/** "outdated": a runtime is there but not the pinned version (an older PC setup); `index --embeddings` replaces it. */
+export function runtimeState(base = embeddingsDir()): RuntimeState {
+  const v = installedRuntimeVersion(base);
+  return v === null ? "missing" : v === pinnedRuntimeVersion() ? "ok" : "outdated";
+}
+/** True only for the pinned version, so nothing ever embeds with an old runtime. */
 export function runtimeInstalled(base = embeddingsDir()): boolean {
-  return existsSync(path.join(runtimeDir(base), "node_modules", ...RUNTIME_PKG.split("/"), "package.json"));
+  return runtimeState(base) === "ok";
 }
 export function modelPresent(base = embeddingsDir()): boolean {
   return existsSync(path.join(modelsDir(base), ...LOCAL_MODEL.name.split("/"), "onnx", "model_quantized.onnx"));
@@ -41,8 +68,7 @@ export function modelPresent(base = embeddingsDir()): boolean {
 export function installRuntime(base = embeddingsDir()): void {
   const dir = runtimeDir(base);
   mkdirSync(dir, { recursive: true });
-  const src = path.join(import.meta.dirname, "embed-runtime");
-  for (const f of ["package.json", "package-lock.json"]) copyFileSync(path.join(src, f), path.join(dir, f));
+  for (const f of ["package.json", "package-lock.json"]) copyFileSync(path.join(RUNTIME_SRC, f), path.join(dir, f));
   const npm = process.platform === "win32" ? "npm.cmd" : "npm";
   const r = spawnSync(npm, ["ci", "--ignore-scripts", "--no-audit", "--no-fund", "--omit=dev"], { cwd: dir, stdio: "inherit", shell: process.platform === "win32" });
   if (r.status !== 0) throw new Error(`installing the embedding runtime failed (npm exit ${r.status ?? r.error?.message})`);
@@ -59,7 +85,9 @@ interface TransformersLike {
  */
 export async function loadLocalEmbedder(opts: { allowDownload: boolean; base?: string }): Promise<Embedder> {
   const base = opts.base ?? embeddingsDir();
-  if (!runtimeInstalled(base)) throw new Error("embedding runtime not installed (run: npm run brain -- index --embeddings)");
+  const state = runtimeState(base);
+  if (state === "missing") throw new Error("embedding runtime not installed (run: npm run brain -- index --embeddings)");
+  if (state === "outdated") throw new Error(`embedding runtime is ${installedRuntimeVersion(base)}, this version needs ${pinnedRuntimeVersion()} (run: npm run brain -- index --embeddings)`);
   if (!opts.allowDownload && !modelPresent(base)) throw new Error("embedding model not downloaded (run: npm run brain -- index --embeddings)");
   const req = createRequire(path.join(runtimeDir(base), "package.json"));
   const mod = (await import(pathToFileURL(req.resolve(RUNTIME_PKG)).href)) as TransformersLike & { default?: TransformersLike };
@@ -71,7 +99,7 @@ export async function loadLocalEmbedder(opts: { allowDownload: boolean; base?: s
   t.env.allowRemoteModels = opts.allowDownload;
   const fe = await t.pipeline("feature-extraction", LOCAL_MODEL.name, { dtype: LOCAL_MODEL.dtype });
   return {
-    id: LOCAL_MODEL_ID,
+    id: localModelId(pinnedRuntimeVersion()),
     dimensions: LOCAL_MODEL.dimensions,
     async embed(texts) {
       if (!texts.length) return [];

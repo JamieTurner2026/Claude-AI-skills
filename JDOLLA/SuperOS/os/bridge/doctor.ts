@@ -35,7 +35,8 @@ export type DoctorDeps = {
   probeWrite: (dir: string) => { ok: true } | { ok: false; error: string };
   claudeBinFromConfig: () => string | undefined;
   brainIndexPath: () => string;
-  embeddingsRuntime: () => boolean;
+  /** true: the pinned runtime is installed; "outdated": an older one is (it is refused until replaced); false: none. */
+  embeddingsRuntime: () => boolean | "outdated";
   sandboxHas: (cmd: string) => boolean;
   /** engine.backup.remote from the config ("" when none); null if the config could not be read. */
   backupRemote: () => string | null;
@@ -173,7 +174,9 @@ export function checkBrainIndex(d: DoctorDeps): Check {
 }
 
 export function checkEmbeddings(d: DoctorDeps): Check {
-  return d.embeddingsRuntime() ? pass("embeddings", "Meaning search", "local embeddings runtime installed")
+  const r = d.embeddingsRuntime();
+  if (r === "outdated") return warn("embeddings", "Meaning search", "runtime out of date: search uses keywords only until it is replaced", "PC-SETUP §5.2: npm run brain -- index --embeddings (replaces the runtime and re-embeds; the model is kept)");
+  return r ? pass("embeddings", "Meaning search", "local embeddings runtime installed")
     : warn("embeddings", "Meaning search", "not set up (optional; search uses keywords only)", "PC-SETUP §5.2: npm run brain -- index --embeddings, only if you want it");
 }
 

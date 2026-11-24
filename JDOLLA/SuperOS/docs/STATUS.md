@@ -1,6 +1,6 @@
 # Status
 
-Updated 2026-11-24. Built and tested in the cloud: every PR runs `npm run check`, `npm test`, `npm run eval:router` and `npm run smoke` on Linux and Windows (`.github/workflows/superos.yml`), with a fake Claude only. History lives in git and `docs/LEARNINGS.md`; what to run on the PC is in `START-HERE.md`.
+Updated 2026-11-23. Built and tested in the cloud: every PR runs `npm run check`, `npm test`, `npm run eval:router` and `npm run smoke` on Linux and Windows (`.github/workflows/superos.yml`), with a fake Claude only. Version 1.0.0 (2026-11-24); what changed, phase by phase, is in `CHANGELOG.md`. History lives in git and `docs/LEARNINGS.md`; what to run on the PC is in `START-HERE.md`.
 
 ## What works now
 
@@ -21,7 +21,7 @@ Updated 2026-11-24. Built and tested in the cloud: every PR runs `npm run check`
 
 **Second brain**
 - Every T2/T3 run and routine gets the read-only `superos-brain` tools (`search`, `get_note`), rebuilt first if the index is over 5 minutes old (a failed rebuild never blocks a run). Off: `engine.brain.enabled`. One real run searched twice, opened the right note and answered from it for $0.0008. `raw/` results come back marked untrusted.
-- Local meaning search (opt-in: `npm run brain -- index --embeddings`, the only command that downloads, about 400 MB runtime + 23 MB model `Xenova/all-MiniLM-L6-v2` into `~/.superos/brain/embeddings`): keyword and vector rankings merged by reciprocal rank fusion, with a cosine floor of 0.15 (`MIN_SIMILARITY`; chosen on 30 questions, re-check on the PC). Falls back to keywords if the model can't load; `SUPEROS_BRAIN_HYBRID=off` forces keywords. New or changed notes are embedded in the background (5 s per rebuild, never blocking a run).
+- Local meaning search (opt-in: `npm run brain -- index --embeddings`, the only command that downloads, about 500 MB runtime (transformers 4.3.2, pinned exact; `npm audit` clean) + 23 MB model `Xenova/all-MiniLM-L6-v2` into `~/.superos/brain/embeddings`). Each vector is tagged with the runtime version, so a runtime change re-embeds everything instead of mixing; an older runtime is refused with a plain message until `index --embeddings` replaces it: keyword and vector rankings merged by reciprocal rank fusion, with a cosine floor of 0.15 (`MIN_SIMILARITY`; chosen on 30 questions, re-check on the PC). Falls back to keywords if the model can't load; `SUPEROS_BRAIN_HYBRID=off` forces keywords. New or changed notes are embedded in the background (5 s per rebuild, never blocking a run).
 - Brain eval (`npm run brain -- eval [--k 5]`, 30 invented questions: 10 keyword, 10 paraphrase, 10 synonym): keyword baseline hit@1 0.633, hit@5 0.867, hit@10 0.900, MRR 0.723; hybrid with the floor 0.833 / 0.933 / 1.000 / 0.883. At k=5, synonym questions go 0.600 → 0.800. Re-run on the PC after importing sessions.
 - Session import (`npm run brain -- import-sessions [--dry-run] [--claude-ai conversations.json]`): user and assistant text only, secrets and personal data redacted first, one file per session in the git-ignored `raw/sessions/<source>/`, never overwrites, skips sessions already imported (ledger in `~/.superos/brain/`). Imported text is searched as untrusted `raw/` data.
 - Mail into the brain (8a, offline half): `npm run brain -- import-mail [--dry-run]` reads Brain-labelled messages from `inbox/_feeds/mail.json` through `FileSource` (its guards unchanged) and writes one note per message to the git-ignored `raw/mail/YYYY-MM/<date>_<slug>.md` with frontmatter `type: mail`, `source: mail feed`, date, sender's name only, subject and `trusted: false`, plus the snippet (the feed has no full body). Redacted with the session-import redaction, which also masks digit runs of 9 or more (account or card numbers), then stripped of Markdown link, HTML and code characters. Never overwrites (`-v2`); deduped by message id through a hashed ledger in the log folder, not the vault. Search and `get_note` return these notes fenced as untrusted. Nothing connects to Gmail.
@@ -66,7 +66,7 @@ Updated 2026-11-24. Built and tested in the cloud: every PR runs `npm run check`
 - LEGEND OF DOOM has its own repo, but its Vercel project still builds from a `car-finder-app` branch. Repointing it is Jay's call.
 
 ## Known gaps
-- `npm audit --omit=dev`: clean since zod moved to 4.6.7 (2026-11-24, clears GHSA-mrhx-c7xc-m3w5). The optional meaning-search runtime (`brain/embed-runtime`, own lockfile) still pulls `sharp` with a high advisory; its fix is a major `@huggingface/transformers` upgrade, not done.
+- `npm audit --omit=dev`: clean (zod 4.6.7 since 2026-11-24). The opt-in meaning-search runtime (`os/brain/embed-runtime`, own lockfile) is clean too since transformers 4.3.2 (sharp 0.35.5).
 - The blueprint assumes a Mac. On Windows the sync hook, log path and sandbox need adapting.
 - Seven departments, against the blueprint's suggested 3 to 6. The Business Strategy department has only a draft skill.
 - Project notes were written from README, package files and file listings, not a full code read. Security and Strategy have no project notes.
