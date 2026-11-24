@@ -32,7 +32,7 @@ export function monthBounds(month: string, tz: string): { fromMs: number; toMs: 
   return { fromMs: localToInstant(y, mo, 1, 0, 0, tz), toMs: localToInstant(ny, nmo, 1, 0, 0, tz), days: new Date(Date.UTC(y, mo, 0)).getUTCDate() };
 }
 
-const Ledger = z.object({ spend: z.record(z.unknown()).default({}) }).passthrough();
+const Ledger = z.object({ spend: z.record(z.string(), z.unknown()).default({}) }).passthrough();
 /** Per-day spend from a ledger file (routine-ledger.json or learning-ledger.json): YYYY-MM-DD -> dollars. Never throws. */
 export function readLedgerSpend(logDir: string, name: "routine-ledger.json" | "learning-ledger.json"): Record<string, number> | null {
   if (!logDir) return null;
