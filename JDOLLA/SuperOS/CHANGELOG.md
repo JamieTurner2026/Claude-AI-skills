@@ -55,6 +55,7 @@ The first full version: everything from Phase 2 to Phase 11, built and tested in
 - Run analysis suggests budget and setting changes; approving one only records your decision (#31).
 - A scorecard for the learning loop: `npm run analyse:learning` (#40).
 - The Proposals widget gets filters, a one-line "why", and keys: j/k to move, a/r to ask, y to confirm (#39).
+- `npm run analyse:runs -- --month` and the monthly cost report (off by default), a This month chip (#51).
 
 ### Phase 11: hardening
 - Red team: hostile text was pushed through every place outside text comes in; five leaks were found and fixed (#50).

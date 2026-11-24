@@ -11,6 +11,8 @@ export type HealthView = {
   lastRun: { status: string; tier: "T2" | "T3"; at: string } | null;
   brain: { present: boolean; indexAgeSec: number | null; stale: boolean; embeddings: boolean; embeddedChunks: number };
   proposals: { pending: number };
+  /** Everything spent so far this calendar month (Jay's time zone), from the run log: dollars only. */
+  month: { spendUsd: number };
   /** The last vault backup: when, and its one-word result (pushed, nothing, refused, failed). Null until one has run. */
   backup: { at: string; status: "pushed" | "nothing" | "refused" | "failed" } | null;
 };
@@ -46,6 +48,7 @@ export function formatHealth(h: HealthView, now: Date = new Date()): string {
     ["Brain index", !h.brain.present ? "not built yet" : h.brain.stale ? "marked stale, rebuilds on the next run" : `${formatAge(h.brain.indexAgeSec ?? 0)} old`],
     ["Embeddings", h.brain.embeddings ? `present (${h.brain.embeddedChunks} chunks)` : "not set up"],
     ["Proposals", `${h.proposals.pending} pending`],
+    ["This month", `$${h.month.spendUsd.toFixed(2)} spent`],
     ["Backup", h.backup ? `${h.backup.status}, ${formatAge((now.getTime() - Date.parse(h.backup.at)) / 1000)} ago` : "never run"],
   ];
   const width = Math.max(...rows.map((r) => r[0].length));
