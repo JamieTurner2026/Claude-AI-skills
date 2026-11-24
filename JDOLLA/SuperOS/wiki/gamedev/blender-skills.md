@@ -3,6 +3,7 @@ title: Blender skills from outside repos
 dept: gamedev
 type: concept
 sources:
+  - raw/gamedev/blender-skills/build123d/2026-11-24_repo-snapshot.md
   - raw/gamedev/blender-skills/blender-agent-skills/2026-11-24_repo-snapshot.md
   - raw/gamedev/blender-skills/mcp-for-blender/2026-11-24_repo-snapshot.md
   - raw/gamedev/blender-skills/mcp-for-blender/guides/bpy.md
@@ -84,6 +85,19 @@ In the Claude-AI-skills repo: `cp -r JDOLLA/SuperOS/raw/gamedev/blender-skills/b
 - PC: Blender 5.2 LTS or newer (5.3 recommended) installed; the scripts find it.
 - Cloud sessions: the Blender download is blocked, but `pip install bpy` (5.3) runs the scripts by importing them.
 - Tested 2026-11-24 in the cloud with pip `bpy` 5.3.0: the repo's suite gave 73 passed, 1 failed, 5 skipped. The failure (add-on validate) needs the Blender program, not the Python module; the skips need a GPU. A crate run end to end (modifier stack, QA, LODs, Unreal FBX export) worked, and QA caught a planted floating part and z-fighting. `review_shots.py` contact sheets need a GPU, so on cloud sessions check visuals with a `blender-visuals` Cycles render instead.
+
+## build123d (Apache-2.0): exact CAD parts
+Source: [[raw/gamedev/blender-skills/build123d/2026-11-24_repo-snapshot]]
+
+Not a Blender pack: a Python library that builds exact parts in millimetres (holes, slots, fillets) and exports STEP, STL and GLB. Jay chose to turn it into a skill (2026-11-24).
+
+| Piece | Works now? | What it gives the build |
+|---|---|---|
+| `cad-parts` skill (new, in `.claude/skills/`) | Yes | Brackets, sensor mounts, plates and enclosures for servo stations and training rigs. STEP for CAD/CNC, STL for 3D printing, GLB that drops into `blender-visuals` machine diagrams at true size. Examples: servo bracket, M18 sensor mount. |
+| Sheet metal (`BuildSheet`, `unfold`) | No | Only in the build123d dev branch, not the released 0.13.0. Bent brackets are modelled as solids for now. |
+
+Needs: `bash .claude/skills/cad-parts/scripts/setup_cad.sh` once per machine (own venv, about 900 MB, Python 3.11 to 3.14). Tested 2026-11-24: both examples are valid single solids, their volumes match a hand estimate within 0.4%, and they rendered correctly in Blender 5.3.
+Training and simulation only: a model here is never a certified drawing for real equipment.
 
 ## Related
 - Department: [[depts/gamedev]] · Charter: [[wiki/gamedev/charter]] · Project: [[wiki/gamedev/midnight-reign]]
