@@ -110,6 +110,8 @@ async function startAndStatus(ctx: Ctx): Promise<void> {
       else if (Date.now() - t0 > 90_000 || child.exitCode !== null) { clearInterval(t); resolve(null); }
     }, 250);
   });
+  // The start lines can arrive in separate chunks: read on until the last one (or 5 s), so the check sees what Jay sees.
+  for (let i = 0; pid !== null && i < 20 && !/Scheduler (on|off)/.test(log); i++) await new Promise((r) => setTimeout(r, 250));
   const port = /127\.0\.0\.1:(\d+)/.exec(log)?.[1];
   record(ctx, "7", "npm start (in the background)", "START-HERE 7, PC-SETUP §6", log, null, t0, [
     [pid !== null, "it printed `JDOLLA$ bridge running on http://127.0.0.1:<port> (pid N)` (PC-SETUP §6)"],
