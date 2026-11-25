@@ -15,3 +15,4 @@ proposals/*
 !proposals/README.md
 .obsidian/workspace*
 .obsidian/plugins/
+os/config/os.local.json

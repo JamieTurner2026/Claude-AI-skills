@@ -101,15 +101,15 @@ export function checkClaude(d: DoctorDeps): Check {
   let cmd: string;
   let args: string[] = ["--version"];
   if (configured) {
-    if (!d.exists(configured) && !findOnPath(configured, d)) return fail("claude", L, `engine.claudeBin is set but not found: ${configured}`, "PC-SETUP §1: fix engine.claudeBin in os/config/os.config.json");
+    if (!d.exists(configured) && !findOnPath(configured, d)) return fail("claude", L, `claudeBin is set but not found: ${configured}`, "PC-SETUP §1: fix claudeBin in os/config/os.local.json");
     if (/\.(c|m)?js$/i.test(configured)) { cmd = process.execPath; args = [configured, "--version"]; } else cmd = configured;
   } else {
     const names = d.platform === "win32" ? ["claude.exe", "claude"] : ["claude"];
     let found: string | null = null;
     for (const n of names) { found = findOnPath(n, d); if (found) break; }
-    if (!found) return fail("claude", L, `not found on PATH (looked for ${names.join(", ")})`, "PC-SETUP §1: install Claude Code, or set engine.claudeBin");
+    if (!found) return fail("claude", L, `not found on PATH (looked for ${names.join(", ")})`, "PC-SETUP §1: install Claude Code, or set claudeBin in os/config/os.local.json");
     if (d.platform === "win32" && /\.(cmd|bat)$/i.test(found)) {
-      return warn("claude", L, `found ${pathFor(d.platform).basename(found)}, which cannot start without a shell`, "PC-SETUP §1: use the native installer, or point engine.claudeBin at the CLI's cli.js");
+      return warn("claude", L, `found ${pathFor(d.platform).basename(found)}, which cannot start without a shell`, "PC-SETUP §1: use the native installer, or point claudeBin in os/config/os.local.json at the CLI's cli.js");
     }
     cmd = found;
   }

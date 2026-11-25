@@ -19,7 +19,7 @@ npm run smoke   # after every update: the real bridge on a temp copy of the vaul
 
 ## Runs (step f)
 Press Enter on a question (T2) or a work request (T3). T2 starts at once; T3 asks first because it costs more.
-- Runs use the Claude Code CLI (`claude`, or `claude.exe` on Windows; set `engine.claudeBin` in the config if it is elsewhere).
+- Runs use the Claude Code CLI (`claude`, or `claude.exe` on Windows; set `claudeBin` in the git-ignored `config/os.local.json` if it is elsewhere, so `npm run update` still sees a clean tree; `engine.claudeBin` in `os.config.json` still works).
 - Every run: `--restricted --strict-mcp-config`, a spend cap, deny rules for `.env`, `os/`, `.claude/`, `logs/`, `.git/`. T2 can only read. T3 can write only in `outputs/_work/<id>/`, and its files are copied to `outputs/YYYY-MM/`.
 - Costs and decisions are logged to `router.jsonl` in the log folder.
 

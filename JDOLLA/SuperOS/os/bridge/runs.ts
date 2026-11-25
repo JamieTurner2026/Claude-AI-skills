@@ -81,8 +81,8 @@ const MAX_DELIVERABLE_BYTES = 20 * 1024 * 1024;
 
 type Run = RunInfo & { child: ChildProcess | null; listeners: Set<(e: RunEvent) => void>; events: RunEvent[]; stopRequested: boolean; workDir: string; onEnd: ((info: RunInfo) => void) | null };
 
-export function defaultClaudeBin(config: OsConfig, platform: string = process.platform): ClaudeBin {
-  const bin = config.engine.claudeBin;
+export function defaultClaudeBin(config: OsConfig, platform: string = process.platform, setting: string | undefined = config.engine.claudeBin): ClaudeBin {
+  const bin = setting;
   // An npm-installed CLI on Windows is a .cmd file, which can't be started without a shell. Point
   // claudeBin at its .js entry instead and it runs with this Node, still with no shell.
   if (bin && /\.(c|m)?js$/i.test(bin)) return { cmd: process.execPath, prefixArgs: [bin] };

@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { route } from "../shared/router.ts";
 import { COOKIE, SESSION_MS, loadOrCreateSecret, mintToken, verifyToken } from "./auth.ts";
-import { LayoutSchema, loadConfig, loadEnv, logDir, pathsFor, saveConfig } from "./config.ts";
+import { LayoutSchema, claudeBinSetting, loadConfig, loadEnv, logDir, pathsFor, saveConfig } from "./config.ts";
 import type { Paths } from "./config.ts";
 import { GuardError, MAX_READ, OPEN_EXT, READ_EXT, resolveVaultFile } from "./guards.ts";
 import { DIRECTIVE_LINE, buildState, directiveId } from "./indexer.ts";
@@ -81,7 +81,7 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
     brain,
     paths,
     config: () => loadConfig(paths),
-    bin: () => opts.claudeBin ?? defaultClaudeBin(loadConfig(paths)),
+    bin: () => { if (opts.claudeBin) return opts.claudeBin; const c = loadConfig(paths); return defaultClaudeBin(c, process.platform, claudeBinSetting(paths, c)); },
     log: runLog,
     logDir: opts.logDir ?? logDir(paths),
     ...(opts.sandbox ? { sandbox: opts.sandbox } : {}),

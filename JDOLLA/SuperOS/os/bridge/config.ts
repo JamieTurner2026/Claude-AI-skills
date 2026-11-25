@@ -53,6 +53,29 @@ export function loadConfig(p: Paths): OsConfig {
   return ConfigSchema.parse(JSON.parse(readFileSync(p.config, "utf8")));
 }
 
+/**
+ * This PC's own settings, in os/config/os.local.json. Git ignores the file, so setting it never leaves a changed file that
+ * `npm run update` would refuse to pull over (os.config.json is tracked). Only the keys below are allowed.
+ */
+export const LocalConfigSchema = z.strictObject({
+  /** Path to the Claude Code CLI on this PC (its cli.js, for an npm install). Wins over engine.claudeBin in os.config.json. */
+  claudeBin: z.string().min(1).max(260).optional(),
+});
+export type LocalConfig = z.infer<typeof LocalConfigSchema>;
+export const localConfigPath = (p: Paths): string => path.join(p.os, "config", "os.local.json");
+
+/** {} when the file is absent. A file that is there but unreadable or wrong throws, so a typo is never silently ignored. */
+export function loadLocalConfig(p: Paths): LocalConfig {
+  const f = localConfigPath(p);
+  if (!existsSync(f)) return {};
+  return LocalConfigSchema.parse(JSON.parse(readFileSync(f, "utf8")));
+}
+
+/** The Claude CLI setting to use: os.local.json first, then engine.claudeBin in os.config.json, else none (PATH). */
+export function claudeBinSetting(p: Paths, config: OsConfig): string | undefined {
+  return loadLocalConfig(p).claudeBin ?? config.engine.claudeBin;
+}
+
 /** Write via a temp file and rename, so a crash never leaves half a config. */
 export function saveConfig(p: Paths, config: OsConfig): void {
   const tmp = p.config + ".tmp";
