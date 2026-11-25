@@ -252,6 +252,12 @@ Money limits:
 - Each time slot runs at most once, even if the PC restarts.
 - Routines only run on their own while the bridge is running. If the PC was off, a missed slot runs once when the bridge comes back.
 
+**Content cascade** (Fridays 16:00, up to $1.00) turns one finished deliverable into three drafts: a post, a summary and a note. It drafts only and never posts anything.
+
+- It takes the newest deliverable in `outputs\YYYY-MM\` that has no drafts yet. When every deliverable has drafts, it skips the week at no cost.
+- The drafts land beside the others in `outputs\YYYY-MM\` as `YYYY-MM-DD_<dept>_<slug>-draft-post.md`, `-draft-summary.md` and `-draft-note.md`, each starting `Status: DRAFT, not published`. If a file with that name is already there, it adds `-v2` and never overwrites.
+- It runs in its own work folder, with no web, shell or publishing tools.
+
 **Turning on the morning brief.** The **Morning intel** routine (weekdays 07:30, up to $0.40) writes `reports\YYYY-MM-DD_morning-intel.md`, or nothing when nothing is new. It is most useful once the calendar and mail feed files are in place (§13.2). Then switch it on in the Routines widget (or press **Run now** once to see what it writes) and leave `SUPEROS_SCHEDULER=on`. It only reads: it never sends, replies to or drafts any message, and it treats every mail subject and calendar title as quoted data.
 
 To stop everything scheduled at once, set `SUPEROS_SCHEDULER=off` in `os\.env` and restart the bridge.
