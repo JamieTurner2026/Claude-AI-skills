@@ -57,3 +57,8 @@ One hostile fixture (`os/shared/hostile.ts`: a fake closing fence, `&lt;/untrust
 `npm audit --omit=dev`, 2026-11-24:
 - **zod 3.25.76: high**, GHSA-mrhx-c7xc-m3w5 (memory on oversized constrained collections). The only fix is zod 4.6.7, a major version. Installing it gave 41 type errors (API changes such as two-argument `z.record`), so it was not upgraded here. Exposure was small because every input is size-capped before zod sees it: HTTP bodies 64 KB, feeds 1 MB, brain reads 512 KB, plus array maximums. Migrated to zod 4.6.7 the same day as its own change; `npm audit --omit=dev` is now clean.
 - **`brain/embed-runtime` (optional meaning search): high** via `sharp` in `@huggingface/transformers`. The fix is transformers 4.3.2, a major version, not done here. It only runs once Jay sets up meaning search (PC-SETUP §5.2), on his own notes.
+
+## Skills end to end, 2026-11-25
+- A skill's text can drift from what the bridge does. Pin it with a test that reads the real SKILL.md: the sections it promises (backticked `## Heading`s, in order), the tools it names against its policy, and its `NOTHING_NEW` wording against the bridge's token. Evidence: three skills said "write the report file" although T2 skills only reply; vault-cleanup's step 8 mentioned `## Backups` before its list, so the order was ambiguous.
+- Text a tool copies out of a proposal is attacker-influenced (the diagnosis read a failed run). `proposals_summary` returned approved rule text unfenced; it is now fenced like mail and calendar text.
+- A 6000-character hostile line in the run log is skipped as unreadable by the month report, not counted: the month-costs test pins "unreadable lines skipped: 1".

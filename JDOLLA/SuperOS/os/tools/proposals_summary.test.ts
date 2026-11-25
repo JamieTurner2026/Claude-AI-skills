@@ -76,8 +76,10 @@ test("approved rules show failures before and since, with the rule on one short 
   const [rule, ...rest] = run(ctx, 30).approvedRules;
   assert.equal(rest.length, 0, "the approved move has no rule");
   assert.deepEqual({ ...rule!, rule: undefined }, { skill: "plan-today", rule: undefined, approvedOn: "2026-11-14", daysSince: 2, failuresBefore: 3, failuresSince: 1 });
-  assert.ok(rule!.rule.startsWith("Call the today tool before anything else."));
-  assert.ok(rule!.rule.length <= 160 && !rule!.rule.includes("\n"));
+  assert.ok(rule!.rule.startsWith('<untrusted-data source="proposal">Call the today tool before anything else.'), "the rule is fenced as untrusted data");
+  const inner = rule!.rule.slice('<untrusted-data source="proposal">'.length, -"</untrusted-data>".length);
+  assert.ok(inner.length <= 160 && !rule!.rule.includes("\n"));
+  assert.ok(!/<[^u/]/.test(inner.replace(/&lt;/g, "")), "no live tag inside the fence");
   assert.deepEqual(run(ctx, 1).approvedRules, [], "approved two days ago: outside a 1-day window");
 });
 
