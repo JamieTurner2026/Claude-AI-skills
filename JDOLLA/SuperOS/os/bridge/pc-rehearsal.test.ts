@@ -43,7 +43,7 @@ test("the summary lists every step with its result and only the notes that matte
 });
 
 test("the workflow: manual and weekly, windows-latest, contents read, no secrets, pinned actions, uploads the logs", () => {
-  const y = readFileSync(path.join(REPO, ".github", "workflows", "pc-rehearsal.yml"), "utf8");
+  const y = readFileSync(path.join(REPO, ".github", "workflows", "pc-rehearsal.yml"), "utf8").replace(/\r\n/g, "\n"); // Windows checks out CRLF
   assert.match(y, /workflow_dispatch:/);
   assert.match(y, /schedule:\n\s+- cron: "[^"]+"/);
   assert.match(y, /runs-on: windows-latest/);
