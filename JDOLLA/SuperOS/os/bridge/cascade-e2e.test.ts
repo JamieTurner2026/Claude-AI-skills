@@ -178,3 +178,17 @@ test("a deliverable that is a link is never chosen, so nothing outside outputs/ 
   assert.deepEqual(readdirSync(path.join(vault, "outputs/_work", run.id, "_inputs")), ["2026-11-18_strategy_q4-plan.md"], "the real file, not the newer link, was the source");
   assert.ok(existsSync(secret));
 });
+
+test("the skill says what the bridge does: the source is in ./_inputs/, three named files in the work folder, the bridge names and never overwrites", () => {
+  const skill = readFileSync(path.join(REAL, "skills/content-cascade/SKILL.md"), "utf8").replace(/\r\n/g, "\n");
+  assert.match(skill, /`\.\/_inputs\/`/, "the source is the file in ./_inputs/");
+  for (const k of ["post", "summary", "note"]) {
+    assert.ok(skill.includes(`\`draft-${k}.md\``), `it writes draft-${k}.md in its work folder (the fake does the same)`);
+    assert.ok(skill.includes(`-draft-${k}.md`), `and names the -draft-${k}.md the bridge makes`);
+  }
+  assert.doesNotMatch(skill, /next to it|in the same month folder/, "a T3 run cannot write next to the source: it writes in its work folder");
+  assert.doesNotMatch(skill, /the file Jay names/, "Jay's input never changes the source");
+  assert.match(skill, /Tier: \*\*T3\*\*/);
+  assert.match(skill, /\*\*\$1\.00 per run\*\*/);
+  assert.match(skill, /Never publish, post, send, upload or email anything/);
+});

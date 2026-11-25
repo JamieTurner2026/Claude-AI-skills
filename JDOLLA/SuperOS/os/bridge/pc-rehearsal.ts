@@ -124,6 +124,7 @@ async function startAndStatus(ctx: Ctx): Promise<void> {
       [/1\.0\.0|version/i.test(out), "the table shows the version"],
       [!/not running/.test(out), "it does not say not running"],
     ]);
+    await cascadeRunNow(ctx);
     // Stop it by pid, as Jay would close the window. Then the status check must say "not running" and exit 1.
     const t1 = Date.now();
     const kill = win ? spawnSync("taskkill.exe", ["/PID", String(pid), "/T", "/F"], { encoding: "utf8" }) : spawnSync("kill", [String(pid)], { encoding: "utf8" });
@@ -141,6 +142,52 @@ async function startAndStatus(ctx: Ctx): Promise<void> {
     ]);
   }
   try { if (win) spawnSync("taskkill.exe", ["/PID", String(child.pid), "/T", "/F"]); else process.kill(-(child.pid ?? 0), "SIGTERM"); } catch { /* already gone */ }
+}
+
+/**
+ * The one T3 routine, content-cascade, by Run now on the bridge `npm start` started, so a T3 run goes through the CLI
+ * set in os.local.json (the fake). It needs a finished deliverable: one is written for it. The routine stays switched off
+ * (Run now works on a switched-off routine). Its three drafts must land in outputs/ named after the source.
+ */
+async function cascadeRunNow(ctx: Ctx): Promise<void> {
+  const t0 = Date.now();
+  const notes: string[] = [];
+  const checks: Array<[boolean, string]> = [];
+  let log = "";
+  try {
+    const now = new Date();
+    const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+    const vault = path.dirname(ctx.osDir);
+    const outDir = path.join(vault, "outputs", day.slice(0, 7));
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(path.join(outDir, `${day}_strategy_rehearsal-plan.md`), "# Rehearsal plan\nShip the dashboard on Friday.\n");
+    const auth = await import(pathToFileURL(path.join(ctx.osDir, "bridge", "auth.ts")).href) as { loadOrCreateSecret(p: { cache: string }): string; mintToken(s: string): string };
+    const token = auth.mintToken(auth.loadOrCreateSecret({ cache: path.join(ctx.osDir, ".cache") }));
+    const base = "http://127.0.0.1:4317";
+    const headers = { authorization: `Bearer ${token}`, "x-superos": "1", "content-type": "application/json" };
+    const started = await fetch(`${base}/api/routines/content-cascade/run`, { method: "POST", headers, body: "{}" });
+    const body = await started.json() as { run?: { id: string } };
+    log += `POST /api/routines/content-cascade/run -> ${started.status}\n`;
+    checks.push([started.status === 202 && !!body.run?.id, `Run now starts it (got ${started.status})`]);
+    let run: { status: string; deliverables: string[] } | undefined;
+    for (let i = 0; i < 240 && body.run?.id; i++) {
+      const { runs: list } = await (await fetch(`${base}/api/runs`, { headers })).json() as { runs: Array<{ id: string; status: string; deliverables: string[] }> };
+      run = list.find((r) => r.id === body.run!.id);
+      if (run && run.status !== "running") break;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    log += `run: ${JSON.stringify(run ?? null)}\n`;
+    checks.push([run?.status === "done", `the run finishes (status ${run?.status ?? "none"})`]);
+    const want = ["note", "post", "summary"].map((k) => `outputs/${day.slice(0, 7)}/${day}_strategy_rehearsal-plan-draft-${k}.md`);
+    checks.push([JSON.stringify(run?.deliverables ?? []) === JSON.stringify(want), `three drafts named after the source (${(run?.deliverables ?? []).join(", ") || "none"})`]);
+    checks.push([want.every((w) => existsSync(path.join(vault, w)) && readFileSync(path.join(vault, w), "utf8").startsWith("Status: DRAFT, not published")), "each draft starts `Status: DRAFT, not published`"]);
+    const routine = (JSON.parse(readFileSync(path.join(vault, "routines", "routines.json"), "utf8")) as Array<{ id: string; enabled: boolean }>).find((r) => r.id === "content-cascade");
+    checks.push([routine?.enabled === false, "the routine is still switched off"]);
+    notes.push("STUB: the T3 run is the fake CLI (os.local.json); a real cascade costs up to $1.");
+  } catch (e) {
+    checks.push([false, `the cascade check could not run: ${e instanceof Error ? e.message : String(e)}`]);
+  }
+  record(ctx, "8a", "Run now: content-cascade (the one T3 routine)", "routines/routines.json, skills/content-cascade", log, null, t0, checks, notes);
 }
 
 export async function rehearse(source: string, work: string, out: string): Promise<Step[]> {
