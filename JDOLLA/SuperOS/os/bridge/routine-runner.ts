@@ -10,9 +10,10 @@ import type { OsConfig, Paths } from "./config.ts";
 import type { LogLine } from "./run-log.ts";
 import { RunError } from "./runs.ts";
 import type { RunInfo, RunManager } from "./runs.ts";
-import { dueRoutines } from "./scheduler.ts";
+import { dueRoutines, parseSchedule, slotOnDay } from "./scheduler.ts";
+import type { Schedule } from "./scheduler.ts";
 import { findSkill, listSkills } from "./skills.ts";
-import type { SkillsView } from "../shared/types.ts";
+import type { CalendarDay, CalendarSlot, RoutineCalendarView, SkillsView } from "../shared/types.ts";
 import { VaultGuardError, safeTarget } from "../vault/generate.ts";
 
 const SLUG = /^[a-z0-9][a-z0-9-]{0,39}$/;
@@ -311,6 +312,46 @@ export class RoutineRunner {
       for (const f of files) { const p = path.join(root, m, f); if (statSync(p).isFile()) return [p]; }
     }
     return [];
+  }
+
+  /**
+   * The next `days` local days of routine slots, on and off, from the scheduler's own slot rule (slotOnDay). Days are local
+   * calendar days, so a 23-hour or 25-hour DST day is still one day; a slot's time is when it will really fire (a 02:30 slot
+   * on spring-forward day shows 03:30). Each day totals the budgets of the routines that are on, against the daily cap.
+   * It reads routines.json only; nothing is started, written or reserved.
+   */
+  calendar(now: Date = new Date(), days = 7): RoutineCalendarView {
+    const tz = this.tz();
+    const cap = this.config().engine.routines.dailyCapUsd;
+    const { routines, problems } = this.readRoutines();
+    const parsed: Array<{ r: Routine; schedule: Schedule }> = [];
+    const notes = [...problems];
+    for (const r of routines) {
+      const p = parseSchedule(r.schedule);
+      if (p.ok) parsed.push({ r, schedule: p.schedule });
+      else notes.push(`Routine ${r.id.slice(0, 40)} has a schedule that is not understood, so it is not on the calendar.`);
+    }
+    const [y, mo, d] = localDate(now, tz).split("-").map(Number) as [number, number, number];
+    const hhmm = new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+    const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", weekday: "short" });
+    const out: CalendarDay[] = [];
+    for (let i = 0; i < Math.max(1, Math.min(31, days)); i++) {
+      const day = new Date(Date.UTC(y, mo - 1, d + i));
+      const [dy, dm, dd] = [day.getUTCFullYear(), day.getUTCMonth() + 1, day.getUTCDate()];
+      const slots: Array<CalendarSlot & { ms: number }> = [];
+      for (const { r, schedule } of parsed) {
+        const ms = slotOnDay(schedule, dy, dm, dd, tz);
+        if (ms === null) continue;
+        slots.push({ ms, at: new Date(ms).toISOString(), time: hhmm.format(new Date(ms)), id: r.id, name: r.name, enabled: r.enabled, builtin: r.builtin !== undefined, budgetUsd: this.budgetOf(r), past: ms < now.getTime() });
+      }
+      slots.sort((a, b) => a.ms - b.ms || (a.id < b.id ? -1 : 1));
+      const enabledTotal = round(slots.filter((s) => s.enabled).reduce((a, s) => a + s.budgetUsd, 0));
+      out.push({
+        date: `${dy}-${String(dm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`, weekday: weekday.format(day), today: i === 0,
+        slots: slots.map(({ ms: _ms, ...s }) => s), enabledTotalUsd: enabledTotal, allTotalUsd: round(slots.reduce((a, s) => a + s.budgetUsd, 0)), overCap: enabledTotal > cap + 1e-9,
+      });
+    }
+    return { timezone: tz, capUsd: cap, days: out, problems: notes };
   }
 
   status(now: Date = new Date()): RoutineStatus {

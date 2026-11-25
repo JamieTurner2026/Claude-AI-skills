@@ -1,6 +1,6 @@
 // Calls to the bridge. The session cookie is HttpOnly, so this code never sees the token.
 import type { HealthView } from "../shared/health.ts";
-import type { Directive, InboxView, LayoutItem, OsState, ProposalView, ProposalsView, RoutinesView, RunView, SetupView, SkillsView, SuggestResult } from "../shared/types.ts";
+import type { Directive, InboxView, LayoutItem, OsState, ProposalView, ProposalsView, RoutinesView, RoutineCalendarView, RunView, SetupView, SkillsView, SuggestResult } from "../shared/types.ts";
 
 export class ApiError extends Error {
   status: number;
@@ -26,6 +26,7 @@ export const api = {
   state: () => call<OsState>("/api/state"),
   health: () => call<HealthView>("/api/health"),
   setup: () => call<SetupView>("/api/setup"),
+  routinesCalendar: () => call<RoutineCalendarView>("/api/routines/calendar"),
   saveLayout: (layout: LayoutItem[]) => call<{ layout: LayoutItem[] }>("/api/layout", { layout }),
   toggleDirective: (id: string) => call<{ directives: Directive[] }>("/api/directives/toggle", { id }),
   addDirective: (text: string) => call<{ directives: Directive[] }>("/api/directives/add", { text }),

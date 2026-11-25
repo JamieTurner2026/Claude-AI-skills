@@ -240,6 +240,7 @@ Then it stops everything and deletes the temp folder, even when a step fails. Ev
 
 All routines ship **switched off**. In the Routines widget:
 
+- the **Next 7 days** widget under it shows when each routine will run in the coming week (on and off), and each day's total budget against the $2 cap. It only shows; change a routine with its switch
 - the switch turns a routine on or off (it rewrites `routines\routines.json`)
 - **Run now** runs a routine once, right away
 - each routine shows its last result, and the widget shows "spent today $x of $2"

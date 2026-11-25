@@ -246,6 +246,13 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
         monthUsd: monthSpend(opts.logDir ?? logDir(paths), now, config.timezones[0] ?? "America/New_York"),
       }));
     }
+    // The next seven days of routine slots (on and off) against the daily cap. Reads only; a foreign Origin is refused too.
+    if (url.pathname === "/api/routines/calendar") {
+      if (req.method !== "GET") throw new HttpError(405, "Method not allowed.");
+      const origin = req.headers.origin;
+      if (origin && !ownOrigins().some((o) => origin === `http://${o}`)) throw new HttpError(403, "Wrong origin.");
+      return send(res, 200, routines.calendar((opts.now ?? (() => new Date()))()));
+    }
     if (url.pathname === "/api/routines" && req.method === "GET") return send(res, 200, routines.status());
     if (url.pathname === "/api/inbox" && req.method === "GET") return send(res, 200, inbox.status());
     if (url.pathname === "/api/inbox/sort" && req.method === "POST") {

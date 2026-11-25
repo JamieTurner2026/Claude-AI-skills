@@ -86,18 +86,26 @@ export function assertTimezone(tz: string): void {
   try { formatter(tz).format(0); } catch { throw new RangeError(`Unknown time zone: ${tz.slice(0, 64)}`); }
 }
 
+/**
+ * The slot instant for a schedule on one local calendar day (y, mo, d in time zone tz), or null when the schedule does not
+ * fire that day. The one place that decides which days a schedule fires on, so the due check and the calendar view agree.
+ */
+export function slotOnDay(s: Schedule, y: number, mo: number, d: number, tz: string): number | null {
+  const dow = new Date(Date.UTC(y, mo - 1, d)).getUTCDay();
+  if (s.kind === "monthly" && d !== s.dom) return null;
+  if (s.kind === "weekdays" && (dow === 0 || dow === 6)) return null;
+  if (s.kind === "weekly" && dow !== s.day) return null;
+  return localToInstant(y, mo, d, s.hour, s.minute, tz);
+}
+
 /** The latest slot instant at or before now, or null if none in the lookback window. */
 export function latestSlot(s: Schedule, now: number, tz: string): number | null {
   const today = localParts(now, tz);
   const lookback = s.kind === "monthly" ? MONTHLY_LOOKBACK_DAYS : LOOKBACK_DAYS;
   for (let back = 0; back <= lookback; back++) {
     const day = new Date(Date.UTC(today.y, today.mo - 1, today.d - back));
-    const dow = day.getUTCDay();
-    if (s.kind === "monthly" && day.getUTCDate() !== s.dom) continue;
-    if (s.kind === "weekdays" && (dow === 0 || dow === 6)) continue;
-    if (s.kind === "weekly" && dow !== s.day) continue;
-    const slot = localToInstant(day.getUTCFullYear(), day.getUTCMonth() + 1, day.getUTCDate(), s.hour, s.minute, tz);
-    if (slot <= now) return slot;
+    const slot = slotOnDay(s, day.getUTCFullYear(), day.getUTCMonth() + 1, day.getUTCDate(), tz);
+    if (slot !== null && slot <= now) return slot;
   }
   return null;
 }
