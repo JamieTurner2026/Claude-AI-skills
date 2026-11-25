@@ -114,6 +114,9 @@ Setting up on the PC: see `../docs/PC-SETUP.md`.
 ## Status check (Phase 9b)
 - `GET /api/health` (session required) reports version, uptime, scheduler, routines on, spend vs cap, last run, brain index age, embeddings and pending proposals. `npm run status` prints it (exit 0 running, 1 not running, 2 unusable answer). The dashboard's Health strip shows it. Logic: `bridge/health.ts`, `bridge/status.ts`, `shared/health.ts`. No tray icon.
 
+## Routines calendar
+- `GET /api/routines/calendar` and the **Next 7 days** widget (`app/widgets/calendar.ts`): `RoutineRunner.calendar()` lists the next seven local days of routine slots using the scheduler's `slotOnDay` (the same rule the due check uses), with each day's budget total against the daily cap. Read-only.
+
 ## Offline sources (Phase 8 prep)
 - `sources/` holds the `MailSource` and `CalendarSource` interfaces and `FileSource`, which reads `inbox/_feeds/mail.json` and `calendar.json`. Nothing connects to an account or the network. Feed text is other people's words: cleaned to one line, fenced as untrusted data in tool answers, reduced to inert plain text in the daily note. Tools `calendar_today` and `mail_brain` return names and subjects only.
 

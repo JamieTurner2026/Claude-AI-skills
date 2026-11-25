@@ -19,6 +19,7 @@
     { "widget": "setup", "span": 3 },
     { "widget": "departments", "span": 2 },
     { "widget": "routines", "span": 1 },
+    { "widget": "calendar", "span": 3 },
     { "widget": "skills", "span": 3 },
     { "widget": "runs", "span": 3 },
     { "widget": "proposals", "span": 3 }
