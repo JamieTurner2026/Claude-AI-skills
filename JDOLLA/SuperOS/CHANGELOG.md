@@ -28,7 +28,6 @@ The first full version: everything from Phase 2 to Phase 11, built and tested in
 
 ### Phase 4: routines
 - Scheduled routines you switch on in the dashboard, with a daily spending cap shared by all of them (#7, #9). The cap is $2 a day (#18).
-- A "Next 7 days" calendar on the dashboard shows when each routine will run, on or off, and each day's budget against the cap (#58).
 
 ### Phase 5: the learning loop
 - When a run fails, gets blocked or hits its cap, the OS drafts a proposal: what broke, a fix and a lesson. Nothing changes until you approve it (#12).
