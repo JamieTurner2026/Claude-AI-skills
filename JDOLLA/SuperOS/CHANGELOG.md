@@ -7,10 +7,10 @@ What changed in JDOLLA$ Super OS, newest first, in plain words. The numbers like
 Small fixes and checks on top of 1.0.0. Still built and tested in the cloud on Linux and Windows with a stand-in for Claude; it has not run on your PC yet.
 
 - `npm run analyse:runs -- --month` and the monthly cost report (off by default), a This month chip in the Health strip (#51).
-- A rehearsal of [[START-HERE]] on a fresh Windows machine, and the fixes it found: the autostart install needs `-- install`, your own settings go in `os.local.json`, and the first setup downloads about 520 MB (#57).
-- The Routines widget shows a calendar of what runs when (#58).
+- A rehearsal of [[START-HERE]] on a fresh Windows machine, and the fixes it found: the autostart install needs `-- install`, your own settings go in `os.local.json`, and the optional meaning-search download is about 520 MB (#57).
+- A Next 7 days panel on the dashboard shows when each routine runs and what it would cost, against the $2 daily cap; it uses the scheduler's own rule, so they can't disagree (#58).
 - Checks that the plan-today, vault-cleanup, proposals-review and month-costs skills do what their text promises: only their own tools, the report in the right place, nothing written when there is nothing new. Their text was corrected where it had drifted, and an approved rule quoted from a proposal now arrives fenced as untrusted data (#59).
-- Content cascade fixes: drafts get clear names, a repeat run no longer makes the same draft again, and it only uses files that really exist (#60).
+- Content cascade fixes: drafts get clear names, a repeat run no longer makes the same draft again, it only drafts from a real finished file (never a link or another draft), and when there is nothing to draft it skips without spending anything (#60).
 
 ## 1.0.0 (2026-11-24)
 
