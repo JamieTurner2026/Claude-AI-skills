@@ -85,6 +85,7 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
     log: runLog,
     logDir: opts.logDir ?? logDir(paths),
     ...(opts.sandbox ? { sandbox: opts.sandbox } : {}),
+    ...(opts.now ? { now: opts.now } : {}),
   });
   const routines = new RoutineRunner({ paths, config: () => loadConfig(paths), runs, logDir: opts.logDir ?? logDir(paths), log: runLog, schedulerOn: opts.schedulerOn ?? false,
     builtins: {

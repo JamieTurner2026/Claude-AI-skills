@@ -8,6 +8,7 @@ import path from "node:path";
 import { ContainmentError, buildClaudeArgs, capFor } from "./claude-args.ts";
 import { allDenyRules } from "./deny-rules.ts";
 import { PolicyError, loadPolicy, scriptToolsFor, t3Tools } from "./policy.ts";
+import { localDate } from "./local-date.ts";
 import { buildRunMcp } from "./mcp-servers.ts";
 import { detectSandbox } from "./sandbox.ts";
 import type { BrainLink } from "./brain-link.ts";
@@ -110,6 +111,7 @@ export class RunManager {
 
   private sandbox: () => SandboxStatus;
   private brain: BrainLink | null;
+  private now: () => Date;
   private endListeners = new Set<(info: RunInfo) => void>();
 
   /** Called once for every run that ends (after its own onEnd). Returns an unsubscribe function. */
@@ -121,11 +123,12 @@ export class RunManager {
   /** `logDir` is where router.jsonl is written; the tools server is told, so run_stats can read it. */
   private logDir: string;
 
-  constructor(opts: { paths: Paths; config: () => OsConfig; bin: () => ClaudeBin; log: (line: LogLine) => void; sandbox?: () => SandboxStatus; brain?: BrainLink | null; logDir?: string }) {
+  constructor(opts: { paths: Paths; config: () => OsConfig; bin: () => ClaudeBin; log: (line: LogLine) => void; sandbox?: () => SandboxStatus; brain?: BrainLink | null; logDir?: string; now?: () => Date }) {
     this.logDir = opts.logDir ?? "";
     this.paths = opts.paths; this.config = opts.config; this.bin = opts.bin; this.log = opts.log;
     this.sandbox = opts.sandbox ?? (() => detectSandbox());
     this.brain = opts.brain ?? null;
+    this.now = opts.now ?? (() => new Date());
   }
 
   list(): RunInfo[] {
@@ -200,7 +203,7 @@ export class RunManager {
 
     const run: Run = {
       id, tier: req.tier, text: req.text.slice(0, 300), dept: req.dept && /^[a-z][a-z0-9-]{0,39}$/.test(req.dept) ? req.dept : "general",
-      status: "running", startedAt: new Date().toISOString(), endedAt: null, capUsd: cap, costUsd: null,
+      status: "running", startedAt: this.now().toISOString(), endedAt: null, capUsd: cap, costUsd: null,
       output: "", error: null, deliverables: [], denied: [], result: null, routine: internal.routine ?? null, skill: req.skill && /^[a-z0-9][a-z0-9-]{0,39}$/.test(req.skill) ? req.skill : null, purpose: internal.purpose ?? "run", toolsUsed: [], notesOpened: [], onEnd: internal.onEnd ?? null, child: null, listeners: new Set(), events: [], stopRequested: false, workDir,
     };
     this.runs.set(id, run);
@@ -320,10 +323,13 @@ export class RunManager {
 
   stopAll(): void { for (const r of this.runs.values()) this.stop(r.id); }
 
-  /** Copies regular files the T3 run made in its work folder into outputs/YYYY-MM/. Links and folders are skipped. */
+  /**
+   * Copies regular files the T3 run made in its work folder into outputs/YYYY-MM/. Links and folders are skipped.
+   * The date is the owner's day when the run started (timezones[0]), not UTC's: 21:00 in New York is still today.
+   */
   private copyDeliverables(r: Run): string[] {
     if (!existsSync(r.workDir)) return [];
-    const date = r.startedAt.slice(0, 10);
+    const date = localDate(new Date(r.startedAt), this.config().timezones[0] ?? "America/New_York");
     const outDir = path.join(this.paths.vault, "outputs", date.slice(0, 7));
     const slug = slugify(r.text);
     const copied: string[] = [];

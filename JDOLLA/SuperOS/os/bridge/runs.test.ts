@@ -169,6 +169,28 @@ test("T3 deliverables are copied to outputs/ with the naming rule, never overwri
   assert.ok(existsSync(path.join(vault, "outputs", "_work", first.id, "report.md")), "the work folder keeps the original");
 });
 
+test("T3 deliverables are dated by the owner's day, not UTC's (late evening on the last day of a month)", async () => {
+  const v = makeVault();
+  let clock = new Date("2026-12-01T04:30:00Z"); // 2026-11-30 23:30 in New York (timezones[0]), already 1 December in UTC
+  const b = createBridge(path.join(v, "os"), { claudeBin: { cmd: process.execPath, prefixArgs: [fake] }, logDir: mkdtempSync(path.join(tmpdir(), "superos-logs-")), now: () => clock });
+  await new Promise<void>((r) => b.server.listen(0, "127.0.0.1", r));
+  try {
+    const one = (text: string): Promise<RunInfo> => new Promise((resolve, reject) => {
+      const info = b.runs.start({ text, tier: "T3" });
+      const t = setTimeout(() => reject(new Error("run did not finish")), 8000);
+      const unsub = b.runs.subscribe(info.id, (e) => { if (e.type === "status") { clearTimeout(t); unsub?.(); resolve(b.runs.get(info.id)!); } });
+    });
+    const late = await one(T3("DELIVER"));
+    assert.equal(late.status, "done");
+    assert.deepEqual(late.deliverables, ["outputs/2026-11/2026-11-30_general_write-a-short-summary-report-about.md"], "Jay's day and month, not UTC's 2026-12-01");
+    assert.ok(!existsSync(path.join(v, "outputs", "2026-12")), "nothing lands in next month's folder");
+
+    clock = new Date("2026-11-30T17:00:00Z"); // control: midday in New York, the same day in UTC
+    const midday = await one(T3("DELIVER"));
+    assert.deepEqual(midday.deliverables, ["outputs/2026-11/2026-11-30_general_write-a-short-summary-report-about-v2.md"]);
+  } finally { b.runs.stopAll(); b.server.close(); }
+});
+
 test("only one T3 at a time", async () => {
   const hang = await startOk({ text: T3("HANG"), confirm: true });
   const second = await run({ text: T3("again"), confirm: true });

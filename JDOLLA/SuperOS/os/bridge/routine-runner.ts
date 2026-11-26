@@ -8,6 +8,7 @@ import path from "node:path";
 import { z } from "zod";
 import type { OsConfig, Paths } from "./config.ts";
 import type { LogLine } from "./run-log.ts";
+import { localDate } from "./local-date.ts";
 import { RunError } from "./runs.ts";
 import type { RunInfo, RunManager } from "./runs.ts";
 import { dueRoutines, parseSchedule, slotOnDay } from "./scheduler.ts";
@@ -62,10 +63,7 @@ function writeAtomic(file: string, text: string): void {
   renameSync(tmp, file);
 }
 
-/** YYYY-MM-DD in the owner's time zone. */
-export function localDate(now: Date, tz: string): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
-}
+export { localDate };
 
 export class RoutineRunner {
   private paths: Paths;
