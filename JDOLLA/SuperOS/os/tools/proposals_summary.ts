@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import type { ScriptTool } from "./registry.ts";
+import { UNTRUSTED_NOTE, fence } from "../brain/present.ts";
 import { MAX_READ_BYTES, scanVault, vaultRoot } from "./vault.ts";
 
 const DAY_MS = 86_400_000;
@@ -125,7 +126,7 @@ export const proposalsSummary: ScriptTool = {
         const failures = items.filter((q) => isFailure(q) && skillOf(q) === skill);
         return {
           skill,
-          rule: oneLine(p.skillChange!.rule, 160),
+          rule: fence(oneLine(p.skillChange!.rule, 160), false, "proposal"), // the rule was drafted from a run that may have read hostile text: fenced data
           approvedOn: p.decidedAt!.slice(0, 10),
           daysSince: Math.max(0, Math.floor((now - at) / DAY_MS)),
           failuresBefore: failures.filter((q) => t(q.createdAt) < at && t(q.createdAt) >= at - days * DAY_MS).length,
@@ -135,6 +136,7 @@ export const proposalsSummary: ScriptTool = {
 
     return {
       days,
+      notice: UNTRUSTED_NOTE,
       from: new Date(from).toISOString().slice(0, 10),
       to: new Date(now).toISOString().slice(0, 10),
       total: inWindow.length,
