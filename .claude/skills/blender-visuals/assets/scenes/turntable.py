@@ -1,4 +1,4 @@
-"""Rotating showcase of an object. args: model=path.glb|obj|stl  OR  shape=cube|sphere|torus|monkey|cone  color=#hex  bg=#hex
+"""Rotating showcase of an object. args: model=path.glb|obj|stl|fbx  OR  shape=cube|sphere|torus|monkey|cone  color=#hex  bg=#hex
 Render: render.py scenes/turntable.py --out out --frames 48 --mp4 [--arg shape=monkey]"""
 import math
 import bpy

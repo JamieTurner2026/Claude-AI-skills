@@ -3,7 +3,9 @@ Builds on Jay's manufacturing and equipment troubleshooting experience and conne
 
 ## Skills
 - `/video-knowledge`: learn procedures, warnings and error codes from equipment training videos
-- `/blender-visuals`: 3D diagrams of machines, stations and component layouts
+- `/blender-visuals`: 3D diagrams of machines, stations and component layouts (see its `references/materials.md` and `rigging.md` for real-looking parts and moving mechanisms; [[wiki/gamedev/blender-skills]])
+- `/blender-lighting-lookdev`, `/blender-rendering`, `/blender-video-editing`: lit machine renders and cut training videos; `/blender-asset-qa` before delivery
+- `/cad-parts`: exact brackets, sensor mounts and plates as STEP/STL/GLB (build123d); render them with `/blender-visuals`. Training and simulation only. [[wiki/gamedev/blender-skills]]
 - `industrial-training-sim` (draft, inert, `skills/industrial-training-sim/`): safe, fictional troubleshooting scenarios; simulation and training only
 
 ## References

@@ -41,7 +41,13 @@ def run(a):
     if a.engine == "cycles":
         r.engine = "CYCLES"; sc.cycles.device = "CPU"; sc.cycles.samples = samples; sc.cycles.use_denoising = True
     else:
-        r.engine = "BLENDER_EEVEE"  # needs a working OpenGL context; may fail on headless CPU-only hosts
+        # needs a working OpenGL context; may fail on headless CPU-only hosts.
+        # EEVEE is BLENDER_EEVEE_NEXT in 4.2-4.x and BLENDER_EEVEE before and after.
+        for ident in ("BLENDER_EEVEE_NEXT", "BLENDER_EEVEE"):
+            try:
+                r.engine = ident; break
+            except TypeError:
+                continue
     outputs = []
     if a.export:
         path = os.path.join(a.out, a.export); ext = os.path.splitext(path)[1].lower()

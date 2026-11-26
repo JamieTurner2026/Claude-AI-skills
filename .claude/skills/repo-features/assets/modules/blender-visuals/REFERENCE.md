@@ -24,7 +24,7 @@ Outputs are listed as `OUTPUT <path>`. CPU Cycles is the default (works headless
 | goal | scene | key args |
 |---|---|---|
 | title card / label | `title_card.py` | `title=`, `subtitle=`, `bg=`, `color=` |
-| rotating object video | `turntable.py` with `--frames 48 --mp4` | `shape=monkey\|cube\|sphere\|torus\|cone` or `model=file.glb/.obj/.stl`, `color=` |
+| rotating object video | `turntable.py` with `--frames 48 --mp4` | `shape=monkey\|cube\|sphere\|torus\|cone` or `model=file.glb/.obj/.stl/.fbx`, `color=` |
 | machine / station diagram | `machine_diagram.py` | `spec=spec.json` (nodes with id/label/kind/pos/size/color, links); see `assets/examples/servo_station.json` |
 | build + export a model | `model_export.py --export part.stl` | `shape=`, `size=` |
 
@@ -37,9 +37,13 @@ A scene file defines `build(args)` and optionally `animate(frame, total, args)`.
 1. Preview first: `--width 640 --height 360 --samples 8-16`. 2. Read the PNG and check framing, readability, colours. 3. Fix and repeat. 4. Final render at the requested size/samples. 5. Give the user the file path(s) in an allowed output folder.
 Never claim a visual is done without having viewed it (for video, view 2-3 frames from `OUT/frames/`).
 
+## Craft guides
+For real game or production assets (modeling, UVs, baking, LODs, engine export, QA), use the `blender-core` skill and the `blender-*` skills it routes to; this module is for quick visuals.
+`references/` holds guides for version-proof bpy, scene, materials, animation, rigging, retopology and level design (game export). Start with `references/README.md`.
+
 ## Pitfalls
 - Always call `add_camera_fit` after creating everything (text bounds are measured after a scene update, already handled).
-- bpy 5.x removed `action.fcurves`; don't edit keyframe interpolation, drive motion in `animate()`.
+- bpy 5.x removed `action.fcurves`; drive simple motion in `animate()`, or key in `build()` and call `scene.frame_set(1 + i)` in `animate()` (see `references/animation.md`).
 - Text is the built-in font; keep it short. Labels should face the camera (rotate X by 90° for a front-facing view).
 - Don't import untrusted `.blend`/scripts: scene scripts run arbitrary Python.
 - Render time scales with pixels × samples; 1280x720 at 32 samples takes seconds for simple scenes, minutes for complex ones.

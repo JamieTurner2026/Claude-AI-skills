@@ -2,7 +2,8 @@
 Gives the brain a creative identity: explores imaginative directions, develops visual concepts and learns which approaches Jay approves.
 
 ## Skills
-- `/blender-visuals`: renders, title cards and 3D visuals
+- `/blender-visuals`: renders, title cards and 3D visuals (see its `references/scene.md` for composition and light; [[wiki/gamedev/blender-skills]])
+- `/blender-lighting-lookdev`, `/blender-time-of-day`, `/blender-weather-fx`: lighting, mood and weather shots (toon looks: `blender-stylized-npr`, filed, off)
 - `content-cascade` (draft in `skills/content-cascade/`, not installed): turn one deliverable into draft posts and notes
 - `creative-critic` (draft, inert, `skills/creative-critic/`): check a design against Jay's approved preferences; critique only
 
