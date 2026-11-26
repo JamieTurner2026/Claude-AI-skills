@@ -2,6 +2,16 @@
 
 What changed in JDOLLA$ Super OS, newest first, in plain words. The numbers like #42 are the pull requests on GitHub (`JamieTurner2026/Claude-AI-skills`) where each change was built and checked. What to run on the PC is in [[START-HERE]]; what works and what waits on you is in [[docs/STATUS]].
 
+## 1.0.1 (2026-11-26)
+
+Small fixes and checks on top of 1.0.0. Still built and tested in the cloud on Linux and Windows with a stand-in for Claude; it has not run on your PC yet.
+
+- `npm run analyse:runs -- --month` and the monthly cost report (off by default), a This month chip in the Health strip (#51).
+- A rehearsal of [[START-HERE]] on a fresh Windows machine, and the fixes it found: the autostart install needs `-- install`, your own settings go in `os.local.json`, and the first setup downloads about 520 MB (#57).
+- The Routines widget shows a calendar of what runs when (#58).
+- Checks that the plan-today, vault-cleanup, proposals-review and month-costs skills do what their text promises: only their own tools, the report in the right place, nothing written when there is nothing new. Their text was corrected where it had drifted, and an approved rule quoted from a proposal now arrives fenced as untrusted data (#59).
+- Content cascade fixes: drafts get clear names, a repeat run no longer makes the same draft again, and it only uses files that really exist (#60).
+
 ## 1.0.0 (2026-11-24)
 
 The first full version: everything from Phase 2 to Phase 11, built and tested in the cloud on Linux and Windows with a stand-in for Claude. It has not run on your PC yet ([[START-HERE]] walks you through that).
@@ -56,7 +66,6 @@ The first full version: everything from Phase 2 to Phase 11, built and tested in
 - Run analysis suggests budget and setting changes; approving one only records your decision (#31).
 - A scorecard for the learning loop: `npm run analyse:learning` (#40).
 - The Proposals widget gets filters, a one-line "why", and keys: j/k to move, a/r to ask, y to confirm (#39).
-- `npm run analyse:runs -- --month` and the monthly cost report (off by default), a This month chip (#51).
 
 ### Phase 11: hardening
 - Red team: hostile text was pushed through every place outside text comes in; five leaks were found and fixed (#50).

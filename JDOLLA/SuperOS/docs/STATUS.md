@@ -1,6 +1,6 @@
 # Status
 
-Updated 2026-11-24. Built and tested in the cloud: every PR runs `npm run check`, `npm test`, `npm run eval:router` and `npm run smoke` on Linux and Windows (`.github/workflows/superos.yml`), with a fake Claude only. A **PC rehearsal** (`.github/workflows/pc-rehearsal.yml`, by hand and weekly) follows `START-HERE.md` line by line on `windows-latest` in a fresh clone outside the checkout, stubbing only the Claude CLI and the embedding download, and saves each step's scrubbed output. Version 1.0.0 (2026-11-24); what changed, phase by phase, is in `CHANGELOG.md`. History lives in git and `docs/LEARNINGS.md`; what to run on the PC is in `START-HERE.md`.
+Updated 2026-11-26. Built and tested in the cloud: every PR runs `npm run check`, `npm test`, `npm run eval:router` and `npm run smoke` on Linux and Windows (`.github/workflows/superos.yml`), with a fake Claude only. A **PC rehearsal** (`.github/workflows/pc-rehearsal.yml`, by hand and weekly) follows `START-HERE.md` line by line on `windows-latest` in a fresh clone outside the checkout, stubbing only the Claude CLI and the embedding download, and saves each step's scrubbed output. Version 1.0.1 (2026-11-26); what changed, phase by phase, is in `CHANGELOG.md`. History lives in git and `docs/LEARNINGS.md`; what to run on the PC is in `START-HERE.md`.
 
 ## What works now
 
