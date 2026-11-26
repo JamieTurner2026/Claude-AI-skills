@@ -1,11 +1,11 @@
 // brain -- bench: a synthetic vault at real size, in a temp folder, to measure the index and search honestly.
 // Seeded, invented text only, never the real vault or index, and the temp folder is removed in finally.
-// It measures index build time, index size and search latency with the graph off and on. (Retrieval quality at this
+// It measures index build time, index size and search latency with the graph off and on (on: re-rank + connected list). (Retrieval quality at this
 // size, with generated questions, is the separate queued bench task.)
 import { mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { graphSearch } from "./hybrid.ts";
+import { connectedNotes, graphSearch } from "./hybrid.ts";
 import { rebuildIndex } from "./indexer.ts";
 import { openReadOnly } from "./search.ts";
 
@@ -83,8 +83,10 @@ export interface BenchReport { size: SynthSize; graphOff: BenchRun; graphOn: Ben
 function timeQueries(dbPath: string, queries: string[], graph: boolean): { p50: number; p95: number } {
   const db = openReadOnly(dbPath);
   try {
-    for (const q of queries.slice(0, 20)) graphSearch(db, { query: q }, null, graph); // warm-up
-    const ms = queries.map((q) => { const t0 = performance.now(); graphSearch(db, { query: q }, null, graph); return performance.now() - t0; });
+    // graph on = what a search through the brain server costs since 12b: the re-rank plus the connected list.
+    const one = (q: string) => { const hits = graphSearch(db, { query: q }, null, graph); if (graph) connectedNotes(db, hits, { query: q }); };
+    for (const q of queries.slice(0, 20)) one(q); // warm-up
+    const ms = queries.map((q) => { const t0 = performance.now(); one(q); return performance.now() - t0; });
     return { p50: pct(ms, 50), p95: pct(ms, 95) };
   } finally { db.close(); }
 }

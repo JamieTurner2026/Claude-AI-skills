@@ -85,16 +85,45 @@ export function buildGraph(db: DatabaseSync, notes: readonly GraphNote[]): Graph
 
 const hasEdges = (db: DatabaseSync): boolean => !!db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'edges'").get();
 
-/** Note paths one hop from `from`, over edges that may boost search: link, source and project, authored by a trusted note. */
-export function boostNeighbours(db: DatabaseSync, from: readonly string[]): Map<string, number> {
-  const out = new Map<string, number>();
-  if (!from.length || !hasEdges(db)) return out;
-  const q = db.prepare(`SELECT dst AS n FROM edges WHERE src = ? AND src_trusted = 1 AND kind IN ('link','source','project')
-    UNION ALL SELECT src AS n FROM edges WHERE dst = ? AND src_trusted = 1 AND kind IN ('link','source','project')`);
-  from.forEach((p, rank) => {
-    for (const r of q.all(p, p) as { n: string }[]) if (!from.includes(r.n)) out.set(r.n, (out.get(r.n) ?? 0) + 1 / (rank + 1));
-  });
-  return out;
+/**
+ * How much one edge votes, by kind (12b). A wikilink is a deliberate pointer; a shared source is weaker; folder-layout
+ * project membership weaker still. Dept edges never vote: every note in a department has one.
+ */
+export const EDGE_WEIGHT: Readonly<Record<Exclude<EdgeKind, "dept">, number>> = { link: 1, source: 0.6, project: 0.3 };
+const VOTE_KINDS = "('link','source','project')";
+
+export interface Vote { score: number; via: string }
+
+/**
+ * Graph votes from `seeds` (the top text hits) to their neighbours, over edges a trusted note authored. Each edge
+ * between a seed and a note adds EDGE_WEIGHT[kind] / log2(1 + degree of the busier end), so a charter or project hub
+ * that touches everything votes weakly and is voted for weakly. A seed is never voted for by itself, but seeds vote
+ * for each other. `via` is the seed that gave the biggest share.
+ */
+export function graphVotes(db: DatabaseSync, seeds: readonly string[]): Map<string, Vote> {
+  const out = new Map<string, Vote & { best: number }>();
+  if (!seeds.length || !hasEdges(db)) return new Map();
+  const nb = db.prepare(`SELECT dst AS n, kind FROM edges WHERE src = ? AND src_trusted = 1 AND kind IN ${VOTE_KINDS}
+    UNION ALL SELECT src AS n, kind FROM edges WHERE dst = ? AND src_trusted = 1 AND kind IN ${VOTE_KINDS}`);
+  const deg = db.prepare(`SELECT (SELECT count(*) FROM edges WHERE src = ?1 AND src_trusted = 1 AND kind IN ${VOTE_KINDS})
+    + (SELECT count(*) FROM edges WHERE dst = ?1 AND src_trusted = 1 AND kind IN ${VOTE_KINDS}) AS d`);
+  const degrees = new Map<string, number>();
+  const degreeOf = (p: string): number => {
+    let d = degrees.get(p);
+    if (d === undefined) { d = Number((deg.get(p) as { d: number }).d); degrees.set(p, d); }
+    return d;
+  };
+  for (const s of new Set(seeds)) {
+    for (const r of nb.all(s, s) as { n: string; kind: Exclude<EdgeKind, "dept"> }[]) {
+      if (r.n === s) continue;
+      const v = EDGE_WEIGHT[r.kind] / Math.log2(1 + Math.max(degreeOf(s), degreeOf(r.n), 1));
+      const cur = out.get(r.n) ?? { score: 0, via: s, best: 0 };
+      cur.score += v;
+      if (v > cur.best) { cur.best = v; cur.via = s; }
+      out.set(r.n, cur);
+    }
+  }
+  return new Map([...out].map(([p, { score, via }]) => [p, { score, via }]));
 }
 
 export type RelationLabel = "links to" | "linked from" | "cites" | "cited by" | "same source" | "same project";

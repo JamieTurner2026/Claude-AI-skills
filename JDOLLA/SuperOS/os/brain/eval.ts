@@ -11,6 +11,8 @@ export const EvalFile = z.object({
   questions: z.array(z.object({
     id: z.string().regex(/^[\w-]{1,40}$/),
     style: z.enum(["keyword", "paraphrase", "synonym"]),
+    /** "graph": the answer is reached through a link or shared source from the note the words match (12b practice set). */
+    kind: z.enum(["text", "graph"]).optional(),
     query: z.string().min(1).max(300),
     relevant: z.array(z.string().regex(/^(wiki|raw)\/[\w./-]+\.(md|txt)$/)).min(1),
   }).strict()).min(1),
@@ -43,14 +45,14 @@ export function keywordRanker(db: DatabaseSync): Ranker {
   return (query) => distinctPaths(search(db, { query, limit: 50 }).map((h) => h.path));
 }
 
-export interface QuestionResult { id: string; style: Question["style"]; query: string; rank: number | null; top: string[]; relevant: string[] }
-export interface EvalReport { k: number; questions: number; hitAtK: number; mrr: number; byStyle: Record<string, { n: number; hitAtK: number; mrr: number }>; results: QuestionResult[]; unknownPaths: string[] }
+export interface QuestionResult { id: string; style: Question["style"]; kind: "text" | "graph"; query: string; rank: number | null; top: string[]; relevant: string[] }
+export interface EvalReport { k: number; questions: number; hitAtK: number; mrr: number; byStyle: Record<string, { n: number; hitAtK: number; mrr: number }>; byKind: Record<string, { n: number; hitAtK: number; mrr: number }>; results: QuestionResult[]; unknownPaths: string[] }
 
 /** rank = 1-based position of the first relevant note among the first MRR_DEPTH distinct notes, else null. */
 export function scoreQuestion(q: Question, ranked: readonly string[], k: number): QuestionResult {
   const list = distinctPaths(ranked).slice(0, MRR_DEPTH);
   const i = list.findIndex((p) => q.relevant.includes(p));
-  return { id: q.id, style: q.style, query: q.query, rank: i < 0 ? null : i + 1, top: list.slice(0, k), relevant: q.relevant };
+  return { id: q.id, style: q.style, kind: q.kind ?? "text", query: q.query, rank: i < 0 ? null : i + 1, top: list.slice(0, k), relevant: q.relevant };
 }
 
 const summarise = (rs: QuestionResult[], k: number) => ({
@@ -69,8 +71,13 @@ export function runEval(file: EvalFile, rank: Ranker, k: number, knownPaths?: Re
     const rs = results.filter((r) => r.style === style);
     if (rs.length) byStyle[style] = summarise(rs, k);
   }
+  const byKind: EvalReport["byKind"] = {};
+  for (const kind of ["text", "graph"] as const) {
+    const rs = results.filter((r) => r.kind === kind);
+    if (rs.length) byKind[kind] = summarise(rs, k);
+  }
   const all = summarise(results, k);
-  return { k, questions: all.n, hitAtK: all.hitAtK, mrr: all.mrr, byStyle, results, unknownPaths };
+  return { k, questions: all.n, hitAtK: all.hitAtK, mrr: all.mrr, byStyle, byKind, results, unknownPaths };
 }
 
 export function indexedPaths(db: DatabaseSync): Set<string> {
