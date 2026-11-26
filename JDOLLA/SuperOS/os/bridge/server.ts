@@ -19,6 +19,7 @@ import { RoutineRunner } from "./routine-runner.ts";
 import { LearningLoop } from "./learning.ts";
 import { BrainLink } from "./brain-link.ts";
 import { defaultIndexPath } from "../brain/indexer.ts";
+import { brainGraphView } from "./brain-graph-view.ts";
 import { RunError, RunManager, defaultClaudeBin } from "./runs.ts";
 import type { ClaudeBin, RunEvent } from "./runs.ts";
 import type { SandboxStatus } from "./sandbox.ts";
@@ -245,6 +246,13 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
         backup: readBackupRecord(opts.logDir ?? logDir(paths)),
         monthUsd: monthSpend(opts.logDir ?? logDir(paths), now, config.timezones[0] ?? "America/New_York"),
       }));
+    }
+    // Brain graph (12a): counts and the top hubs, titles only, for a later dashboard panel. Reads only; a foreign Origin is refused.
+    if (url.pathname === "/api/brain/graph") {
+      if (req.method !== "GET") throw new HttpError(405, "Method not allowed.");
+      const origin = req.headers.origin;
+      if (origin && !ownOrigins().some((o) => origin === `http://${o}`)) throw new HttpError(403, "Wrong origin.");
+      return send(res, 200, brainGraphView(brain.dbPath));
     }
     // The next seven days of routine slots (on and off) against the daily cap. Reads only; a foreign Origin is refused too.
     if (url.pathname === "/api/routines/calendar") {

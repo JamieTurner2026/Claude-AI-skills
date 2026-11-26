@@ -2,6 +2,10 @@
 
 What changed in JDOLLA$ Super OS, newest first, in plain words. The numbers like #42 are the pull requests on GitHub (`JamieTurner2026/Claude-AI-skills`) where each change was built and checked. What to run on the PC is in [[START-HERE]]; what works and what waits on you is in [[docs/STATUS]].
 
+## Unreleased
+
+- A note graph for the second brain, built with the index on your PC: no model, no network, no cost. The `related` tool shows a note's neighbours (links to, linked from, cites, same source, same project), the weekly vault cleanup lists orphans and hubs, and `GET /api/brain/graph` gives counts for a later dashboard panel. Search doesn't use it yet: on the eval it didn't help, so the boost is off. `npm run brain -- bench` measures index and search speed on a made-up vault of about 2,700 notes.
+
 ## 1.0.1 (2026-11-26)
 
 Small fixes and checks on top of 1.0.0. Still built and tested in the cloud on Linux and Windows with a stand-in for Claude; it has not run on your PC yet.

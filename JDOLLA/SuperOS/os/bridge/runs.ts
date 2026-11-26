@@ -9,6 +9,7 @@ import { ContainmentError, buildClaudeArgs, capFor } from "./claude-args.ts";
 import { allDenyRules } from "./deny-rules.ts";
 import { PolicyError, loadPolicy, scriptToolsFor, t3Tools } from "./policy.ts";
 import { buildRunMcp } from "./mcp-servers.ts";
+import { brainGraphTools } from "./brain-link.ts";
 import { detectSandbox } from "./sandbox.ts";
 import type { BrainLink } from "./brain-link.ts";
 import type { SandboxStatus } from "./sandbox.ts";
@@ -193,7 +194,7 @@ export class RunManager {
       const policy = loadPolicy(this.paths);
       const tools = t3Tools(policy, req.skill);
       const brain = config.engine.brain.enabled && this.brain?.ensureFresh() ? this.brain.server() : null;
-      const mcp = buildRunMcp({ brain, tools: config.engine.tools.enabled ? scriptToolsFor(policy, req.skill) : [], timezone: config.timezones[0] ?? "America/New_York", vault: this.paths.vault, logDir: this.logDir });
+      const mcp = buildRunMcp({ brain, tools: config.engine.tools.enabled ? scriptToolsFor(policy, req.skill) : [], timezone: config.timezones[0] ?? "America/New_York", vault: this.paths.vault, logDir: this.logDir, brainExtra: brainGraphTools(req.tier, req.skill) });
       built = buildClaudeArgs({ tier: req.tier, text: req.text, budgetUsd: cap, vault: this.paths.vault, workDir, t3Tools: tools, deny: allDenyRules(this.paths.vault), sandbox: this.sandbox(), mcp }, config);
     } catch (e) {
       if (e instanceof PolicyError || e instanceof ContainmentError) throw new RunError(400, e.message);

@@ -74,7 +74,7 @@ test("a morning-intel run is given exactly the tools its policy names, read-only
   const argv = argvFromOutput(done.output);
   const flag = (f: string) => argv[argv.indexOf(f) + 1]!;
   const policyTools = ["today", "recent_changes", "list_reports", "proposals_summary", "calendar_today", "mail_brain"];
-  assert.deepEqual(flag("--allowedTools").split(","), ["mcp__superos-brain__search", "mcp__superos-brain__get_note", ...policyTools.map((n) => `mcp__superos-tools__${n}`)]);
+  assert.deepEqual(flag("--allowedTools").split(","), ["mcp__superos-brain__search", "mcp__superos-brain__get_note", "mcp__superos-brain__related", ...policyTools.map((n) => `mcp__superos-tools__${n}`)]);
   assert.equal(flag("--tools"), "Read,Glob,Grep", "read-only built-ins: no Write, Edit, Bash or web tool");
   const server = JSON.parse(flag("--mcp-config")).mcpServers["superos-tools"] as { env: Record<string, string> };
   assert.equal(server.env["SUPEROS_TOOLS"], policyTools.join(","));
