@@ -3,12 +3,12 @@
 // and starts each through the normal RunManager, so every containment rule still applies.
 // Safety: the attempt is written to the ledger BEFORE a run starts, so a crash or restart never runs the
 // same slot twice; and a routine starts only if today's spend plus its full budget fits under the daily cap.
-import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import type { OsConfig, Paths } from "./config.ts";
 import type { LogLine } from "./run-log.ts";
-import { RunError } from "./runs.ts";
+import { RunError, parseDeliverableName } from "./runs.ts";
 import type { RunInfo, RunManager } from "./runs.ts";
 import { dueRoutines, parseSchedule, slotOnDay } from "./scheduler.ts";
 import type { Schedule } from "./scheduler.ts";
@@ -20,6 +20,9 @@ const SLUG = /^[a-z0-9][a-z0-9-]{0,39}$/;
 export const NOTHING_NEW = "NOTHING_NEW";
 const DEFAULT_BUDGET = { T2: 0.25, T3: 1 } as const;
 const MAX_SKILL_BYTES = 64 * 1024;
+/** The one routine that drafts from a deliverable (it gets the source in ./_inputs/ and its files are named as drafts). */
+export const CASCADE_SKILL = "content-cascade";
+const MAX_CASCADE_SOURCE_BYTES = 1024 * 1024;
 /** Ledger key for a run started from the Skills widget. It has a colon, so it can never collide with a routine id. */
 const skillKey = (name: string): string => `skill:${name}`;
 export const MAX_INPUT_CHARS = 500;
@@ -208,6 +211,10 @@ export class RoutineRunner {
     if (capNote) fail(429, capNote);
     const skillText = this.readSkill(r.skill as string);
     if (skillText === null) fail(400, `Skill file skills/${r.skill}/SKILL.md is missing or too large.`);
+    // content-cascade drafts from one deliverable. With none to draft from it would only spend money, so it is skipped
+    // here, before anything is reserved, and the slot counts as used.
+    const source = r.skill === CASCADE_SKILL ? this.cascadeSource() : null;
+    if (r.skill === CASCADE_SKILL && !source) fail(409, "Nothing to cascade: no finished deliverable in outputs/ without drafts.");
 
     // Record the attempt and reserve the full budget BEFORE starting (at most once, never over the cap).
     ledger.lastRunAt[r.id] = now.toISOString();
@@ -215,11 +222,11 @@ export class RoutineRunner {
     this.saveLedger(ledger);
 
     const prompt = buildPrompt(r, skillText as string, today, tz, input ? { input } : {});
-    const inputs = r.tier === "T3" ? this.latestDeliverable() : [];
+    const inputs = source ? [source] : [];
     let info: RunInfo;
     try {
       info = this.runs.start({ text: prompt, tier: r.tier, ...(r.skill ? { skill: r.skill } : {}) }, {
-        routineBudgetUsd: budget, ...(why === "skill" ? {} : { routine: r.id }), inputs,
+        routineBudgetUsd: budget, ...(why === "skill" ? {} : { routine: r.id }), inputs, ...(source ? { drafts: { source, day: today } } : {}),
         onEnd: (end) => this.finish(r, end, today, budget),
       });
     } catch (e) {
@@ -302,16 +309,28 @@ export class RoutineRunner {
     } catch { return null; }
   }
 
-  /** Newest finished deliverable in outputs/YYYY-MM/ that is not itself a draft (input for content-cascade). */
-  private latestDeliverable(): string[] {
+  /**
+   * content-cascade's source: the newest finished deliverable in outputs/YYYY-MM/ that has no drafts yet. A finished
+   * deliverable is a regular file (never a link) named by the rule and not itself a draft; it "has drafts" when any month
+   * holds a `<day>_<dept>_<slug>-draft-*` file for it. Newest is by the date in the name, then the name.
+   */
+  private cascadeSource(): string | null {
     const root = path.join(this.paths.vault, "outputs");
-    if (!existsSync(root)) return [];
+    if (!existsSync(root)) return null;
     const months = readdirSync(root).filter((d) => /^\d{4}-\d{2}$/.test(d)).sort().reverse();
-    for (const m of months) {
-      const files = readdirSync(path.join(root, m)).filter((f) => !f.startsWith(".") && !f.includes("-draft")).sort().reverse();
-      for (const f of files) { const p = path.join(root, m, f); if (statSync(p).isFile()) return [p]; }
+    const all = months.flatMap((m) => readdirSync(path.join(root, m)).map((f) => ({ m, f })));
+    const drafted = new Set(all.map(({ f }) => /^\d{4}-\d{2}-\d{2}_([a-z][a-z0-9-]*_[a-z0-9-]+?)-draft-/.exec(f)?.[1]).filter(Boolean));
+    const candidates = all
+      .filter(({ f }) => !f.includes("-draft") && parseDeliverableName(f))
+      .sort((a, b) => b.f.localeCompare(a.f));
+    for (const { m, f } of candidates) {
+      const p = parseDeliverableName(f)!;
+      if (drafted.has(`${p.dept}_${p.slug}`)) continue;
+      const file = path.join(root, m, f);
+      const st = lstatSync(file);
+      if (st.isFile() && st.size <= MAX_CASCADE_SOURCE_BYTES) return file;
     }
-    return [];
+    return null;
   }
 
   /**

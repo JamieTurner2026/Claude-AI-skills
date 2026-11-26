@@ -3,9 +3,10 @@
 // DELIVER (writes report.md in its working folder), CRASH (a non-budget error). An inbox-triage prompt is answered with the
 // JSON in FAKE_TRIAGE_ANSWER. BRAINANSWER (and friends, see below) emits brain tool_use events and then an answer. A learning-loop
 // diagnosis prompt gets a JSON answer, junk (BADDIAG), a failure (DIAGFAIL), a never-ending answer (DIAGSLOW) or
-// text trying to break out of its fields (DIAGEVIL). It writes its arguments to a file named in its output (ARGVFILE:) so tests can check them.
+// text trying to break out of its fields (DIAGEVIL). The content-cascade skill (its "# Content cascade" heading in the prompt) reads
+// ./_inputs/ and writes three drafts, each quoting the source's first line, the way a T3 cascade run would. It writes its arguments to a file named in its output (ARGVFILE:) so tests can check them.
 import { spawn } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -111,6 +112,13 @@ if (text.startsWith("You are sorting files that Jay dropped")) {
   process.exitCode = 1;
 } else {
   if (text.includes("DELIVER")) writeFileSync("report.md", "# Report\nMade by the stand-in.\n");
+  if (text.includes("# Content cascade")) {
+    const src = existsSync("_inputs") ? readdirSync("_inputs").sort()[0] : undefined;
+    if (src) {
+      const first = readFileSync(path.join("_inputs", src), "utf8").split(/\r?\n/)[0] ?? "";
+      for (const kind of ["post", "summary", "note"]) writeFileSync(`draft-${kind}.md`, `Status: DRAFT, not published\n\nFrom ${src}: ${first}\n`);
+    }
+  }
   out({ type: "assistant", message: { content: [{ type: "tool_use", name: "Read" }, { type: "text", text: "All done." }] } });
   out({ type: "result", subtype: "success", is_error: false, total_cost_usd: 0.0123, result: "All done." });
 }
