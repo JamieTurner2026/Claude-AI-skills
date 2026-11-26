@@ -25,6 +25,10 @@ const healthy = (over: Partial<HealthView> = {}): HealthView => ({
   brain: { present: true, indexAgeSec: 600, stale: false, embeddings: true, embeddedChunks: 42 }, proposals: { pending: 2 }, month: { spendUsd: 1.234 }, backup: null, ...over,
 });
 
+// Never the real ~/.superos embedding runtime: with one installed, the bridge's post-run reindex would embed the fixture
+// and this file's hand-made vectors table would clash with it (found in 12b, where the runtime was installed for the eval).
+process.env["SUPEROS_EMBED_DIR"] = mkdtempSync(path.join(tmpdir(), "health-embed-"));
+
 async function setup() {
   const vault = makeVault();
   const logs = mkdtempSync(path.join(tmpdir(), "health-logs-"));

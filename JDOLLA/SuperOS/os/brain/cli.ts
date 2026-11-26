@@ -10,7 +10,8 @@ import { isTrusted } from "./files.ts";
 import { runImportCommand } from "./import-cli.ts";
 import { runMailCommand } from "./mail-cli.ts";
 import { FULL, SMALL, formatBench, runBench } from "./bench.ts";
-import { compareEval, compareGraph, formatComparison, formatGraphComparison, hybridSearchCli, indexWithEmbeddings } from "./embed-cli.ts";
+import { compareEval, formatComparison, hybridSearchCli, indexWithEmbeddings } from "./embed-cli.ts";
+import { formatSweep, sweepGraph } from "./graph-eval.ts";
 import { formatReport, indexedPaths, keywordRanker, loadEvalFile, runEval } from "./eval.ts";
 import { formatUsage, readUsage, summarizeUsage, usagePathFor } from "./usage.ts";
 
@@ -19,8 +20,10 @@ const USAGE = `usage: brain <index|search|get|stats|eval|usage|bench|import-sess
                          search (one-time download, files in ~/.superos/brain/embeddings)
   search <query> [--dept d] [--limit n] [--trusted] [--json] [--hybrid]
   get <vault-path>       print one note
-  eval [--k 5] [--questions <file>] [--json] [--compare]   (--compare: keyword vs hybrid)
+  eval [--k 5] [--questions <file>] [--json] [--compare | --graph]   (--compare: keyword vs hybrid)
                          retrieval eval: hit@k and MRR (default questions: <vault>/evals/brain/questions.json)
+                         --graph: graph re-rank off vs a grid of settings, on your questions and on the practice
+                         set in evals/brain/graph-practice/ (indexed in a temp folder, deleted after)
   usage [--json]         which notes runs opened (get_note), and wiki notes never opened; reads only
   import-sessions [--claude-code <dir>] [--claude-ai <conversations.json>] [--dry-run]
                          import past sessions into raw/sessions/ (redacted, never overwritten)
@@ -75,8 +78,8 @@ async function main(argv: string[]): Promise<number> {
       const file = loadEvalFile(values.questions ?? path.join(vault, "evals", "brain", "questions.json"));
       const k = values.k ? Number(values.k) : 5;
       if (values.graph) {
-        const g = await compareGraph(file, dbPath, k);
-        console.log(values.json ? JSON.stringify(g, null, 2) : formatGraphComparison(g));
+        const g = await sweepGraph(vault, dbPath, k, { questions: file });
+        console.log(values.json ? JSON.stringify(g, null, 2) : formatSweep(g));
         return 0;
       }
       if (values.compare) {

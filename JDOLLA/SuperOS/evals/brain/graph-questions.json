@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "about": "Graph practice set (12b). Invented notes in evals/brain/graph-practice/, indexed with a copy of the vault's wiki/ and raw/ in a temp folder, never in Jay's wiki. g01-g10: the words match one note and the answer is one link, source or project edge away. g11 and g12 are traps: in g11 the matched note links to the wrong note, in g12 the answer is a clear winner that a hub links away from; the graph must not make them worse. Questions written so a link leads to the answer show the graph can help, not how often it will in real notes.",
+  "questions": [
+    {
+      "id": "g01",
+      "style": "paraphrase",
+      "kind": "graph",
+      "query": "which gripper does the line 4 palletizer use now",
+      "relevant": [
+        "wiki/industrial/practice-gripper-swap.md"
+      ]
+    },
+    {
+      "id": "g02",
+      "style": "keyword",
+      "kind": "graph",
+      "query": "nutrunner torque fault codes for station 7",
+      "relevant": [
+        "raw/industrial/practice-nutrunner/2026-10-02_vendor-torque-table.md"
+      ]
+    },
+    {
+      "id": "g03",
+      "style": "paraphrase",
+      "kind": "graph",
+      "query": "how many times does the invoice service retry a failed webhook",
+      "relevant": [
+        "wiki/software/practice-webhook-retries.md"
+      ]
+    },
+    {
+      "id": "g04",
+      "style": "paraphrase",
+      "kind": "graph",
+      "query": "which Node version does the ledger app repo use",
+      "relevant": [
+        "raw/software/practice-ledger-app/2026-11-03_repo-snapshot.md"
+      ]
+    },
+    {
+      "id": "g05",
+      "style": "keyword",
+      "kind": "graph",
+      "query": "fog settings for the harbor level",
+      "relevant": [
+        "wiki/gamedev/practice-fog-volume.md"
+      ]
+    },
+    {
+      "id": "g06",
+      "style": "paraphrase",
+      "kind": "graph",
+      "query": "the tire numbers we tuned for drift physics",
+      "relevant": [
+        "wiki/gamedev/practice-tire-grip.md"
+      ]
+    },
+    {
+      "id": "g07",
+      "style": "paraphrase",
+      "kind": "graph",
+      "query": "which colours did we pick for the autumn poster series",
+      "relevant": [
+        "wiki/creative/practice-autumn-palette.md"
+      ]
+    },
+    {
+      "id": "g08",
+      "style": "paraphrase",
+      "kind": "graph",
+      "query": "what price did the Q1 roadmap settle on for the paid tier",
+      "relevant": [
+        "wiki/strategy/practice-paid-tier-pricing.md"
+      ]
+    },
+    {
+      "id": "g09",
+      "style": "keyword",
+      "kind": "graph",
+      "query": "home lab network VLAN numbers for the cameras",
+      "relevant": [
+        "wiki/security/practice-vlan-plan.md"
+      ]
+    },
+    {
+      "id": "g10",
+      "style": "paraphrase",
+      "kind": "graph",
+      "query": "when does agent memory forget old entries",
+      "relevant": [
+        "wiki/ai/practice-memory-eviction.md"
+      ]
+    },
+    {
+      "id": "g11",
+      "style": "keyword",
+      "kind": "graph",
+      "query": "sorter conveyor belt speed",
+      "relevant": [
+        "wiki/industrial/practice-sorter-belt-speed.md"
+      ]
+    },
+    {
+      "id": "g12",
+      "style": "keyword",
+      "kind": "graph",
+      "query": "prompt caching cache prefix",
+      "relevant": [
+        "wiki/ai/practice-prompt-caching.md"
+      ]
+    }
+  ]
+}
