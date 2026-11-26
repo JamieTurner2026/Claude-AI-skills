@@ -1,6 +1,6 @@
 # claude-repo-template
 
-Skills for starting projects fast with Claude: **repo-builder**, repo-scaffold, repo-conventions, repo-features, repo-ship, video-knowledge, blender-visuals, claude-skills-api (generate xlsx/pptx/pdf/docx through the Claude API).
+Skills for starting projects fast with Claude: **repo-builder**, repo-scaffold, repo-conventions, repo-features, repo-ship, video-knowledge, blender-visuals, claude-skills-api (generate xlsx/pptx/pdf/docx through the Claude API), plus 18 game-dev skills from [awesome-gamedev-agent-skills](https://github.com/gamedev-skills/awesome-gamedev-agent-skills) (Apache-2.0): 6 Unreal Engine skills and engine-neutral ones for AI, physics, cameras, input, UI, saves, audio and Steam. The rest are filed in `JDOLLA/SuperOS/raw/gamedev/unreal-skills/`.
 
 ## Use it
 - **Per repo:** click "Use this template". The skills in `.claude/skills/` load automatically in Claude Code.
