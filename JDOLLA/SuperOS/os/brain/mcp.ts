@@ -10,7 +10,8 @@ import { readBrainFile } from "./files.ts";
 import { UNTRUSTED_NOTE, fence } from "./present.ts";
 import { SearchInput, openReadOnly, search, type SearchHit } from "./search.ts";
 import { isTrusted, toVaultRel } from "./files.ts";
-import { hybridSearch } from "./hybrid.ts";
+import { graphEnabled, graphSearch } from "./hybrid.ts";
+import { graphSummary, related } from "./graph.ts";
 import { searchQueryVector, type QueryVectors } from "./query-vectors.ts";
 import { defaultUsagePath, recordUse } from "./usage.ts";
 
@@ -19,6 +20,8 @@ const PROTOCOL = "2024-11-05";
 const MAX_NOTE_CHARS = 60_000;
 
 const GetNoteInput = z.object({ path: z.string().min(1).max(400) }).strict();
+const RelatedInput = z.object({ path: z.string().min(1).max(400), depth: z.union([z.literal(1), z.literal(2)]).default(1) }).strict();
+const OverviewInput = z.object({ limit: z.number().int().min(1).max(25).default(10) }).strict();
 
 export const TOOLS = [
   {
@@ -44,6 +47,27 @@ export const TOOLS = [
       type: "object",
       properties: { path: { type: "string", maxLength: 400 } },
       required: ["path"],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  {
+    name: "related",
+    description: "Notes connected to one note (wiki/... or raw/...), up to 2 hops: links to, linked from, cites, cited by, same source, same project. Paths and titles only; untrusted titles are fenced.",
+    inputSchema: {
+      type: "object",
+      properties: { path: { type: "string", maxLength: 400 }, depth: { type: "integer", enum: [1, 2], default: 1 } },
+      required: ["path"],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  {
+    name: "graph_overview",
+    description: "The whole note graph in numbers: notes, edges by kind, wiki notes with no links or sources in or out (orphans), and the most connected notes (hubs). Paths and titles only.",
+    inputSchema: {
+      type: "object",
+      properties: { limit: { type: "integer", minimum: 1, maximum: 25, default: 10 } },
       additionalProperties: false,
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
@@ -90,8 +114,33 @@ function runTool(ctx: Ctx, name: string, args: unknown): unknown {
       const db = openReadOnly(ctx.dbPath); // missing/corrupt: tell the user to rebuild; this server never writes
       try {
         const q = ctx.vectors?.get(input.query) ?? null;
-        const hits = (q ? hybridSearch(db, input, q) : search(db, input)).map(presentHit);
+        const g = graphEnabled();
+        const hits = (q || g ? graphSearch(db, input, q, g) : search(db, input)).map(presentHit);
         return toolText(JSON.stringify({ note: UNTRUSTED_NOTE, count: hits.length, hits }, null, 2));
+      } finally { db.close(); }
+    }
+    if (name === "related" || name === "graph_overview") {
+      const db = openReadOnly(ctx.dbPath);
+      try {
+        const titleOf = db.prepare("SELECT title FROM documents WHERE path = ? ORDER BY chunk LIMIT 1");
+        const show = (p: string) => {
+          const trusted = isTrusted(p);
+          return { path: p, trusted, title: metaText(String((titleOf.get(p) as { title?: string } | undefined)?.title ?? ""), trusted, p) };
+        };
+        if (name === "related") {
+          const { path: rel, depth } = RelatedInput.parse(args);
+          const p = rel.replace(/\\/g, "/");
+          if (!/^(wiki|raw)\//.test(p) || !titleOf.get(p)) return toolText("No indexed note at that path. Use a path returned by search.", true);
+          const items = related(db, p, depth).map((r) => ({ ...show(r.path), edge: r.edge, depth: r.depth, ...(r.via ? { via: r.via } : {}) }));
+          return toolText(JSON.stringify({ note: UNTRUSTED_NOTE, of: show(p), count: items.length, related: items }, null, 2));
+        }
+        const { limit } = OverviewInput.parse(args);
+        const s = graphSummary(db, limit);
+        return toolText(JSON.stringify({
+          note: UNTRUSTED_NOTE, notes: s.notes, edges: s.edges,
+          orphans: { total: s.orphans.total, notes: s.orphans.paths.slice(0, limit * 2).map(show) },
+          hubs: s.hubs.map((h) => ({ ...show(h.path), degree: h.degree })),
+        }, null, 2));
       } finally { db.close(); }
     }
     const { path: rel } = GetNoteInput.parse(args);

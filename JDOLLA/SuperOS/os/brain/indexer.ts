@@ -6,6 +6,7 @@ import { z } from "zod";
 import { GuardError } from "../bridge/guards.ts";
 import { chunkMarkdown } from "./chunker.ts";
 import { BRAIN_EXT, BRAIN_ROOTS, isTrusted, readBrainFile, toVaultRel } from "./files.ts";
+import { buildGraph, type GraphNote, type GraphStats } from "./graph.ts";
 import { createSchema, verifyIndex } from "./schema.ts";
 
 const Front = z.object({
@@ -47,13 +48,15 @@ function* walk(vaultRoot: string, root: string): Generator<string> {
   }
 }
 
-export interface IndexStats { files: number; chunks: number; skipped: number; untrustedFiles: number }
+export interface IndexStats { files: number; chunks: number; skipped: number; untrustedFiles: number; graph?: GraphStats }
 
-export function indexVault(db: DatabaseSync, vault: string): IndexStats {
+/** opts.graph false skips the graph (the bench uses it to measure the graph's cost); default true. */
+export function indexVault(db: DatabaseSync, vault: string, opts: { graph?: boolean } = {}): IndexStats {
   const vaultRoot = realpathSync(vault);
   const stats: IndexStats = { files: 0, chunks: 0, skipped: 0, untrustedFiles: 0 };
   const insDoc = db.prepare("INSERT INTO documents(path, chunk, heading, dept, type, title, updated, trusted, text) VALUES (?,?,?,?,?,?,?,?,?)");
   const insFts = db.prepare("INSERT INTO docs_fts(rowid, path, dept, type, title, heading, updated, text, trusted) VALUES (?,?,?,?,?,?,?,?,?)");
+  const graphNotes: GraphNote[] = [];
   db.exec("BEGIN");
   try {
     db.exec("DELETE FROM documents; DELETE FROM docs_fts;");
@@ -76,6 +79,7 @@ export function indexVault(db: DatabaseSync, vault: string): IndexStats {
         if (!chunks.length) continue;
         stats.files++;
         if (!trusted) stats.untrustedFiles++;
+        graphNotes.push({ rel, trusted: trusted === 1, text, type });
         chunks.forEach((c, i) => {
           const r = insDoc.run(rel, i, c.heading, dept, type, title, updated, trusted, c.text);
           insFts.run(r.lastInsertRowid, rel, dept, type, title, c.heading, updated, c.text, trusted);
@@ -83,6 +87,7 @@ export function indexVault(db: DatabaseSync, vault: string): IndexStats {
         });
       }
     }
+    if (opts.graph !== false) stats.graph = buildGraph(db, graphNotes);
     db.exec("COMMIT");
   } catch (e) {
     db.exec("ROLLBACK");
@@ -106,10 +111,10 @@ export function openOrCreateIndex(dbPath: string): { db: DatabaseSync; recreated
   return { db, recreated: true };
 }
 
-export function rebuildIndex(vault: string, dbPath: string): IndexStats & { recreated: boolean } {
+export function rebuildIndex(vault: string, dbPath: string, opts: { graph?: boolean } = {}): IndexStats & { recreated: boolean } {
   const { db, recreated } = openOrCreateIndex(dbPath);
   try {
-    const s = indexVault(db, vault);
+    const s = indexVault(db, vault, opts);
     return { ...s, recreated };
   } finally { db.close(); }
 }

@@ -7,7 +7,7 @@ import { mkdirSync, mkdtempSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { BRAIN_HINT, BRAIN_SERVER_SCRIPT, BRAIN_TOOLS, BrainLink } from "./brain-link.ts";
+import { BRAIN_GRAPH_TOOLS, BRAIN_HINT, BRAIN_SERVER_SCRIPT, BRAIN_TOOLS, BrainLink } from "./brain-link.ts";
 import { buildClaudeArgs } from "./claude-args.ts";
 import { loadConfig, pathsFor, saveConfig } from "./config.ts";
 import { builtinDenyRules } from "./deny-rules.ts";
@@ -99,7 +99,7 @@ test("the index is rebuilt only when missing or stale", () => {
   assert.equal(kinds.filter((k) => k === "brain-index").length, 2, "stale after 5 minutes: rebuilt");
 });
 
-test("the exact server a run would get starts, lists two tools and finds a note", async () => {
+test("the exact server a run would get starts, lists its four tools and finds a note", async () => {
   const vault = brainVault();
   const link = new BrainLink({ paths: pathsFor(path.join(vault, "os")), dbPath: path.join(mkdtempSync(path.join(tmpdir(), "mcp-")), "i.sqlite"), log: () => undefined });
   assert.ok(link.ensureFresh());
@@ -115,8 +115,8 @@ test("the exact server a run would get starts, lists two tools and finds a note"
   for (let i = 0; i < 100 && lines.length < 3; i++) await new Promise((r) => setTimeout(r, 50));
   child.kill();
   const tools = lines.find((l) => l.id === 2)!.result.tools.map((t: { name: string }) => t.name);
-  assert.deepEqual(tools, ["search", "get_note"]);
-  assert.deepEqual(BRAIN_TOOLS.map((t) => t.split("__")[2]), tools, "pre-approved names match the server's tools");
+  assert.deepEqual(tools, ["search", "get_note", "related", "graph_overview"]);
+  assert.deepEqual([...BRAIN_TOOLS, ...BRAIN_GRAPH_TOOLS].map((t) => t.split("__")[2]), tools, "pre-approved names match the server's tools");
   const hits = JSON.parse(lines.find((l) => l.id === 3)!.result.content[0].text) as { count: number; hits: { path: string }[] };
   assert.ok(hits.count > 0);
   assert.equal(hits.hits[0]!.path, "wiki/industrial/servo.md");

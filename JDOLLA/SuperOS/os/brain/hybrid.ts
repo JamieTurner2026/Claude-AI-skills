@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import { dot, type Embedder } from "./embeddings.ts";
 import { SearchInput, search, type SearchHit } from "./search.ts";
+import { boostNeighbours } from "./graph.ts";
 
 export const VECTORS_SQL = `CREATE TABLE IF NOT EXISTS vectors (
   key TEXT PRIMARY KEY, model TEXT NOT NULL, dim INTEGER NOT NULL, vec BLOB NOT NULL
@@ -100,9 +101,9 @@ export function vectorRank(db: DatabaseSync, model: string, query: Float32Array,
 }
 
 /** Reciprocal rank fusion over ids: score(d) = sum over lists of 1 / (RRF_K + rank). */
-export function rrf(lists: readonly (readonly number[])[], k = RRF_K): { id: number; score: number }[] {
+export function rrf(lists: readonly (readonly number[])[], k = RRF_K, weights?: readonly number[]): { id: number; score: number }[] {
   const s = new Map<number, number>();
-  for (const list of lists) list.forEach((id, i) => s.set(id, (s.get(id) ?? 0) + 1 / (k + i + 1)));
+  lists.forEach((list, li) => { const w = weights?.[li] ?? 1; list.forEach((id, i) => s.set(id, (s.get(id) ?? 0) + w / (k + i + 1))); });
   return [...s].map(([id, score]) => ({ id, score })).sort((a, b) => b.score - a.score || a.id - b.id);
 }
 
@@ -125,4 +126,48 @@ export function hybridSearch(db: DatabaseSync, raw: SearchInput, query: { model:
     }
   }
   return rrf([kw.map((h) => h.id), vr.map((v) => v.row.id)]).slice(0, input.limit).map((f) => ({ ...byId.get(f.id)!, score: -f.score }));
+}
+
+// ---------- graph-aware search (Phase 12a) ----------
+
+/** How many of the top fused hits seed the graph list, and how much a graph vote weighs against a keyword or vector vote. */
+export const GRAPH_SEEDS = 5;
+export const GRAPH_WEIGHT = 0.5;
+
+/** Graph boost on or off. Default from the eval (docs/STATUS.md); SUPEROS_BRAIN_GRAPH=on|off overrides. */
+export const GRAPH_DEFAULT = false;
+export function graphEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  const v = env["SUPEROS_BRAIN_GRAPH"];
+  return v === "on" ? true : v === "off" ? false : GRAPH_DEFAULT;
+}
+
+/**
+ * Search with an optional graph list. graph=false is exactly hybridSearch (and so exactly keyword search with no
+ * query vector). graph=true adds a third RRF list: notes one hop from the top hits, over edges a trusted note authored.
+ */
+export function graphSearch(db: DatabaseSync, raw: SearchInput, query: { model: string; vector: Float32Array } | null, graph: boolean, minSimilarity = MIN_SIMILARITY): SearchHit[] {
+  if (!graph) return hybridSearch(db, raw, query, minSimilarity);
+  const input = SearchInput.parse(raw);
+  const kw = search(db, { ...input, limit: DEPTH });
+  const vr = query ? vectorRank(db, query.model, query.vector, input, minSimilarity) : [];
+  const byId = new Map<number, SearchHit>(kw.map((h) => [h.id, h]));
+  const hitOf = (row: DocRow, score: number): SearchHit => ({ id: row.id, path: row.path, heading: row.heading, dept: row.dept, type: row.type, title: row.title, updated: row.updated, trusted: Number(row.trusted) === 1, snippet: snippetOf(row.text), score });
+  for (const { row, score } of vr) if (!byId.has(row.id)) byId.set(row.id, hitOf(row, -score));
+  const lists = [kw.map((h) => h.id), ...(vr.length ? [vr.map((v) => v.row.id)] : [])];
+  const base = rrf(lists);
+  const seeds: string[] = [];
+  for (const f of base) { const p = byId.get(f.id)!.path; if (!seeds.includes(p)) seeds.push(p); if (seeds.length >= GRAPH_SEEDS) break; }
+  const near = boostNeighbours(db, seeds);
+  if (!near.size) return base.slice(0, input.limit).map((f) => ({ ...byId.get(f.id)!, score: -f.score }));
+  // One chunk per neighbour note (its first), filtered like every other hit.
+  const first = db.prepare("SELECT id, path, heading, dept, type, title, updated, trusted, text FROM documents WHERE path = ? ORDER BY chunk LIMIT 1");
+  const graphList: number[] = [];
+  for (const [p] of [...near].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))) {
+    const row = first.get(p) as unknown as DocRow | undefined;
+    if (!row || (input.dept && row.dept !== input.dept) || (input.trustedOnly && Number(row.trusted) !== 1)) continue;
+    if (!byId.has(row.id)) byId.set(row.id, hitOf(row, 0));
+    graphList.push(row.id);
+    if (graphList.length >= DEPTH) break;
+  }
+  return rrf([...lists, graphList], RRF_K, [...lists.map(() => 1), GRAPH_WEIGHT]).slice(0, input.limit).map((f) => ({ ...byId.get(f.id)!, score: -f.score }));
 }

@@ -25,7 +25,7 @@ const CASES: Case[] = [
   { id: "plan-today", schedule: "weekdays 07:00", at: new Date("2026-11-16T12:00:30Z"), day: "2026-11-16", budget: 0.25, nothingNew: true,
     headings: ["## Do first", "## Today", "## Waiting", "## Not today"], tools: ["recent_changes", "list_reports", "calendar_today", "mail_brain"] },
   { id: "vault-cleanup", schedule: "weekly sun 18:00", at: new Date("2026-11-22T23:00:30Z"), day: "2026-11-22", budget: 0.75, nothingNew: false,
-    headings: ["## What changed", "## Drifting", "## Decisions made and forgotten", "## Duplicates and contradictions", "## Broken wikilinks", "## Missing sources", "## Stale and never used", "## Backups", "## Suggested fixes"],
+    headings: ["## What changed", "## Drifting", "## Decisions made and forgotten", "## Duplicates and contradictions", "## Broken wikilinks", "## Missing sources", "## Stale and never used", "## Orphans", "## Hubs", "## Backups", "## Suggested fixes"],
     tools: ["link_check", "vault_stats", "backup_status"] },
   { id: "proposals-review", schedule: "weekly sun 17:00", at: new Date("2026-11-22T22:00:30Z"), day: "2026-11-22", budget: 0.25, nothingNew: true,
     headings: ["## This week in numbers", "## What keeps breaking", "## Approved rules: did they help?", "## Rejected most", "## Suggestions"], tools: ["proposals_summary", "list_reports"] },
@@ -94,7 +94,8 @@ for (const c of CASES) {
     const argv = argvFromOutput(e.done.output);
     const flag = (f: string) => argv[argv.indexOf(f) + 1]!;
     const tools = ["today", ...c.tools];
-    assert.deepEqual(flag("--allowedTools").split(","), ["mcp__superos-brain__search", "mcp__superos-brain__get_note", ...tools.map((n) => `mcp__superos-tools__${n}`)]);
+    const graph = c.id === "vault-cleanup" ? ["mcp__superos-brain__related", "mcp__superos-brain__graph_overview"] : ["mcp__superos-brain__related"]; // 12a: T2 runs get related; vault-cleanup also graph_overview
+    assert.deepEqual(flag("--allowedTools").split(","), ["mcp__superos-brain__search", "mcp__superos-brain__get_note", ...graph, ...tools.map((n) => `mcp__superos-tools__${n}`)]);
     assert.equal(flag("--tools"), "Read,Glob,Grep");
     assert.ok(!/Write|Edit|Bash/.test(flag("--allowedTools") + flag("--tools")));
     assert.equal((JSON.parse(flag("--mcp-config")).mcpServers["superos-tools"] as { env: Record<string, string> }).env["SUPEROS_TOOLS"], tools.join(","));

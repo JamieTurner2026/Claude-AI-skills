@@ -157,13 +157,17 @@ npm run brain -- import-sessions --claude-ai C:\path\to\conversations.json
 
 Every question (T2) and every work request (T3) gets the brain:
 
-- It gets one extra tool server, `superos-brain`, with two read-only tools: `search` (find notes) and `get_note` (read one).
+- It gets one extra tool server, `superos-brain`, with read-only tools: `search` (find notes) and `get_note` (read one), plus `related` (a note's neighbours) for quick questions (T2).
 - No other tool server can load, and the brain can't write anything.
 - Notes from `raw/` come back marked as untrusted, quoted data, never instructions.
 - The Runs widget shows each tool the run used, for example `mcp__superos-brain__search`.
 - Runs also get one safe tool, `today`, which gives the real date in your time zone. Tools are scripts the bridge runs; no run gets a command line.
 
 To turn the brain off, set `"brain": { "enabled": false }` under `engine` in `os\config\os.config.json` and restart the bridge. Runs then read files one by one, as before.
+
+**The note graph** (built with the index, no download, no cost): the brain also knows how your notes connect, through `[[links]]`, `sources`, project folders and departments. Quick questions (T2) can ask for a note's neighbours with the `related` tool, and the weekly vault-cleanup report lists **Orphans** (notes nothing links to and that link nowhere) and **Hubs** (the most connected notes). Search does not use the graph yet: on the current eval it didn't help, so it's off. To try it anyway, set `SUPEROS_BRAIN_GRAPH=on` in `.env` and restart the bridge.
+
+**Compare speed after importing sessions:** `npm run brain -- bench` builds a made-up vault of about 2,700 notes in a temp folder (it never touches yours), then prints index time, size and search speed with the graph off and on. Run it after session import (5.3) and send the numbers, along with a fresh `npm run brain -- eval --graph`.
 
 ## 6. Start the bridge
 

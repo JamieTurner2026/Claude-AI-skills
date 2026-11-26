@@ -131,7 +131,8 @@ test("through the bridge: a skill's run is allowed exactly its tools, and the to
   for (const [skill, tools] of cases) {
     const { argv, vault } = await argvFor(skill);
     const flag = (f: string) => argv[argv.indexOf(f) + 1]!;
-    assert.deepEqual(flag("--allowedTools").split(","), [...brain, ...tools.map(mcpToolName)], `${skill ?? "no skill"}: allowed tools`);
+    const graph = skill === "vault-cleanup" ? ["mcp__superos-brain__related", "mcp__superos-brain__graph_overview"] : ["mcp__superos-brain__related"]; // 12a, T2 runs
+    assert.deepEqual(flag("--allowedTools").split(","), [...brain, ...graph, ...tools.map(mcpToolName)], `${skill ?? "no skill"}: allowed tools`);
     const server = JSON.parse(flag("--mcp-config")).mcpServers["superos-tools"] as { env: Record<string, string> };
     assert.equal(server.env["SUPEROS_TOOLS"], tools.join(","), `${skill ?? "no skill"}: tools server list`);
     assert.equal(server.env["SUPEROS_VAULT"], vault);

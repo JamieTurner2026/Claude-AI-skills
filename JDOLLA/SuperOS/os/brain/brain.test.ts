@@ -147,10 +147,10 @@ describe("get_note guard", () => {
 });
 
 describe("MCP server", () => {
-  it("lists exactly search and get_note, both marked read-only", () => {
+  it("lists exactly search, get_note, related and graph_overview, all marked read-only", () => {
     const { ctx } = setup();
     const r = handleMessage(ctx, { jsonrpc: "2.0", id: 1, method: "tools/list" })!.result as { tools: { name: string; annotations: { readOnlyHint: boolean } }[] };
-    assert.deepEqual(r.tools.map((t) => t.name), ["search", "get_note"]);
+    assert.deepEqual(r.tools.map((t) => t.name), ["search", "get_note", "related", "graph_overview"]);
     assert.ok(r.tools.every((t) => t.annotations.readOnlyHint));
   });
   it("refuses unknown tools and unknown methods", () => {

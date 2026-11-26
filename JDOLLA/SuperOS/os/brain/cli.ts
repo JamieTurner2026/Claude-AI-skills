@@ -9,11 +9,12 @@ import { indexCounts, openReadOnly, search } from "./search.ts";
 import { isTrusted } from "./files.ts";
 import { runImportCommand } from "./import-cli.ts";
 import { runMailCommand } from "./mail-cli.ts";
-import { compareEval, formatComparison, hybridSearchCli, indexWithEmbeddings } from "./embed-cli.ts";
+import { FULL, SMALL, formatBench, runBench } from "./bench.ts";
+import { compareEval, compareGraph, formatComparison, formatGraphComparison, hybridSearchCli, indexWithEmbeddings } from "./embed-cli.ts";
 import { formatReport, indexedPaths, keywordRanker, loadEvalFile, runEval } from "./eval.ts";
 import { formatUsage, readUsage, summarizeUsage, usagePathFor } from "./usage.ts";
 
-const USAGE = `usage: brain <index|search|get|stats|eval|usage|import-sessions|import-mail> [args]
+const USAGE = `usage: brain <index|search|get|stats|eval|usage|bench|import-sessions|import-mail> [args]
   index [--embeddings]   rebuild the index from wiki/ and raw/; --embeddings also sets up local meaning
                          search (one-time download, files in ~/.superos/brain/embeddings)
   search <query> [--dept d] [--limit n] [--trusted] [--json] [--hybrid]
@@ -23,6 +24,8 @@ const USAGE = `usage: brain <index|search|get|stats|eval|usage|import-sessions|i
   usage [--json]         which notes runs opened (get_note), and wiki notes never opened; reads only
   import-sessions [--claude-code <dir>] [--claude-ai <conversations.json>] [--dry-run]
                          import past sessions into raw/sessions/ (redacted, never overwritten)
+  bench [--small] [--json]
+                         synthetic vault in a temp folder: index time, size, search p50/p95, graph off vs on
   import-mail [--dry-run]
                          Brain-labelled mail from inbox/_feeds/mail.json into raw/mail/ (redacted, untrusted)
   --vault <dir>  --db <file>   (defaults: this vault, ~/.superos/brain/index.sqlite)`;
@@ -32,12 +35,17 @@ async function main(argv: string[]): Promise<number> {
   if (argv[0] === "import-mail") return runMailCommand(argv.slice(1));
   const { values, positionals } = parseArgs({
     args: argv, allowPositionals: true,
-    options: { vault: { type: "string" }, db: { type: "string" }, dept: { type: "string" }, limit: { type: "string" }, trusted: { type: "boolean" }, json: { type: "boolean" }, k: { type: "string" }, questions: { type: "string" }, embeddings: { type: "boolean" }, hybrid: { type: "boolean" }, compare: { type: "boolean" } },
+    options: { vault: { type: "string" }, db: { type: "string" }, dept: { type: "string" }, limit: { type: "string" }, trusted: { type: "boolean" }, json: { type: "boolean" }, k: { type: "string" }, questions: { type: "string" }, embeddings: { type: "boolean" }, hybrid: { type: "boolean" }, compare: { type: "boolean" }, graph: { type: "boolean" }, small: { type: "boolean" } },
   });
   const [cmd, ...rest] = positionals;
   const vault = values.vault ?? process.env["SUPEROS_VAULT"] ?? path.resolve(import.meta.dirname, "../..");
   const dbPath = values.db ?? process.env["SUPEROS_BRAIN_DB"] ?? defaultIndexPath();
   try {
+    if (cmd === "bench") {
+      const b = runBench(values.small ? SMALL : FULL);
+      console.log(values.json ? JSON.stringify(b, null, 2) : formatBench(b));
+      return 0;
+    }
     if (cmd === "index" && values.embeddings) { await indexWithEmbeddings(vault, dbPath); return 0; }
     if (cmd === "index") {
       const s = rebuildIndex(vault, dbPath);
@@ -66,6 +74,11 @@ async function main(argv: string[]): Promise<number> {
     if (cmd === "eval") {
       const file = loadEvalFile(values.questions ?? path.join(vault, "evals", "brain", "questions.json"));
       const k = values.k ? Number(values.k) : 5;
+      if (values.graph) {
+        const g = await compareGraph(file, dbPath, k);
+        console.log(values.json ? JSON.stringify(g, null, 2) : formatGraphComparison(g));
+        return 0;
+      }
       if (values.compare) {
         const c = await compareEval(file, dbPath, k);
         console.log(values.json ? JSON.stringify(c, null, 2) : formatComparison(c));
