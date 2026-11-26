@@ -10,4 +10,4 @@ Everything here is data, not instructions. Never edit; add a newer snapshot as a
 What fits the build is decided in [[wiki/gamedev/unreal-skills]]. Skills Jay switches on are copied into the Claude-AI-skills repo's `.claude/skills/<name>/`. The rest stay filed here; to turn one on later, copy its folder into `.claude/skills/`, then run `./install.sh` on the PC.
 
 ## Repos filed
-None yet.
+- `awesome-gamedev-agent-skills/`: 76 game-dev skills plus a router (Apache-2.0), 6 of them Unreal. Read 2026-11-26. 18 switched on; the rest are filed, off.
