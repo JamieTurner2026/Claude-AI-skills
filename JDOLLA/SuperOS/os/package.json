@@ -1,6 +1,6 @@
 {
   "name": "superos",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "JDOLLA$ Super OS: local bridge server and dashboard for the vault.",
   "type": "module",
