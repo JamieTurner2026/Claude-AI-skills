@@ -5,6 +5,7 @@ Skills for starting projects fast with Claude: **repo-builder**, repo-scaffold, 
 ## Use it
 - **Per repo:** click "Use this template". The skills in `.claude/skills/` load automatically in Claude Code.
 - **Everywhere:** `git clone <this repo> && ./install.sh` copies them to `~/.claude/skills`, so you can call them from any folder. `./install.sh --check` lists what is installed.
+- **Windows:** in the repo root, `powershell -ExecutionPolicy Bypass -File .\install.ps1` does the same into `%USERPROFILE%\.claude\skills` (`-Check` lists them). Re-run it after every update so new skills appear as `/` commands.
 - **Claude.ai:** upload the packaged `.skill` files in Settings > Skills (skills do not sync from GitHub automatically).
 
 Then just ask: "use repo-builder to start a new Next.js project called X".
