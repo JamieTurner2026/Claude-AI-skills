@@ -3,6 +3,8 @@ title: Blender skills from outside repos
 dept: gamedev
 type: concept
 sources:
+  - raw/gamedev/unreal-skills/codex-handoff/2026-11-26_handoff-snapshot.md
+  - raw/gamedev/blender-skills/mpfb2/2026-11-26_repo-snapshot.md
   - raw/gamedev/blender-skills/build123d/2026-11-24_repo-snapshot.md
   - raw/gamedev/blender-skills/blender-agent-skills/2026-11-24_repo-snapshot.md
   - raw/gamedev/blender-skills/mcp-for-blender/2026-11-24_repo-snapshot.md
@@ -98,6 +100,25 @@ Not a Blender pack: a Python library that builds exact parts in millimetres (hol
 
 Needs: `bash .claude/skills/cad-parts/scripts/setup_cad.sh` once per machine (own venv, about 900 MB, Python 3.11 to 3.14). Tested 2026-11-24: both examples are valid single solids, their volumes match a hand estimate within 0.4%, and they rendered correctly in Blender 5.3.
 Training and simulation only: a model here is never a certified drawing for real equipment.
+
+## Blender → Unreal
+From the Codex handoff (2026-11-26): its six Unreal skills were already in and switched on, unchanged. They are now the Blender skills' next step: `blender-core` routes there after export, and `blender-export-pipelines` points to them. Source: [[raw/gamedev/unreal-skills/codex-handoff/2026-11-26_handoff-snapshot]]
+
+1. **Build and check in Blender:**
+   - `/blender-core` and the modeling and material skills;
+   - `/blender-asset-qa` for numbers and a review sheet;
+   - a `blender-visuals` Cycles render to judge the look.
+2. **Export:** `blender-export-pipelines` with `--preset unreal` (FBX, cm scale, `UCX_` collision, LODs from `blender-game-optimization`).
+3. **Realism review after import** (the handoff's checklist): silhouette, scale against a 180 cm reference, materials, lighting, collision. Fix in Blender and re-export rather than patching in Unreal.
+4. **In Unreal, in the handoff's priority order:**
+   - `unreal-blueprints` for one clear interaction;
+   - `unreal-enhanced-input` for controls;
+   - `unreal-niagara` for effects that make player actions clear;
+   - then `unreal-cpp-gameplay` and `unreal-behavior-trees` as needed;
+   - `unreal-packaging` to test a standalone build.
+5. **Characters:** MPFB2 (Blender 4.2+, code GPL-3.0, assets CC0) is filed for later. Test one character's scale, rig, materials and animation first. Source: [[raw/gamedev/blender-skills/mpfb2/2026-11-26_repo-snapshot]]
+
+First test: the MIDNIGHT REIGN checkpoint run (see [[wiki/gamedev/midnight-reign]]). Tested on PC: not yet.
 
 ## Related
 - Department: [[depts/gamedev]] · Charter: [[wiki/gamedev/charter]] · Project: [[wiki/gamedev/midnight-reign]]

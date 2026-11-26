@@ -40,6 +40,7 @@ metadata:
 | Batch/headless pipelines, file conversion | `blender-pipeline-automation` |
 | Checking a mesh/asset before delivery (always) | `blender-asset-qa` |
 | End-to-end playbooks (prop, character, Roblox, product shot) | `blender-workflow-recipes` |
+| After export to Unreal: Blueprint interactions, controls, VFX, a standalone build (local addition) | `unreal-blueprints`, `unreal-enhanced-input`, `unreal-niagara`, `unreal-packaging` (also `unreal-cpp-gameplay`, `unreal-behavior-trees`) |
 
 *Filed, off in this install: copy `JDOLLA/SuperOS/raw/gamedev/blender-skills/blender-agent-skills/skills/<name>/` (Claude-AI-skills repo) into `.claude/skills/` and run `./install.sh` to turn it on. Until then, tell the user it is off and use `blender-core` rules plus `blender-visuals/references/` (e.g. `rigging.md`).
 

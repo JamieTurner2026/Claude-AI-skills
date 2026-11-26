@@ -5,6 +5,7 @@ type: concept
 sources:
   - raw/gamedev/unreal-skills/README.md
   - raw/gamedev/unreal-skills/awesome-gamedev-agent-skills/2026-11-26_repo-snapshot.md
+  - raw/gamedev/unreal-skills/codex-handoff/2026-11-26_handoff-snapshot.md
 updated: 2026-11-26
 last_used: 2026-11-26
 ---
@@ -55,6 +56,9 @@ Text skills written from the engine docs. The 6 Unreal skills target **UE 5.8**;
 Filed, off (in `raw/gamedev/unreal-skills/awesome-gamedev-agent-skills/`): the router, Godot (16), Unity (8), Ebitengine, web engines (Phaser, PixiJS, three.js), other engines (Bevy, Defold, LÖVE, pygame, Roblox), genres (no racing genre), the other disciplines (create-game-assets, dialogue, procedural generation, shaders), and the game-jam, itch and prototype-fast workflows.
 
 Turn one on later: in the Claude-AI-skills repo, `cp -r JDOLLA/SuperOS/raw/gamedev/unreal-skills/awesome-gamedev-agent-skills/skills/<group>/<name> .claude/skills/`, then `./install.sh` on the PC.
+
+### Codex handoff (2026-11-26)
+The same six Unreal skills, byte-for-byte identical, so nothing new was imported. Its workflow note sets the priority: Blueprint interactions, Enhanced Input, then Niagara; then one short playable scene with a standalone build. The Blender side of that path: [[wiki/gamedev/blender-skills]] ("Blender → Unreal"). Source: [[raw/gamedev/unreal-skills/codex-handoff/2026-11-26_handoff-snapshot]]
 
 ## Related
 - Department: [[depts/gamedev]] · Charter: [[wiki/gamedev/charter]] · Project: [[wiki/gamedev/midnight-reign]]
