@@ -4,7 +4,7 @@ What changed in JDOLLA$ Super OS, newest first, in plain words. The numbers like
 
 ## Unreleased
 
-- A note graph for the second brain, built with the index on your PC: no model, no network, no cost. The `related` tool shows a note's neighbours (links to, linked from, cites, same source, same project), the weekly vault cleanup lists orphans and hubs, and `GET /api/brain/graph` gives counts for a later dashboard panel. Search doesn't use it yet: on the eval it didn't help, so the boost is off. `npm run brain -- bench` measures index and search speed on a made-up vault of about 2,700 notes.
+- A note graph for the second brain, built with the index on your PC: no model, no network, no cost. The `related` tool shows a note's neighbours (links to, linked from, cites, same source, same project), the weekly vault cleanup lists orphans and hubs, and `GET /api/brain/graph` gives counts for a later dashboard panel. Search doesn't use it yet: on the eval it didn't help, so the boost is off. `npm run brain -- bench` measures index and search speed on a made-up vault of about 2,700 notes (#66).
 
 ## 1.0.1 (2026-11-26)
 
