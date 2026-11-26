@@ -8,10 +8,11 @@ Builds complete interactive games, MIDNIGHT REIGN first.
 ## References
 - Charter: `wiki/gamedev/charter.md`
 - Notes: `wiki/gamedev/`
-- Sources: `raw/gamedev/`
+- Sources: `raw/gamedev/` (Unreal Engine skill repos: `raw/gamedev/unreal-skills/`)
 - Deliverables: `outputs/**/*_gamedev_*`
 - Projects: MIDNIGHT REIGN
 
 ## Notes
 - [[wiki/gamedev/charter]] (concept)
 - [[wiki/gamedev/midnight-reign]] (project)
+- [[wiki/gamedev/unreal-skills]] (concept)
