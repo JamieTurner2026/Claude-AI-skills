@@ -16,6 +16,7 @@ const Health = z.object({
   lastRun: z.object({ status: z.string().max(20), tier: z.enum(["T2", "T3"]), at: z.string().max(40) }).nullable(),
   brain: z.object({ present: z.boolean(), indexAgeSec: z.number().nullable(), stale: z.boolean(), embeddings: z.boolean(), embeddedChunks: z.number() }),
   proposals: z.object({ pending: z.number() }),
+  month: z.object({ spendUsd: z.number() }),
   backup: z.object({ at: z.string().max(40), status: z.enum(["pushed", "nothing", "refused", "failed"]) }).nullable(),
 });
 

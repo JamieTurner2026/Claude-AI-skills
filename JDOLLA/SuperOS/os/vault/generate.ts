@@ -38,7 +38,7 @@ export class VaultGuardError extends Error {}
 /** One plain line: no control characters, no markup that could make a link or tag out of copied text. */
 export function clean(text: string, max = 120): string {
   const t = text
-    .replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, " ")
+    .replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, " ")
     .replace(/<[^>]*>/g, " ")
     .replace(/\[\[|\]\]/g, "")
     .replace(/[[\]<>|`]/g, "")

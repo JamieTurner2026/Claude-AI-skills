@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { route } from "../shared/router.ts";
 import { COOKIE, SESSION_MS, loadOrCreateSecret, mintToken, verifyToken } from "./auth.ts";
-import { LayoutSchema, loadConfig, loadEnv, logDir, pathsFor, saveConfig } from "./config.ts";
+import { LayoutSchema, claudeBinSetting, loadConfig, loadEnv, logDir, pathsFor, saveConfig } from "./config.ts";
 import type { Paths } from "./config.ts";
 import { GuardError, MAX_READ, OPEN_EXT, READ_EXT, resolveVaultFile } from "./guards.ts";
 import { DIRECTIVE_LINE, buildState, directiveId } from "./indexer.ts";
@@ -34,6 +34,8 @@ import type { Check } from "./doctor.ts";
 import { defaultEnv as autostartEnv } from "./autostart.ts";
 import { runBackup } from "../backup/backup.ts";
 import type { BackupOptions } from "../backup/backup.ts";
+import { writeMonthReport } from "../analysis/month-report.ts";
+import { monthSpend } from "../analysis/month.ts";
 import { readBackupRecord, writeBackupRecord } from "../backup/record.ts";
 import { InboxTriage } from "./inbox.ts";
 import type { BuildResult } from "../vault/generate.ts";
@@ -79,7 +81,7 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
     brain,
     paths,
     config: () => loadConfig(paths),
-    bin: () => opts.claudeBin ?? defaultClaudeBin(loadConfig(paths)),
+    bin: () => { if (opts.claudeBin) return opts.claudeBin; const c = loadConfig(paths); return defaultClaudeBin(c, process.platform, claudeBinSetting(paths, c)); },
     log: runLog,
     logDir: opts.logDir ?? logDir(paths),
     ...(opts.sandbox ? { sandbox: opts.sandbox } : {}),
@@ -91,6 +93,12 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
         const c = loadConfig(paths);
         const r = await runBackup({ vault: paths.vault, remote: c.engine.backup.remote, branch: c.engine.backup.branch, timezone: c.timezones[0] ?? "America/New_York", now, ...(opts.backupOptions ?? {}) });
         writeBackupRecord(opts.logDir ?? logDir(paths), r, now);
+        return { status: r.status, message: r.message };
+      },
+      // The monthly cost report: last month's totals from the run log and the ledgers, written to reports/. No model, $0.
+      "month-costs": async (now) => {
+        const c = loadConfig(paths);
+        const r = writeMonthReport({ vault: paths.vault, logDir: opts.logDir ?? logDir(paths), timezone: c.timezones[0] ?? "America/New_York", now, caps: { routineDailyCapUsd: c.engine.routines.dailyCapUsd, learningDailyCapUsd: c.engine.learning.dailyCapUsd } });
         return { status: r.status, message: r.message };
       },
     } });
@@ -193,7 +201,7 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
           routines.setEnabled(id, enabled);
           return send(res, 200, routines.status());
         }
-        return send(res, 202, { run: routines.runNow(id) }); // null for a built-in routine (no model run)
+        return send(res, 202, { run: routines.runNow(id, (opts.now ?? (() => new Date()))()) }); // null for a built-in routine (no model run)
       } catch (e) {
         if (e instanceof RunError) throw new HttpError(e.status, e.message);
         throw e;
@@ -235,7 +243,15 @@ export function createBridge(osDir: string, opts: { opener?: Opener; log?: (line
         version, startedAtMs, now, routines: routines.status(), runs: runs.list(), brainDb: brain.dbPath,
         pendingProposals: learning.list().filter((p) => p.status === "pending").length,
         backup: readBackupRecord(opts.logDir ?? logDir(paths)),
+        monthUsd: monthSpend(opts.logDir ?? logDir(paths), now, config.timezones[0] ?? "America/New_York"),
       }));
+    }
+    // The next seven days of routine slots (on and off) against the daily cap. Reads only; a foreign Origin is refused too.
+    if (url.pathname === "/api/routines/calendar") {
+      if (req.method !== "GET") throw new HttpError(405, "Method not allowed.");
+      const origin = req.headers.origin;
+      if (origin && !ownOrigins().some((o) => origin === `http://${o}`)) throw new HttpError(403, "Wrong origin.");
+      return send(res, 200, routines.calendar((opts.now ?? (() => new Date()))()));
     }
     if (url.pathname === "/api/routines" && req.method === "GET") return send(res, 200, routines.status());
     if (url.pathname === "/api/inbox" && req.method === "GET") return send(res, 200, inbox.status());

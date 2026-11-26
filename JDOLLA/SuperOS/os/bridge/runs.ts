@@ -50,6 +50,12 @@ export type InternalRunOptions = {
   routine?: string;
   /** Files copied into a T3 run's work folder under _inputs/ before it starts (never copied back out). */
   inputs?: string[];
+  /**
+   * The run drafts from one source deliverable (content-cascade): every file it writes is named after the source,
+   * `<day>_<source dept>_<source slug>-draft-<file name>.<ext>`, in outputs/<day's month>/, so a draft is never taken
+   * for a finished deliverable. `day` is the routine's own local date (the owner's time zone).
+   */
+  drafts?: { source: string; day: string };
   onEnd?: (info: RunInfo) => void;
   purpose?: "run" | "diagnosis";
 };
@@ -71,7 +77,7 @@ export const LOG_REQUEST_CHARS = 80;
 /** What to write to router.jsonl as the request: the first 80 characters of what Jay typed, on one plain line, or null. */
 function logRequest(run: RunInfo): string | null {
   if (run.purpose !== "run" || run.skill || run.routine || run.dept === "inbox") return null;
-  const t = run.text.replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, " ").replace(/\s+/g, " ").trim().slice(0, LOG_REQUEST_CHARS);
+  const t = run.text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, " ").replace(/\s+/g, " ").trim().slice(0, LOG_REQUEST_CHARS);
   return t || null;
 }
 const MAX_OUTPUT = 200_000;
@@ -79,10 +85,10 @@ const MAX_KEPT = 50;
 const MAX_DELIVERABLES = 20;
 const MAX_DELIVERABLE_BYTES = 20 * 1024 * 1024;
 
-type Run = RunInfo & { child: ChildProcess | null; listeners: Set<(e: RunEvent) => void>; events: RunEvent[]; stopRequested: boolean; workDir: string; onEnd: ((info: RunInfo) => void) | null };
+type Run = RunInfo & { child: ChildProcess | null; listeners: Set<(e: RunEvent) => void>; events: RunEvent[]; stopRequested: boolean; workDir: string; drafts: { source: string; day: string } | null; onEnd: ((info: RunInfo) => void) | null };
 
-export function defaultClaudeBin(config: OsConfig, platform: string = process.platform): ClaudeBin {
-  const bin = config.engine.claudeBin;
+export function defaultClaudeBin(config: OsConfig, platform: string = process.platform, setting: string | undefined = config.engine.claudeBin): ClaudeBin {
+  const bin = setting;
   // An npm-installed CLI on Windows is a .cmd file, which can't be started without a shell. Point
   // claudeBin at its .js entry instead and it runs with this Node, still with no shell.
   if (bin && /\.(c|m)?js$/i.test(bin)) return { cmd: process.execPath, prefixArgs: [bin] };
@@ -95,6 +101,12 @@ export function deliverableName(dir: string, date: string, dept: string, slug: s
   let name = `${base}${ext}`;
   for (let v = 2; existsSync(path.join(dir, name)); v++) name = `${base}-v${v}${ext}`;
   return name;
+}
+
+/** `YYYY-MM-DD_<dept>_<slug>.<ext>` (the naming rule) split into its parts, or null for any other name. */
+export function parseDeliverableName(name: string): { date: string; dept: string; slug: string } | null {
+  const m = /^(\d{4}-\d{2}-\d{2})_([a-z][a-z0-9-]{0,39})_([a-z0-9][a-z0-9-]{0,80})\.[a-z0-9]{1,10}$/.exec(name);
+  return m ? { date: m[1]!, dept: m[2]!, slug: m[3]! } : null;
 }
 
 export function slugify(text: string): string {
@@ -138,7 +150,7 @@ export class RunManager {
   }
 
   private info(r: Run): RunInfo {
-    const { child: _c, listeners: _l, events: _e, stopRequested: _s, workDir: _w, onEnd: _o, ...info } = r;
+    const { child: _c, listeners: _l, events: _e, stopRequested: _s, workDir: _w, drafts: _d, onEnd: _o, ...info } = r;
     return { ...info, output: info.output.slice(-4000) };
   }
 
@@ -201,7 +213,7 @@ export class RunManager {
     const run: Run = {
       id, tier: req.tier, text: req.text.slice(0, 300), dept: req.dept && /^[a-z][a-z0-9-]{0,39}$/.test(req.dept) ? req.dept : "general",
       status: "running", startedAt: new Date().toISOString(), endedAt: null, capUsd: cap, costUsd: null,
-      output: "", error: null, deliverables: [], denied: [], result: null, routine: internal.routine ?? null, skill: req.skill && /^[a-z0-9][a-z0-9-]{0,39}$/.test(req.skill) ? req.skill : null, purpose: internal.purpose ?? "run", toolsUsed: [], notesOpened: [], onEnd: internal.onEnd ?? null, child: null, listeners: new Set(), events: [], stopRequested: false, workDir,
+      output: "", error: null, deliverables: [], denied: [], result: null, routine: internal.routine ?? null, skill: req.skill && /^[a-z0-9][a-z0-9-]{0,39}$/.test(req.skill) ? req.skill : null, purpose: internal.purpose ?? "run", toolsUsed: [], notesOpened: [], onEnd: internal.onEnd ?? null, child: null, listeners: new Set(), events: [], stopRequested: false, workDir, drafts: internal.drafts && /^\d{4}-\d{2}-\d{2}$/.test(internal.drafts.day) ? internal.drafts : null,
     };
     this.runs.set(id, run);
     this.trim();
@@ -323,9 +335,10 @@ export class RunManager {
   /** Copies regular files the T3 run made in its work folder into outputs/YYYY-MM/. Links and folders are skipped. */
   private copyDeliverables(r: Run): string[] {
     if (!existsSync(r.workDir)) return [];
-    const date = r.startedAt.slice(0, 10);
+    const date = r.drafts?.day ?? r.startedAt.slice(0, 10);
     const outDir = path.join(this.paths.vault, "outputs", date.slice(0, 7));
-    const slug = slugify(r.text);
+    const from = r.drafts ? parseDeliverableName(path.basename(r.drafts.source)) : null;
+    const slug = from?.slug ?? slugify(r.text);
     const copied: string[] = [];
     for (const name of readdirSync(r.workDir).sort()) {
       if (copied.length >= MAX_DELIVERABLES || name.startsWith(".")) continue;
@@ -333,8 +346,9 @@ export class RunManager {
       const st = lstatSync(src);
       if (!st.isFile() || st.size > MAX_DELIVERABLE_BYTES) continue;
       mkdirSync(outDir, { recursive: true });
-      const extra = copied.length ? `-${path.basename(name, path.extname(name)).replace(/[^a-z0-9]+/gi, "-").slice(0, 20).toLowerCase()}` : "";
-      const finalName = deliverableName(outDir, date, r.dept, slug + extra, path.extname(name).toLowerCase().slice(0, 10));
+      const own = path.basename(name, path.extname(name)).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      const extra = r.drafts ? `-draft-${own.replace(/^draft-?/, "").slice(0, 20).replace(/-+$/, "") || "file"}` : copied.length ? `-${own.slice(0, 20)}` : "";
+      const finalName = deliverableName(outDir, date, from?.dept ?? r.dept, slug + extra, path.extname(name).toLowerCase().slice(0, 10));
       copyFileSync(src, path.join(outDir, finalName));
       copied.push(path.posix.join("outputs", date.slice(0, 7), finalName));
     }

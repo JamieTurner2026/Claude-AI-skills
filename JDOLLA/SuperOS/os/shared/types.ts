@@ -126,3 +126,8 @@ export type OsState = {
 /** One step of Jay's list for the PC (GET /api/setup). Only a state, fixed words and a PC-SETUP section: never a path or file content. */
 export type SetupRow = { id: string; label: string; state: "done" | "todo" | "manual"; section: string; hint: string };
 export type SetupView = { rows: SetupRow[]; done: number; total: number };
+
+/** The Routines calendar (GET /api/routines/calendar): the next seven local days of routine slots, on and off. Read-only; names, times and dollars only. */
+export type CalendarSlot = { at: string; time: string; id: string; name: string; enabled: boolean; builtin: boolean; budgetUsd: number; past: boolean };
+export type CalendarDay = { date: string; weekday: string; today: boolean; slots: CalendarSlot[]; enabledTotalUsd: number; allTotalUsd: number; overCap: boolean };
+export type RoutineCalendarView = { timezone: string; capUsd: number; days: CalendarDay[]; problems: string[] };

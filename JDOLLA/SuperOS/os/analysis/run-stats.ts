@@ -127,14 +127,14 @@ function finish(b: Bucket): Bucket {
 
 /** Clean one-line text for display: no control characters, markup or links, cut to 80 characters. */
 export function plain(text: string, max = REQUEST_CHARS): string {
-  return text.replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, " ").replace(/<[^>]*>/g, " ").replace(/\[\[|\]\]/g, "").replace(/[<>`|]/g, "").replace(/\s+/g, " ").trim().slice(0, max);
+  return text.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu, " ").replace(/<[^>]*>/g, " ").replace(/\[\[|\]\]/g, "").replace(/[<>`|]/g, "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
 /** The numbers for the last `days` days (by the timestamps in the log) as of `now`. */
-export function computeStats(log: ParsedLog, now: Date, days: number, truncated = false): Stats {
-  const to = now.getTime();
-  const from = to - days * DAY_MS;
-  const inWindow = (ms: number) => ms >= from && ms <= to;
+export function computeStats(log: ParsedLog, now: Date, days: number, truncated = false, range?: { fromMs: number; toMs: number }): Stats {
+  const to = range?.toMs ?? now.getTime();
+  const from = range?.fromMs ?? to - days * DAY_MS;
+  const inWindow = (ms: number) => ms >= from && (range ? ms < to : ms <= to); // a calendar range is half open: its end is the next range's start
   const results = log.results.filter((r) => inWindow(r.ms));
   const totals = empty(); const tier = { T2: empty(), T3: empty() }; const purpose = { run: empty(), diagnosis: empty() }; const typed = empty();
   const skills = new Map<string, Bucket>(); const routines = new Map<string, Bucket>();

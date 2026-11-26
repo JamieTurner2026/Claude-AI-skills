@@ -1,28 +1,31 @@
 // Pure routine scheduler: decides which routines are due. No timers, no runs, no file access.
-// Schedule strings: "daily HH:MM", "weekdays HH:MM", "weekly <mon..sun> HH:MM", read in one IANA time zone.
+// Schedule strings: "daily HH:MM", "weekdays HH:MM", "weekly <mon..sun> HH:MM", "monthly <1-28> HH:MM", read in one IANA time zone.
 import { z } from "zod";
 
 export const DEFAULT_TIMEZONE = "America/New_York";
 /** A routine that has never run only counts a slot this recent, so enabling one at noon does not fire this morning's 07:00. */
 export const DEFAULT_GRACE_MINUTES = 60;
 const LOOKBACK_DAYS = 8; // covers a weekly schedule plus one day
+const MONTHLY_LOOKBACK_DAYS = 32; // a monthly slot is at most 31 days back, plus one
 const DAY_MS = 86_400_000;
 const DAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
 export type Schedule =
   | { kind: "daily"; hour: number; minute: number }
   | { kind: "weekdays"; hour: number; minute: number }
-  | { kind: "weekly"; day: number; hour: number; minute: number }; // day: 0 = sunday
+  | { kind: "weekly"; day: number; hour: number; minute: number } // day: 0 = sunday
+  | { kind: "monthly"; dom: number; hour: number; minute: number }; // dom: day of the month, 1 to 28 (every month has it)
 
 const Time = "([01]\\d|2[0-3]):([0-5]\\d)";
 const DAILY = new RegExp(`^(daily|weekdays) ${Time}$`);
 const WEEKLY = new RegExp(`^weekly (${DAYS.join("|")}) ${Time}$`);
+const MONTHLY = new RegExp(`^monthly (0?[1-9]|1\\d|2[0-8]) ${Time}$`);
 
 const ScheduleText = z.string().max(40);
 
 export type ParseResult = { ok: true; schedule: Schedule } | { ok: false; reason: string };
 
-/** Never throws. Anything that is not one of the three exact forms is rejected. */
+/** Never throws. Anything that is not one of the four exact forms is rejected. */
 export function parseSchedule(input: unknown): ParseResult {
   const text = ScheduleText.safeParse(input);
   if (!text.success) return { ok: false, reason: "schedule must be short text" };
@@ -31,7 +34,9 @@ export function parseSchedule(input: unknown): ParseResult {
   if (d) return { ok: true, schedule: { kind: d[1] as "daily" | "weekdays", hour: Number(d[2]), minute: Number(d[3]) } };
   const w = WEEKLY.exec(s);
   if (w) return { ok: true, schedule: { kind: "weekly", day: DAYS.indexOf(w[1] as (typeof DAYS)[number]), hour: Number(w[2]), minute: Number(w[3]) } };
-  return { ok: false, reason: 'use "daily HH:MM", "weekdays HH:MM" or "weekly <mon..sun> HH:MM" (24-hour)' };
+  const mo = MONTHLY.exec(s);
+  if (mo) return { ok: true, schedule: { kind: "monthly", dom: Number(mo[1]), hour: Number(mo[2]), minute: Number(mo[3]) } };
+  return { ok: false, reason: 'use "daily HH:MM", "weekdays HH:MM", "weekly <mon..sun> HH:MM" or "monthly <1-28> HH:MM" (24-hour)' };
 }
 
 // ---- time zone maths (Intl only, no dependencies) ----
@@ -81,16 +86,26 @@ export function assertTimezone(tz: string): void {
   try { formatter(tz).format(0); } catch { throw new RangeError(`Unknown time zone: ${tz.slice(0, 64)}`); }
 }
 
+/**
+ * The slot instant for a schedule on one local calendar day (y, mo, d in time zone tz), or null when the schedule does not
+ * fire that day. The one place that decides which days a schedule fires on, so the due check and the calendar view agree.
+ */
+export function slotOnDay(s: Schedule, y: number, mo: number, d: number, tz: string): number | null {
+  const dow = new Date(Date.UTC(y, mo - 1, d)).getUTCDay();
+  if (s.kind === "monthly" && d !== s.dom) return null;
+  if (s.kind === "weekdays" && (dow === 0 || dow === 6)) return null;
+  if (s.kind === "weekly" && dow !== s.day) return null;
+  return localToInstant(y, mo, d, s.hour, s.minute, tz);
+}
+
 /** The latest slot instant at or before now, or null if none in the lookback window. */
 export function latestSlot(s: Schedule, now: number, tz: string): number | null {
   const today = localParts(now, tz);
-  for (let back = 0; back <= LOOKBACK_DAYS; back++) {
+  const lookback = s.kind === "monthly" ? MONTHLY_LOOKBACK_DAYS : LOOKBACK_DAYS;
+  for (let back = 0; back <= lookback; back++) {
     const day = new Date(Date.UTC(today.y, today.mo - 1, today.d - back));
-    const dow = day.getUTCDay();
-    if (s.kind === "weekdays" && (dow === 0 || dow === 6)) continue;
-    if (s.kind === "weekly" && dow !== s.day) continue;
-    const slot = localToInstant(day.getUTCFullYear(), day.getUTCMonth() + 1, day.getUTCDate(), s.hour, s.minute, tz);
-    if (slot <= now) return slot;
+    const slot = slotOnDay(s, day.getUTCFullYear(), day.getUTCMonth() + 1, day.getUTCDate(), tz);
+    if (slot !== null && slot <= now) return slot;
   }
   return null;
 }

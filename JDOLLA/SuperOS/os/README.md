@@ -19,7 +19,7 @@ npm run smoke   # after every update: the real bridge on a temp copy of the vaul
 
 ## Runs (step f)
 Press Enter on a question (T2) or a work request (T3). T2 starts at once; T3 asks first because it costs more.
-- Runs use the Claude Code CLI (`claude`, or `claude.exe` on Windows; set `engine.claudeBin` in the config if it is elsewhere).
+- Runs use the Claude Code CLI (`claude`, or `claude.exe` on Windows; set `claudeBin` in the git-ignored `config/os.local.json` if it is elsewhere, so `npm run update` still sees a clean tree; `engine.claudeBin` in `os.config.json` still works).
 - Every run: `--restricted --strict-mcp-config`, a spend cap, deny rules for `.env`, `os/`, `.claude/`, `logs/`, `.git/`. T2 can only read. T3 can write only in `outputs/_work/<id>/`, and its files are copied to `outputs/YYYY-MM/`.
 - Costs and decisions are logged to `router.jsonl` in the log folder.
 
@@ -91,6 +91,12 @@ Setting up on the PC: see `../docs/PC-SETUP.md`.
 - `GET /api/proposals`, `POST /api/proposals/:id/approve|reject` sit behind the same session, origin and header checks. Approving is append-only: a new `wiki/_learnings/<id>.md` and one bullet under `## Learned rules` in the skill.
 - Switch it off with `engine.learning.enabled: false`.
 
+## Accessibility (11b)
+- `npm run a11y` runs axe-core in Chromium (desktop and phone) on a temp vault copy and walks the page with the keyboard; `A11Y_SHOT=<file.png>` also saves a picture with a control focused. `bridge/a11y-static.test.ts` keeps button names, input labels, polite live regions and AA text colours in the source.
+
+## Red team (11a)
+- `bridge/redteam.test.ts` pushes one hostile fixture (`shared/hostile.ts`) through every untrusted door and checks it stays inert; `npm run redteam:ui` checks the dashboard in Chromium. Door-by-door results: `docs/LEARNINGS.md`.
+
 ## Update (9a)
 - `npm run update`: clean git tree, then `git pull --ff-only` (never merge, rebase, reset or force), then `npm ci`, `npm run doctor`, `npm run smoke`; one PASS/FAIL line per step, stops at the first FAIL. No shell; npm runs as `node npm-cli.js`. Logic: `bridge/update.ts`. PC-SETUP §2.
 
@@ -108,10 +114,14 @@ Setting up on the PC: see `../docs/PC-SETUP.md`.
 ## Status check (Phase 9b)
 - `GET /api/health` (session required) reports version, uptime, scheduler, routines on, spend vs cap, last run, brain index age, embeddings and pending proposals. `npm run status` prints it (exit 0 running, 1 not running, 2 unusable answer). The dashboard's Health strip shows it. Logic: `bridge/health.ts`, `bridge/status.ts`, `shared/health.ts`. No tray icon.
 
+## Routines calendar
+- `GET /api/routines/calendar` and the **Next 7 days** widget (`app/widgets/calendar.ts`): `RoutineRunner.calendar()` lists the next seven local days of routine slots using the scheduler's `slotOnDay` (the same rule the due check uses), with each day's budget total against the daily cap. Read-only.
+
 ## Offline sources (Phase 8 prep)
 - `sources/` holds the `MailSource` and `CalendarSource` interfaces and `FileSource`, which reads `inbox/_feeds/mail.json` and `calendar.json`. Nothing connects to an account or the network. Feed text is other people's words: cleaned to one line, fenced as untrusted data in tool answers, reduced to inert plain text in the daily note. Tools `calendar_today` and `mail_brain` return names and subjects only.
 
-## Run analysis (Phase 10b)
+## Run analysis (Phase 10b, 10e)
+- `npm run analyse:runs -- --month [YYYY-MM]` (`analysis/month.ts`) totals a calendar month in Jay's time zone from the run log and the two ledgers: costs and counts only. The built-in routine `month-costs` ("monthly 1 08:10", no model, $0, off) writes `reports/YYYY-MM_costs.md`, never overwriting.
 - `npm run analyse:runs -- [--days 30]` (`analysis/cli.ts`) prints spend, failure rates, costliest requests (80 characters), blocked calls and cap hits from `router.jsonl`. Read-only. `analysis/run-stats.ts` is the pure core (tolerant reader, stats, suggestion rules); the `run_stats {days}` tool and `POST /api/analysis/suggest` use it.
 - Suggestions become `tune` proposals: fixed text, no model run, 3 a week, no repeats for 28 days. Approving records the decision only; edit config yourself.
 

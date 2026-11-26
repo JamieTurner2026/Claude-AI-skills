@@ -22,7 +22,7 @@ const healthy = (over: Partial<HealthView> = {}): HealthView => ({
   ok: true, version: "0.2.0", uptimeSec: 3600,
   scheduler: { on: true, routinesOn: 3, routinesTotal: 5 }, spend: { todayUsd: 0.2, capUsd: 2, pct: 10 },
   lastRun: { status: "done", tier: "T2", at: "2026-11-22T12:00:00Z" },
-  brain: { present: true, indexAgeSec: 600, stale: false, embeddings: true, embeddedChunks: 42 }, proposals: { pending: 2 }, backup: null, ...over,
+  brain: { present: true, indexAgeSec: 600, stale: false, embeddings: true, embeddedChunks: 42 }, proposals: { pending: 2 }, month: { spendUsd: 1.234 }, backup: null, ...over,
 });
 
 async function setup() {
@@ -131,7 +131,7 @@ test("health never shows a note body, a path, a prompt or a setting's value", as
   const text = await (await e.get()).text();
   for (const secret of ["NOTEBODYSECRET", "ENVSECRET", "RUNPROMPTSECRET", e.vault, e.logs, e.brainDb, "SUPEROS_ROUTER_KEY", ".env", "wiki/software"]) assert.ok(!text.includes(secret), `no ${secret.slice(0, 20)}`);
   assert.ok(!/[\\/]/.test(text.replace(/\d{4}-\d{2}-\d{2}T[\d:.]+Z/g, "")), "no path separators at all");
-  assert.deepEqual(Object.keys(JSON.parse(text)).sort(), ["backup", "brain", "lastRun", "ok", "proposals", "scheduler", "spend", "uptimeSec", "version"]);
+  assert.deepEqual(Object.keys(JSON.parse(text)).sort(), ["backup", "brain", "lastRun", "month", "ok", "proposals", "scheduler", "spend", "uptimeSec", "version"]);
 });
 
 test("npm run status: a running bridge gives the table and exit 0; a refused session and a bad answer give exit 2", async (t) => {

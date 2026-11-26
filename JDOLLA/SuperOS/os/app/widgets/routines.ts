@@ -21,7 +21,7 @@ export const routines: Widget = {
       for (const p of v.problems) body.append(h("p", { class: "empty" }, p));
       if (!v.routines.length) { body.append(h("p", { class: "empty" }, "No routines yet. Add them to routines/routines.json.")); return; }
       for (const r of v.routines) {
-        const sw = h("button", { type: "button", class: "switch", "aria-pressed": String(r.enabled), "aria-label": `${r.name}: ${r.enabled ? "on" : "off"}`,
+        const sw = h("button", { type: "button", class: "switch", "aria-pressed": String(r.enabled), "aria-label": `Run ${r.name} on its schedule`,
           click: () => void ctx.api.setRoutine(r.id, !r.enabled).then(draw, (e: unknown) => ctx.toast(e instanceof Error ? e.message : "Could not change it.")) }, r.enabled ? "On" : "Off");
         const run = h("button", { type: "button", class: "runnow", click: () => void ctx.api.runRoutine(r.id).then(
           (res) => { ctx.toast(res.run ? `Started ${r.name} (up to ${money(res.run.capUsd)}).` : `Started ${r.name} (no model, no cost). The result shows here in a moment.`); void ctx.refresh(); },

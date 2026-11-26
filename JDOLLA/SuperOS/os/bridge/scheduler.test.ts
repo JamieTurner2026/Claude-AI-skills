@@ -186,6 +186,6 @@ describe("the real routines.json", () => {
     const file = new URL("../../routines/routines.json", import.meta.url);
     const list = JSON.parse(readFileSync(file, "utf8")) as (R & { skill?: string; tier?: string; builtin?: string })[];
     assert.equal(list.length >= 4, true);
-    for (const x of list) { assert.equal(parseSchedule(x.schedule).ok, true, x.id); assert.equal(x.enabled, false, x.id); if (x.builtin) assert.deepEqual([x.builtin, x.skill, x.tier], ["vault-backup", undefined, undefined], "a built-in routine names no skill and no tier: no model runs"); else assert.match(x.tier ?? "", /^T[23]$/); }
+    for (const x of list) { assert.equal(parseSchedule(x.schedule).ok, true, x.id); assert.equal(x.enabled, false, x.id); if (x.builtin) assert.deepEqual([["vault-backup", "month-costs"].includes(x.builtin), x.skill, x.tier], [true, undefined, undefined], "a built-in routine names no skill and no tier: no model runs"); else assert.match(x.tier ?? "", /^T[23]$/); }
   });
 });

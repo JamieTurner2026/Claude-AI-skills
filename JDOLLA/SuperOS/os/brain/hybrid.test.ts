@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { compareEval } from "./embed-cli.ts";
-import { loadLocalEmbedder, tryLoadEmbedder, type Embedder } from "./embeddings.ts";
+import { loadLocalEmbedder, pinnedRuntimeVersion, tryLoadEmbedder, type Embedder } from "./embeddings.ts";
 import type { EvalFile } from "./eval.ts";
 import { makeBrainVault } from "./fixture.ts";
 import { embedIndex, hybridSearch, rrf, vectorCoverage } from "./hybrid.ts";
@@ -159,7 +159,7 @@ describe("opt-in and fallback", () => {
     const base = mkdtempSync(path.join(tmpdir(), "embed-"));
     const pkg = path.join(base, "runtime", "node_modules", "@huggingface", "transformers");
     mkdirSync(pkg, { recursive: true });
-    writeFileSync(path.join(pkg, "package.json"), JSON.stringify({ name: "@huggingface/transformers", main: "missing.js" }));
+    writeFileSync(path.join(pkg, "package.json"), JSON.stringify({ name: "@huggingface/transformers", version: pinnedRuntimeVersion(), main: "missing.js" })); // the pinned version: present, not outdated
     await assert.rejects(loadLocalEmbedder({ allowDownload: false, base }), /model not downloaded/);
     assert.deepEqual(readdirSync(base), ["runtime"]); // no models/ folder: nothing was fetched
   });

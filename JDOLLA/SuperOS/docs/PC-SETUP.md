@@ -22,13 +22,13 @@ Nothing here sends, buys, deletes or publishes anything. The only step that cost
   Get-ChildItem "$env:APPDATA\npm\node_modules\@anthropic-ai\claude-code\cli.js"
   ```
 
-  If that lists the file, put its full path in `os\config\os.config.json` under `engine`, with doubled backslashes:
+  If that lists the file, make a new file `os\config\os.local.json` (this PC's own settings; git ignores it, so `npm run update` still pulls) holding its full path, with doubled backslashes:
 
   ```json
-  "claudeBin": "C:\\Users\\<you>\\AppData\\Roaming\\npm\\node_modules\\@anthropic-ai\\claude-code\\cli.js"
+  { "claudeBin": "C:\\Users\\<you>\\AppData\\Roaming\\npm\\node_modules\\@anthropic-ai\\claude-code\\cli.js" }
   ```
 
-  The bridge runs a `.js` path with your Node. If the command finds no file, use the native installer instead.
+  The bridge runs a `.js` path with your Node. Don't put it in `os.config.json`: that file is part of the code, and a change there makes `npm run update` stop with "You have local changes". If you already did, move the line into `os.local.json` and run `git checkout -- config/os.config.json`. If the command finds no file, use the native installer instead.
 
 ## 2. Get the latest code without losing PC work
 
@@ -82,7 +82,7 @@ npm run check
 npm test
 ```
 
-You should see `npm run check` finish with no errors, and `npm test` end with `# fail 0`. The tests use a fake Claude, so they cost nothing. If any test fails, stop here and send Claude the failing lines.
+You should see `npm run check` finish with no errors, and `npm test` end with `ℹ fail 0` (or `# fail 0` if you send the output to a file). The tests use a fake Claude, so they cost nothing. If any test fails, stop here and send Claude the failing lines.
 
 ## 4. Settings file
 
@@ -117,7 +117,8 @@ Keyword search misses notes that say the same thing in other words. This adds a 
 npm run brain -- index --embeddings
 ```
 
-- The first time, it installs a pinned runtime (about 400 MB) and downloads the model (about 23 MB) into `%USERPROFILE%\.superos\brain\embeddings\`. Nothing goes into the vault. This is the only command that downloads anything; runs never do.
+- The first time, it installs a pinned runtime (about 500 MB) and downloads the model (about 23 MB) into `%USERPROFILE%\.superos\brain\embeddings\`. Nothing goes into the vault. This is the only command that downloads anything; runs never do.
+- **If you set this up before 2026-11-24**, run the same command once after updating. The runtime moved to transformers 4.3.2, and the old runtime pulls in an image library (`sharp`) with a security advisory. Until you do, search says "embedding runtime is 3.8.1, this version needs 4.3.2" and uses keywords only. The command replaces the runtime and gives every note a new vector (the model is kept, so nothing is downloaded but the runtime). Old and new vectors are never mixed.
 - Then it gives every note a vector. That takes a few seconds and later runs reuse the vectors.
 - Check it worked: `npm run brain -- eval --compare` prints keyword and hybrid scores side by side.
 - New or changed notes get their vectors on their own: while the bridge runs, the rebuild before each run embeds them in the background (at most 5 s of work per rebuild, without holding up the run). `npm run brain -- index --embeddings` still does them all at once.
@@ -170,7 +171,7 @@ To turn the brain off, set `"brain": { "enabled": false }` under `engine` in `os
 npm start
 ```
 
-Leave this window open. You should see `JDOLLA$ bridge running on http://127.0.0.1:4317`. It only listens on this PC; nothing on your network can reach it. Stop it with Ctrl+C.
+Leave this window open. You should see `JDOLLA$ bridge running on http://127.0.0.1:4317 (pid N)`, then `Open the dashboard with: npm run open`. It only listens on this PC; nothing on your network can reach it. Stop it with Ctrl+C.
 
 While it runs, the bridge keeps these files up to date itself, when it starts and every 30 minutes: `wiki\_master-index.md`, each department's `_index.md`, `reports\_index.md`, one hub per project in `projects\`, and today's note in `daily\`. To see what it would do first, run `npm run vault -- build --dry-run` in `os\`. In a daily note, write only under the `## Notes` line: that part is yours and is never changed.
 
@@ -239,6 +240,7 @@ Then it stops everything and deletes the temp folder, even when a step fails. Ev
 
 All routines ship **switched off**. In the Routines widget:
 
+- the **Next 7 days** widget under it shows when each routine will run in the coming week (on and off), and each day's total budget against the $2 cap. It only shows; change a routine with its switch
 - the switch turns a routine on or off (it rewrites `routines\routines.json`)
 - **Run now** runs a routine once, right away
 - each routine shows its last result, and the widget shows "spent today $x of $2"
@@ -249,6 +251,12 @@ Money limits:
 - Each routine has its own budget (plan-today $0.25, morning-intel $0.40, vault-cleanup $0.75, content-cascade $1.00).
 - Each time slot runs at most once, even if the PC restarts.
 - Routines only run on their own while the bridge is running. If the PC was off, a missed slot runs once when the bridge comes back.
+
+**Content cascade** (Fridays 16:00, up to $1.00) turns one finished deliverable into three drafts: a post, a summary and a note. It drafts only and never posts anything.
+
+- It takes the newest deliverable in `outputs\YYYY-MM\` that has no drafts yet. When every deliverable has drafts, it skips the week at no cost.
+- The drafts land beside the others in `outputs\YYYY-MM\` as `YYYY-MM-DD_<dept>_<slug>-draft-post.md`, `-draft-summary.md` and `-draft-note.md`, each starting `Status: DRAFT, not published`. If a file with that name is already there, it adds `-v2` and never overwrites.
+- It runs in its own work folder, with no web, shell or publishing tools.
 
 **Turning on the morning brief.** The **Morning intel** routine (weekdays 07:30, up to $0.40) writes `reports\YYYY-MM-DD_morning-intel.md`, or nothing when nothing is new. It is most useful once the calendar and mail feed files are in place (§13.2). Then switch it on in the Routines widget (or press **Run now** once to see what it writes) and leave `SUPEROS_SCHEDULER=on`. It only reads: it never sends, replies to or drafts any message, and it treats every mail subject and calendar title as quoted data.
 
@@ -292,6 +300,7 @@ Drafting each suggestion is a small read-only run that costs up to $0.05. All of
 
 **Run analysis:**
 - `cd os` then `npm run analyse:runs -- --days 30` prints where the money went and what keeps failing, from `%LOCALAPPDATA%\JDOLLA\logs\router.jsonl`. Nothing is changed.
+- `npm run analyse:runs -- --month` (or `--month 2026-11`) totals one calendar month in your time zone: spend by tier, routine and skill, the learning diagnoses, your highest day against the $2 daily cap, how many days the cap was hit, and a pace projection. Costs and counts only, never a prompt. The **Monthly costs** routine (1st of each month at 08:10, no model, $0, off until you switch it on in the Routines widget) writes last month's report to `reports\YYYY-MM_costs.md` and never overwrites one. The Health strip shows "This month $x".
 - On the Proposals card, **Suggest changes** adds up to 3 "Suggested change" cards a week. Approve only records your decision; **you edit `os\config\os.config.json` or the routine yourself**.
 - New typed requests are logged as their first 80 characters in `router.jsonl` (on this PC only).
 
@@ -327,7 +336,7 @@ npm run brain -- index
 
 These all passed on Linux in the cloud. Windows is untested. Tell Claude the result of each one.
 
-1. **Claude is found.** §8 worked. If the run failed with "not found", see §1 (native installer, or `engine.claudeBin`).
+1. **Claude is found.** §8 worked. If the run failed with "not found", see §1 (native installer, or `claudeBin` in `os\config\os.local.json`).
 2. **Stop works.** Ask a long T3 job, confirm it, press **Stop** after a few seconds. The run should show `stopped`, and Task Manager should show no `claude.exe` left over from it. The bridge stops it by its exact process ID (`taskkill /PID <id> /T`), never by name, so your own Claude sessions aren't touched.
 3. **Logs land in the right place.** `%LOCALAPPDATA%\JDOLLA\logs\router.jsonl` exists and has one line per run, with its cost.
 4. **No Bash without a sandbox.** Native Windows has no Claude Code sandbox, so any run that needs Bash is refused with a plain message. That's expected. It only works if Claude Code runs inside WSL2.
@@ -344,7 +353,7 @@ These all passed on Linux in the cloud. Windows is untested. Tell Claude the res
 | What you see | What to do |
 |---|---|
 | `node` is older than 22.18 | Install the current LTS from nodejs.org, open a new PowerShell window. |
-| Run fails: `claude.exe` not found | Use the native installer, or set `engine.claudeBin` to `cli.js` (§1). |
+| Run fails: `claude.exe` not found | Use the native installer, or set `claudeBin` in `os\config\os.local.json` to `cli.js` (§1). |
 | Run fails: not signed in | Run `claude` once in PowerShell and sign in, then try again. |
 | Port 4317 in use | Change `SUPEROS_PORT` in `os\.env`, restart the bridge, run `npm run open` again. |
 | `npm run open` opens nothing | If it printed a long link, paste that into your browser (valid 24 hours, this PC only). If it says the bridge is not running, start it first (§6). |

@@ -61,14 +61,15 @@ Blocked on the PC session.
 - ~~10a~~ A weekly review of approved and rejected proposals, written as a report. Built 2026-11-21: skill draft `skills/proposals-review`, routine `proposals-review` (Sundays 17:00, ships off), read-only tool `proposals_summary`.
 - ~~10b~~ `router.jsonl` analysis. Built 2026-11-22 (PR #31): `npm run analyse -- runs`, the read-only `run_stats` tool, and "tune" proposals. Approving a tune only records the decision; Jay edits config himself.
 - ~~10c~~ Learning scorecard. Built 2026-11-22: `npm run analyse:learning [-- --days N] [--json]` gives proposals per kind (made, approved, rejected, pending), the median days to a decision, and the skills with the most learned rules. The weekly proposals review gets the median as a new row.
+- ~~10e~~ Monthly cost report. Built 2026-11-24: `npm run analyse:runs -- --month [YYYY-MM]` (a calendar month in Jay's time zone; spend by tier, routine and skill, diagnosis spend, highest day against the $2 cap, days the cap was hit, a pace projection; costs and counts only), the built-in routine `month-costs` ("monthly 1 08:10", no model, $0, switched off) writing `reports/YYYY-MM_costs.md` without overwriting, and a "This month" chip in the Health strip. The scheduler gained a `monthly <1-28> HH:MM` form.
 
 ## Jay's list to finish the build (on the PC)
 1. `git status` (it must be clean), then `git pull`, then `npm install` in `os/`.
 2. `npm run doctor`; fix each fail at the PC-SETUP section it names.
 3. `npm run check` and `npm test`; send the pass count (that is 9a).
-4. `npm run brain -- index --embeddings` (opt-in, about 420 MB), then `npm run brain -- eval`.
+4. `npm run brain -- index --embeddings` (opt-in, about 520 MB), then `npm run brain -- eval`.
 5. Session import (PC-SETUP 5b), then run the eval again.
-6. `npm run autostart`, then follow its two printed steps.
+6. `npm run autostart -- install`, then follow its two printed steps.
 7. Decide three things: the private Brain repo name; the Gmail "Brain" label and Calendar connect; whether the cloud allowlist keeps the huggingface hosts.
 
 ## Queue

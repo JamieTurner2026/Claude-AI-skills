@@ -3,9 +3,10 @@
 // DELIVER (writes report.md in its working folder), CRASH (a non-budget error). An inbox-triage prompt is answered with the
 // JSON in FAKE_TRIAGE_ANSWER. BRAINANSWER (and friends, see below) emits brain tool_use events and then an answer. A learning-loop
 // diagnosis prompt gets a JSON answer, junk (BADDIAG), a failure (DIAGFAIL), a never-ending answer (DIAGSLOW) or
-// text trying to break out of its fields (DIAGEVIL). It writes its arguments to a file named in its output (ARGVFILE:) so tests can check them.
+// text trying to break out of its fields (DIAGEVIL). The content-cascade skill (its "# Content cascade" heading in the prompt) reads
+// ./_inputs/ and writes three drafts, each quoting the source's first line, the way a T3 cascade run would. It writes its arguments to a file named in its output (ARGVFILE:) so tests can check them.
 import { spawn } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -65,9 +66,11 @@ if (text.startsWith("You are sorting files that Jay dropped")) {
   out({ type: "assistant", message: { content: [{ type: "tool_use", id: "t1", name: "Read", input: { file_path: "os/.env" } }] } });
   out({ type: "user", message: { content: [{ type: "tool_result", tool_use_id: "t1", is_error: true, content: "<tool_use_error>File is in a directory that is denied by your permission settings.</tool_use_error>" }] } });
   out({ type: "result", subtype: "success", is_error: false, total_cost_usd: 0.002, result: "I could not read that file." });
-} else if (text.includes("FAKECALLTOOLS")) {
+} else if (text.includes("FAKECALLTOOLS") || text.includes("FAKEREPORT")) {
   // Plays the model: starts the exact superos-tools server named in --mcp-config, asks it what it offers, calls every offered
   // tool (and one that is not offered), and writes a brief that quotes the answers, so a test sees what a model would see.
+  // FAKECALLTOOLS writes the morning brief. FAKEREPORT works for any skill: one section for every `## Heading` the skill promises
+  // in backticks, in order, each quoting every tool answer (so hostile text in a tool answer reaches the report the way it would reach a model).
   const cfg = JSON.parse(args[args.indexOf("--mcp-config") + 1] ?? "{}") as { mcpServers?: Record<string, { command: string; args: string[]; env?: Record<string, string> }> };
   const srv = cfg.mcpServers?.["superos-tools"];
   if (!srv) out({ type: "result", subtype: "success", is_error: false, total_cost_usd: 0.001, result: "No tools server was configured." });
@@ -90,11 +93,13 @@ if (text.startsWith("You are sorting files that Jay dropped")) {
       out({ type: "assistant", message: { content: [{ type: "tool_use", id: `t${id}`, name: `mcp__superos-tools__${name}`, input: ARGS[name] ?? {} }] } });
       id++;
     }
-    send(99, "tools/call", { name: "link_check", arguments: {} }); // never offered to this run
+    const probe = names.includes("link_check") ? "run_stats" : "link_check"; // a tool this run was never offered
+    send(99, "tools/call", { name: probe, arguments: {} });
     const refused = await wait(99);
     out({ type: "assistant", message: { content: [{ type: "text", text: "UNOFFERED:" + (refused?.error?.message ?? refused?.result?.content?.[0]?.text ?? "") }] } });
     child.kill();
-    const brief = ["# Morning brief", "", "## Facts that came in", answers["calendar_today"] ?? "", answers["mail_brain"] ?? "", "", "## Waiting for Jay's yes", answers["proposals_summary"] ?? "", "", "## Filed or drafted overnight", answers["recent_changes"] ?? ""].join("\n");
+    const promised = [...new Set([...text.matchAll(/`(## [^`\n]+)`/g)].map((m) => m[1] as string))];
+    const brief = text.includes("FAKEREPORT") ? ["# Report", "", ...promised.flatMap((h) => [h, ...Object.values(answers), ""])].join("\n") : ["# Morning brief", "", "## Facts that came in", answers["calendar_today"] ?? "", answers["mail_brain"] ?? "", "", "## Waiting for Jay's yes", answers["proposals_summary"] ?? "", "", "## Filed or drafted overnight", answers["recent_changes"] ?? ""].join("\n");
     out({ type: "result", subtype: "success", is_error: false, total_cost_usd: 0.01, result: brief });
   }
 } else if (text.includes("NOTHINGNEWTEST")) {
@@ -107,6 +112,13 @@ if (text.startsWith("You are sorting files that Jay dropped")) {
   process.exitCode = 1;
 } else {
   if (text.includes("DELIVER")) writeFileSync("report.md", "# Report\nMade by the stand-in.\n");
+  if (text.includes("# Content cascade")) {
+    const src = existsSync("_inputs") ? readdirSync("_inputs").sort()[0] : undefined;
+    if (src) {
+      const first = readFileSync(path.join("_inputs", src), "utf8").split(/\r?\n/)[0] ?? "";
+      for (const kind of ["post", "summary", "note"]) writeFileSync(`draft-${kind}.md`, `Status: DRAFT, not published\n\nFrom ${src}: ${first}\n`);
+    }
+  }
   out({ type: "assistant", message: { content: [{ type: "tool_use", name: "Read" }, { type: "text", text: "All done." }] } });
   out({ type: "result", subtype: "success", is_error: false, total_cost_usd: 0.0123, result: "All done." });
 }

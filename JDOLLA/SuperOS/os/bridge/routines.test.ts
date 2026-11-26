@@ -126,7 +126,8 @@ test("a T3 routine gets the newest deliverable as input and its drafts land in o
 });
 
 test("a busy engine: the routine is not started and its reservation is returned", async () => {
-  const { b, logs } = setup([{ id: "cascade", name: "C", schedule: "daily 07:00", enabled: true, skill: "content-cascade", tier: "T3", budgetUsd: 1 }], { "content-cascade": "# C\nDELIVER" });
+  const { b, vault, logs } = setup([{ id: "cascade", name: "C", schedule: "daily 07:00", enabled: true, skill: "content-cascade", tier: "T3", budgetUsd: 1 }], { "content-cascade": "# C\nDELIVER" });
+  writeFileSync(path.join(vault, "outputs/2026-11/2026-11-10_ai_source.md"), "source deliverable"); // something to cascade, so only the busy engine stops it
   const hang = b.runs.start({ text: "write a report HANG", tier: "T3" });
   assert.deepEqual(await b.routines.tick(AT_0700), []);
   const l = ledger(logs);

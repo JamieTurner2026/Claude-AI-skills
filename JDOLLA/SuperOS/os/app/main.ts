@@ -68,6 +68,9 @@ function draw(): void {
 }
 
 const healthEl = $("health");
+/** Says the health warnings aloud once, when they change; the strip itself redraws every poll and would repeat. */
+const healthLive = $("health-live");
+let lastWarnings = "";
 /** The Health strip: one line of state chips. A chip turns the warning colour when healthWarnings() says so. */
 async function drawHealth(): Promise<void> {
   try {
@@ -78,6 +81,7 @@ async function drawHealth(): Promise<void> {
       chip("Bridge", `up ${formatAge(v.uptimeSec)}`, false),
       chip("Scheduler", v.scheduler.on ? `on, ${v.scheduler.routinesOn}/${v.scheduler.routinesTotal} routines` : "OFF", !v.scheduler.on),
       chip("Spend", `$${v.spend.todayUsd.toFixed(2)} / $${v.spend.capUsd.toFixed(2)}`, v.spend.pct > 80),
+      chip("This month", `$${v.month.spendUsd.toFixed(2)}`, false),
       chip("Last run", v.lastRun ? `${v.lastRun.status}, ${formatAge((Date.now() - Date.parse(v.lastRun.at)) / 1000)} ago` : "none", false),
       chip("Index", !v.brain.present ? "not built" : v.brain.stale ? "stale" : `${formatAge(v.brain.indexAgeSec ?? 0)} old`, v.brain.indexAgeSec !== null && v.brain.indexAgeSec > 86_400),
       chip("Embeddings", v.brain.embeddings ? "present" : "off", false),
@@ -85,6 +89,8 @@ async function drawHealth(): Promise<void> {
       chip("Backup", v.backup ? `${v.backup.status}, ${formatAge((Date.now() - Date.parse(v.backup.at)) / 1000)} ago` : "never run", v.backup?.status === "failed" || v.backup?.status === "refused"));
     healthEl.classList.toggle("warning", warns.length > 0);
     healthEl.title = warns.join(". ");
+    const said = warns.length ? `Health: ${warns.join(". ")}.` : lastWarnings ? "Health: all clear." : "";
+    if (said !== lastWarnings) { healthLive.textContent = said; lastWarnings = said; }
     healthEl.hidden = false;
   } catch { healthEl.hidden = true; } // signed out or the bridge is down: the main view already says so
 }

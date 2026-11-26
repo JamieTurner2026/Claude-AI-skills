@@ -18,21 +18,21 @@ export const ConfigSchema = z.object({
     t2: z.object({ model: z.string(), effort: z.string(), maxBudgetUsd: z.number().positive().max(5).default(0.05) }),
     t3: z.object({ model: z.string(), effort: z.string(), permissionMode: z.string(), maxBudgetUsd: z.number().positive().max(100) }),
     /** Scheduled routines: total spend per day (owner's time zone) and the most one routine run may cost. */
-    routines: z.object({ dailyCapUsd: z.number().positive().max(100), maxBudgetUsd: z.number().positive().max(100) }).default({ dailyCapUsd: 1, maxBudgetUsd: 1 }),
+    routines: z.object({ dailyCapUsd: z.number().positive().max(100), maxBudgetUsd: z.number().positive().max(100) }).prefault({ dailyCapUsd: 1, maxBudgetUsd: 1 }),
     /** Give runs read-only search over the vault through the second brain (superos-brain MCP server). */
-    brain: z.object({ enabled: z.boolean() }).default({ enabled: true }),
+    brain: z.object({ enabled: z.boolean() }).prefault({ enabled: true }),
     /** Give runs the safe script tools in os/tools/ (allowed by name in skills.policy.json). */
-    tools: z.object({ enabled: z.boolean() }).default({ enabled: true }),
+    tools: z.object({ enabled: z.boolean() }).prefault({ enabled: true }),
     /** Learning loop: a run that fails, is blocked or hits its cap gets a proposal, drafted by a small read-only diagnosis run. */
     learning: z.object({
       enabled: z.boolean(),
       diagnosisBudgetUsd: z.number().positive().max(1),
       dailyCapUsd: z.number().positive().max(10),
       /** A T2 answer that used the brain but names no vault note gets a proposal (no diagnosis run, no cost). */
-      citations: z.object({ enabled: z.boolean() }).default({ enabled: true }),
-    }).default({ enabled: true, diagnosisBudgetUsd: 0.05, dailyCapUsd: 0.25 }),
+      citations: z.object({ enabled: z.boolean() }).prefault({ enabled: true }),
+    }).prefault({ enabled: true, diagnosisBudgetUsd: 0.05, dailyCapUsd: 0.25 }),
     /** Vault backup (Phase 9c): the one private GitHub repo the vault may be pushed to. Empty means no backup (the routine refuses). */
-    backup: z.object({ remote: z.string().max(300).default(""), branch: z.string().refine(isValidBranch, MSG_BAD_BRANCH).default("main") }).default({ remote: "", branch: "main" }),
+    backup: z.object({ remote: z.string().max(300).default(""), branch: z.string().refine(isValidBranch, MSG_BAD_BRANCH).default("main") }).prefault({ remote: "", branch: "main" }),
     /** Optional path to the Claude Code CLI. Default: "claude" ("claude.exe" on Windows), found on PATH. */
     claudeBin: z.string().min(1).max(260).optional(),
   }),
@@ -51,6 +51,29 @@ export function pathsFor(osDir: string): Paths {
 
 export function loadConfig(p: Paths): OsConfig {
   return ConfigSchema.parse(JSON.parse(readFileSync(p.config, "utf8")));
+}
+
+/**
+ * This PC's own settings, in os/config/os.local.json. Git ignores the file, so setting it never leaves a changed file that
+ * `npm run update` would refuse to pull over (os.config.json is tracked). Only the keys below are allowed.
+ */
+export const LocalConfigSchema = z.strictObject({
+  /** Path to the Claude Code CLI on this PC (its cli.js, for an npm install). Wins over engine.claudeBin in os.config.json. */
+  claudeBin: z.string().min(1).max(260).optional(),
+});
+export type LocalConfig = z.infer<typeof LocalConfigSchema>;
+export const localConfigPath = (p: Paths): string => path.join(p.os, "config", "os.local.json");
+
+/** {} when the file is absent. A file that is there but unreadable or wrong throws, so a typo is never silently ignored. */
+export function loadLocalConfig(p: Paths): LocalConfig {
+  const f = localConfigPath(p);
+  if (!existsSync(f)) return {};
+  return LocalConfigSchema.parse(JSON.parse(readFileSync(f, "utf8")));
+}
+
+/** The Claude CLI setting to use: os.local.json first, then engine.claudeBin in os.config.json, else none (PATH). */
+export function claudeBinSetting(p: Paths, config: OsConfig): string | undefined {
+  return loadLocalConfig(p).claudeBin ?? config.engine.claudeBin;
 }
 
 /** Write via a temp file and rename, so a crash never leaves half a config. */
