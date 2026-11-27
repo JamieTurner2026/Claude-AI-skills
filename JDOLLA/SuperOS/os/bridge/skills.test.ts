@@ -126,3 +126,14 @@ test("policy: each department agent has its own entry, default tools only, no Ba
   }
   assert.equal(JSON.stringify(policy).includes("Bash"), false, "the real policy grants Bash to nothing");
 });
+
+test("video-remake: the dashboard planner is a read-only T2 skill at $0.25 with default tools and no Bash", () => {
+  const s = listSkills(pathsFor(realOs)).find((x) => x.name === "video-remake");
+  assert.ok(s, "video-remake is listed");
+  assert.deepEqual([s.tier, s.budgetUsd, s.tierKnown, s.budgetKnown, s.problem], ["T2", 0.25, true, true, null]);
+  assert.ok(s.description.length > 20, "it has a description");
+  const policy = loadPolicy(pathsFor(realOs));
+  assert.deepEqual(policy.skills["video-remake"]?.tools, [], "it adds no tools");
+  assert.deepEqual(t3Tools(policy, "video-remake"), policy.defaultTools, "default tools only");
+  assert.ok(!t3Tools(policy, "video-remake").includes("Bash"), "no Bash: the render runs in Claude Code, not here");
+});

@@ -4,7 +4,7 @@ Builds complete interactive games, MIDNIGHT REIGN first.
 ## Skills
 - `/blender-visuals`: headless Blender renders, turntables, 3D models and diagrams; craft guides in its `references/` (bpy, scene, materials, animation, rigging, retopology, level design)
 - `/blender-core`: start here for game assets; routes to `blender-hardsurface-modeling`, `-retopology-uv`, `-pbr-materials`, `-texturing`, `-texture-baking`, `-game-optimization`, `-export-pipelines` (Unreal), `-environment-kits`, `-animation`, `-time-of-day`, `-weather-fx`, `-scene-setup`, `-pipeline-automation`, `-workflow-recipes`; always finish with `/blender-asset-qa`. Nine more filed, off: [[wiki/gamedev/blender-skills]]
-- `/video-remake`: recreate or refine a gameplay/3D clip as a deterministic three.js render that matches a reference shot by shot (also recolours parts of an existing video); see [[depts/creative]]
+- `/video-remake`: recreate or refine a gameplay/3D clip as a deterministic three.js render that matches a reference shot by shot (also recolours parts of an existing video); see [[depts/creative]]. Dashboard planner: `video-remake` in the Skills widget
 - `/cad-parts`: exact mechanical parts (mm) when a prop must match real dimensions
 - Unreal Engine (UE 5.8 docs; check against the project version): `/unreal-cpp-gameplay`, `/unreal-blueprints`, `/unreal-enhanced-input`, `/unreal-behavior-trees`, `/unreal-niagara`, `/unreal-packaging`
 - Engine-neutral game skills: `/game-ai`, `/ai-behavior-trees-utility-ai`, `/physics-tuning`, `/camera-systems`, `/game-feel`, `/input-systems`, `/performance-optimization`, `/level-design`, `/game-ui-ux`, `/save-systems`, `/audio-design`, `/steam-publish`. What each gives MIDNIGHT REIGN: [[wiki/gamedev/unreal-skills]]
