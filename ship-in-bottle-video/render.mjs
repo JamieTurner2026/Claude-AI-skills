@@ -48,6 +48,7 @@ Object.values(dirs).forEach((d) => fs.mkdirSync(d, { recursive: true }));
 const t0 = Date.now();
 for (let i = 0; i < times.length; i++) {
   await Promise.all(['A', 'B'].map(async (s) => {
+    if (!stills && fs.existsSync(path.join(dirs[s], `${String(i).padStart(5, '0')}.png`))) return; // resume
     await pages[s].evaluate((t) => window.renderAt(t), times[i]);
     await pages[s].screenshot({ path: path.join(dirs[s], `${String(i).padStart(5, '0')}.png`) });
   }));
