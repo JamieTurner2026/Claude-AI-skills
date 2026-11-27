@@ -14,6 +14,8 @@ Two routes. Pick by what the user wants to be different:
 
 The two routes can run together: deliver the edited original immediately while the rebuild renders.
 
+Started from the SuperOS dashboard? Its `video-remake` planner (a read-only T2 skill in the vault) writes `reports/<day>_video-remake.md` with the route, the plan and the commands. Read that brief first and follow it unless Jay says otherwise.
+
 ## 1. Study the reference
 ```
 bash scripts/analyze_reference.sh REF.mov work/ref top:0:96:1280:720 bottom:0:912:1280:720
