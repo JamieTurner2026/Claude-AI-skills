@@ -57,7 +57,7 @@ const PAL = {
   A: {
     hull: C('#211b18'), stripe: C('#d6a04a'), port: C('#0d0b0a'), rail: C('#6b4128'), deck: C('#a87447'),
     sailA: C('#b9442f'), sailB: C('#ead9b4'), emblem: C('#f2e6c8'), mast: C('#4a2e1d'),
-    water: C('#08744a'), waterTop: C('#149457'), foam: C('#eafff2'),
+    water: C('#06663f'), waterTop: C('#149457'), foam: C('#eafff2'),
     glass: C('#bfeef0'), cork: C('#c9925a'), corkDark: C('#9c6a3c'), stand: C('#7a3b22'),
   },
   B: {
@@ -182,26 +182,43 @@ function buildShip(style) {
             c = (dx * 3 + y) % 5 === 0 ? P.sailB : P.sailA;
             if (mi === 1 && ti === 0 && ((Math.abs(dx) <= 0 && Math.abs(y - cy) <= 2) || (y === cy && Math.abs(dx) <= 2))) c = P.emblem;
           }
-          v.set(m.x + dx, y, 2 + bil, c);
-          if (bil > 0) v.set(m.x + dx, y, 1 + bil, c);
+          // cloth shading: bright belly, darker edges and bolt-rope, faint horizontal seams
+          let shade = 0.84 + 0.2 * (1 - u * u) * Math.sin(Math.PI * (0.15 + 0.85 * (1 - w)));
+          if (Math.abs(dx) === Math.round(hw) || y === ya || y === yb) shade *= 0.86;
+          if ((y - ya) % 3 === 2) shade *= 0.95;
+          const sc = c.clone().multiplyScalar(shade);
+          v.set(m.x + dx, y, 2 + bil, sc);
+          if (bil > 0) v.set(m.x + dx, y, 1 + bil, sc.clone().multiplyScalar(0.9));
         }
       }
     }
     const pc = style === 'A' ? C('#c23a2a') : C('#b63b2b');
     for (let i = 1; i <= 5; i++) for (let j = 0; j < Math.max(1, 3 - Math.floor(i / 2)); j++) v.set(m.x + i, m.h + 1 + j, 0, pc);
   });
-  // jibs
-  for (let y = S0; y <= 28; y++) {
-    const t = (y - S0) / (28 - S0);
-    const x0 = 19, span = (L + 11 - x0) * (1 - t);
-    for (let x = x0 + 1; x <= x0 + span; x++) if ((x + y) % 9 !== 0) v.set(x, y, 2, style === 'A' ? P.sailB : P.sailA);
-  }
-  // spanker
-  for (let y = S0; y <= 24; y++) {
-    const t = (y - S0) / (24 - S0);
-    for (let x = -26; x <= -18; x++) if ((-18 - x) < 8 * (1 - t * 0.6)) v.set(x, y, 2, style === 'A' ? P.sailB : P.sailA);
+  // jibs and spanker on a half-size grid: smoother diagonal edges than the hull grid
+  const fv = new Vox(v.s / 2);
+  const jibC = style === 'A' ? P.sailB : P.sailA;
+  const jibs = [[19, 2 * S0, 56, L + 11], [17, 2 * S0 + 4, 48, L + 6]];
+  jibs.forEach(([x0, y0, y1, xTip], ji) => {
+    for (let y = y0; y <= y1; y++) {
+      const t = (y - y0) / (y1 - y0);
+      const xe = 2 * x0 + (2 * xTip - 2 * x0) * (1 - t);
+      for (let x = 2 * x0 + 2; x <= xe; x++) {
+        const edge = x >= xe - 1 || y === y0;
+        const belly = Math.sin(Math.PI * Math.min(1, (x - 2 * x0) / Math.max(1, xe - 2 * x0)));
+        fv.set(x, y, 5 + ji * 3 + Math.round(belly * 2), jibC.clone().multiplyScalar(edge ? 0.82 : 0.9 + 0.12 * belly));
+      }
+    }
+  });
+  for (let y = 2 * S0; y <= 48; y++) {
+    const t = (y - 2 * S0) / (48 - 2 * S0);
+    for (let x = -52; x <= -36; x++) if ((-36 - x) < 16 * (1 - t * 0.6)) {
+      const edge = (-36 - x) >= 16 * (1 - t * 0.6) - 1;
+      fv.set(x, y, 4, jibC.clone().multiplyScalar(edge ? 0.82 : 0.96));
+    }
   }
   const mesh = v.build(new THREE.MeshStandardMaterial({ roughness: 0.75 }), { jitter: 0.07 });
+  const fineSails = fv.build(new THREE.MeshStandardMaterial({ roughness: 0.8 }), { jitter: 0.03 });
   const lines = [];
   masts.forEach((m) => {
     lines.push([m.x, m.h, 0, L + 12, DECK + 8, 0], [m.x, m.h, 0, m.x - 11, DECK, 6], [m.x, m.h, 0, m.x - 11, DECK, -6], [m.x, m.h * 0.75, 0, m.x + 8, DECK, 7]);
@@ -211,7 +228,7 @@ function buildShip(style) {
   lg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(lines.flat().map((n) => n * v.s)), 3));
   const rig = new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0x2a1b12, transparent: true, opacity: 0.75 }));
   const g = new THREE.Group();
-  g.add(mesh, rig);
+  g.add(mesh, fineSails, rig);
   return g;
 }
 
@@ -312,10 +329,14 @@ function buildIsland({ style, seed, cx, cz, radius, height, base, kind }) {
 function buildSeabed(style) {
   const vs = 0.1;
   const v = new Vox(vs);
-  const sand = style === 'A' ? [C('#3f7f74'), C('#c2ae7c'), C('#5a8f7a'), C('#2f6b66')] : [C('#2f5f68'), C('#3f6f74'), C('#264f58'), C('#4b7b7c')];
-  const corals = style === 'A'
-    ? [C('#e1789a'), C('#9a6ac0'), C('#e79a46'), C('#47a05a'), C('#d55a5a'), C('#6fc2b0')]
-    : [C('#d86b93'), C('#7f63b8'), C('#e0a24a'), C('#4fa86a'), C('#5bbbc4'), C('#c9c06a')];
+  // calm base: sand with mossy patches and rock outcrops; coral grows in coherent patches, not random noise
+  const sand = style === 'A' ? [C('#e2cf9f'), C('#d6c08e'), C('#ead9ad')] : [C('#58858a'), C('#4d7a80'), C('#62939a')];
+  const moss = style === 'A' ? [C('#5d8f78'), C('#4c7f6a')] : [C('#2f5a5c'), C('#2a5053')];
+  const rock = style === 'A' ? [C('#6f7a72'), C('#5f6a64')] : [C('#4d5b5c'), C('#414e50')];
+  const palettes = style === 'A'
+    ? [[C('#e07a9a'), C('#f09ab4')], [C('#9a6ac0'), C('#b48ad6')], [C('#e79a46'), C('#f2b866')], [C('#d85a5a'), C('#ec7a6a')]]
+    : [[C('#d86b93'), C('#ea8fae')], [C('#7f63b8'), C('#9c84d0')], [C('#e0a24a'), C('#efbe6e')], [C('#5bbbc4'), C('#86d4da')]];
+  const kelp = [C('#3f8f55'), C('#4fa463'), C('#357a48')];
   for (let i = Math.floor(BODY0 / vs); i <= Math.ceil(BODY1 / vs); i++) {
     const x = i * vs;
     const r = innerRadius(x) - 0.05;
@@ -324,37 +345,49 @@ function buildSeabed(style) {
       const z = k * vs;
       if (Math.abs(z) > r) continue;
       const yb = -Math.sqrt(r * r - z * z);
-      const ys = -1.38 + vnoise(i * 0.12, k * 0.12, 5) * 0.35;
+      const rk = vnoise(i * 0.09, k * 0.09, 21);
+      const ys = -1.38 + vnoise(i * 0.12, k * 0.12, 5) * 0.3 + Math.max(0, rk - 0.68) * 0.6;
       if (ys < yb) continue;
       const jb = Math.ceil(yb / vs), js = Math.floor(ys / vs);
-      for (let j = jb; j <= js; j++) v.set(i, j, k, sand[Math.floor(vnoise(i * 0.3, k * 0.3, 9) * 3.99)]);
-      // corals & kelp
-      const hv = hash2(i, k, 11);
-      if (hv > 0.9 && Math.abs(z) < r - 0.15) {
-        const c = corals[Math.floor(hash2(i, k, 12) * corals.length)];
-        const h = 1 + Math.floor(hash2(i, k, 13) * (c === corals[3] ? 5 : 3));
+      const mz = vnoise(i * 0.2, k * 0.2, 9);
+      for (let j = jb; j <= js; j++) {
+        let c = rk > 0.68 ? rock[(i + j + k) & 1] : mz > 0.74 ? moss[(i + k) & 1] : sand[Math.floor(hash2(i, k + j, 2) * 3)];
+        v.set(i, j, k, c);
+      }
+      if (Math.abs(z) > r - 0.15) continue;
+      const patch = vnoise(i * 0.11, k * 0.11, 7);
+      if (patch > 0.6 && hash2(i, k, 11) > 0.55) {
+        const pal = palettes[Math.floor(hash2(Math.floor(i / 9), Math.floor(k / 9), 12) * palettes.length)];
+        const h = 1 + Math.floor(hash2(i, k, 13) * 3 * (patch - 0.5) * 2.5);
         for (let t = 1; t <= h; t++) {
-          if ((js + t) * vs > WATER_Y - 0.6) break;
-          v.set(i, js + t, k, c);
-          if (t > 1 && hash2(i, t, k) > 0.6) v.set(i + 1, js + t, k, c);
+          if ((js + t) * vs > WATER_Y - 0.65) break;
+          v.set(i, js + t, k, pal[t === h ? 1 : 0]);
         }
+      } else if (patch < 0.3 && z < 0 && hash2(i, k, 14) > 0.8) {
+        const h = 3 + Math.floor(hash2(i, k, 15) * 4);
+        for (let t = 1; t <= h; t++) { if ((js + t) * vs > WATER_Y - 0.55) break; v.set(i + (t > 3 && (t & 1) ? 1 : 0), js + t, k, kelp[t % 3]); }
       }
     }
   }
   const mat = new THREE.MeshStandardMaterial({ roughness: 0.95 });
-  return v.build(mat, { jitter: 0.1, castShadow: false });
+  return v.build(mat, { jitter: 0.06, castShadow: false });
 }
 
 function buildClouds(style) {
   const g = new THREE.Group();
   if (style !== 'A') return g;
-  const mat = new THREE.MeshStandardMaterial({ color: 0xf4ead6, roughness: 1 });
-  const spots = [[-0.9, 1.35, -0.4], [1.2, 1.25, -0.5], [2.2, 1.05, 0.2], [-2.2, 1.25, 0.3], [0.3, 1.5, -0.9]];
-  spots.forEach(([x, y, z], n) => {
-    const v = new Vox(0.06);
-    const w = 4 + (n % 3) * 2;
-    for (let i = -w; i <= w; i++) for (let j = 0; j <= 1 + (Math.abs(i) < w / 2 ? 1 : 0); j++) for (let k = -1; k <= 1; k++) v.set(i, j, k, C('#f4ead6'));
-    const m = v.build(mat, { jitter: 0.03, castShadow: false });
+  const mat = new THREE.MeshStandardMaterial({ roughness: 1 });
+  const spots = [[-0.9, 1.3, -0.4, 1.0], [1.2, 1.22, -0.5, 0.8], [2.1, 1.05, 0.2, 0.7], [-2.2, 1.2, 0.3, 0.9], [0.3, 1.45, -0.9, 0.75]];
+  spots.forEach(([x, y, z, sz], n) => {
+    const v = new Vox(0.045);
+    // three overlapping puffs with a flat base; lit top, cool underside
+    const puffs = [[-4 * sz, 0, 0, 3.2 * sz], [0, 1.2, 0, 4.2 * sz], [4 * sz, 0.3, 0, 3 * sz]];
+    for (let i = -9; i <= 9; i++) for (let j = 0; j <= 7; j++) for (let k = -4; k <= 4; k++) {
+      const inside = puffs.some(([px, py, pz, pr]) => Math.hypot(i - px, (j - py) * 1.15, (k - pz) * 1.3) <= pr);
+      if (!inside) continue;
+      v.set(i, j, k, j === 0 ? C('#d3d8d6') : j === 1 ? C('#e6e4dc') : C('#fbf5e9'));
+    }
+    const m = v.build(mat, { jitter: 0.02, castShadow: false });
     m.position.set(x, y, z);
     m.userData.phase = n;
     g.add(m);
@@ -440,13 +473,18 @@ function buildStand(style) {
 }
 
 // ---------- water ----------
+// One wave function per style, shared by the surface and anything floating on it (foam), so they never drift apart.
+export function waveHeight(style, x, z, t, amp) {
+  if (style === 'A') return amp * (0.07 * Math.sin(x * 2.1 - t * 1.6 + z * 0.8) + 0.04 * Math.sin(x * 3.7 + t * 1.1 - z * 2.1) + 0.02 * Math.sin(z * 5 + t * 2.3));
+  return amp * (0.09 * Math.sin(x * 1.9 - t * 1.5 + z * 0.6) + 0.05 * Math.sin(x * 3.3 + t * 1.2 - z * 1.7));
+}
 function buildWater(style) {
   const P = PAL[style];
   const g = new THREE.Group();
   const clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), WATER_Y);
   const bodyGeo = latheX(bottleProfile(1, 0.1), 64);
   const body = new THREE.Mesh(bodyGeo, new THREE.MeshStandardMaterial({
-    color: P.water, transparent: true, opacity: style === 'A' ? 0.42 : 0.5, roughness: 0.9, metalness: 0, envMapIntensity: 0.15,
+    color: P.water, transparent: true, opacity: style === 'A' ? 0.52 : 0.55, roughness: 0.9, metalness: 0, envMapIntensity: 0.15,
     clippingPlanes: [clip], side: THREE.DoubleSide, depthWrite: false,
   }));
   body.renderOrder = 2;
@@ -459,7 +497,9 @@ function buildWater(style) {
     const nx = 140, nz = 40;
     const geo = new THREE.PlaneGeometry(1, 1, nx, nz);
     geo.rotateX(-Math.PI / 2);
-    const mat = new THREE.MeshPhysicalMaterial({ color: P.waterTop, transparent: true, opacity: 0.72, roughness: 0.08, clearcoat: 1, side: THREE.DoubleSide, depthWrite: false });
+    const mat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, transparent: true, opacity: 0.86, roughness: 0.12, clearcoat: 0.6, envMapIntensity: 0.3, side: THREE.DoubleSide, depthWrite: false });
+    geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(geo.attributes.position.count * 3), 3));
+    const trough = P.water.clone().multiplyScalar(0.9), crestC = P.waterTop.clone().lerp(new THREE.Color('#ffffff'), 0.25), tmpC = new THREE.Color();
     surf = new THREE.Mesh(geo, mat);
     surf.renderOrder = 3;
     const base = geo.attributes.position.array.slice();
@@ -469,10 +509,16 @@ function buildWater(style) {
         const u = base[n] + 0.5, w = base[n + 2] * 2; // u 0..1, w -1..1
         const x = x0 + u * (x1 - x0);
         const z = w * zMax(x);
-        const y = WATER_Y + amp * (0.07 * Math.sin(x * 2.1 - t * 1.6 + z * 0.8) + 0.04 * Math.sin(x * 3.7 + t * 1.1 - z * 2.1) + 0.02 * Math.sin(z * 5 + t * 2.3));
+        const y = WATER_Y + waveHeight('A', x, z, t, amp);
         p[n] = x; p[n + 1] = y; p[n + 2] = z;
+        const hN = THREE.MathUtils.clamp((y - WATER_Y) / (0.13 * amp) * 0.5 + 0.5, 0, 1);
+        tmpC.copy(trough).lerp(P.waterTop, Math.min(1, hN * 1.4));
+        if (hN > 0.8) tmpC.lerp(crestC, (hN - 0.8) * 4);
+        if (hN > 0.93) tmpC.lerp(P.foam, (hN - 0.93) * 10);
+        geo.attributes.color.array[n] = tmpC.r; geo.attributes.color.array[n + 1] = tmpC.g; geo.attributes.color.array[n + 2] = tmpC.b;
       }
       geo.attributes.position.needsUpdate = true;
+      geo.attributes.color.needsUpdate = true;
       geo.computeVertexNormals();
     };
   } else {
@@ -486,12 +532,12 @@ function buildWater(style) {
     const m = new THREE.Matrix4(), col = new THREE.Color();
     surf.userData.update = (t, amp) => {
       cells.forEach(([x, z], n) => {
-        const h = amp * (0.09 * Math.sin(x * 1.9 - t * 1.5 + z * 0.6) + 0.05 * Math.sin(x * 3.3 + t * 1.2 - z * 1.7));
+        const h = waveHeight('B', x, z, t, amp);
         const q = Math.round(h / vs) * vs;
         m.makeTranslation(x, WATER_Y + q - vs / 2, z);
         surf.setMatrixAt(n, m);
-        const crest = h > 0.118 * amp && hash2(Math.round(x / vs), Math.round(z / vs), 5) > 0.4 ? 1 : 0;
-        col.copy(crest ? P.foam : P.waterTop).multiplyScalar(0.85 + 0.3 * hash2(Math.round(x / vs), Math.round(z / vs), 1) + q * 1.2);
+        const crest = h > 0.128 * amp && hash2(Math.round(x / vs), Math.round(z / vs), Math.floor(t * 2)) > 0.72 ? 0.45 : 0;
+        col.copy(P.waterTop).lerp(P.foam, crest).multiplyScalar(0.85 + 0.3 * hash2(Math.round(x / vs), Math.round(z / vs), 1) + q * 1.2);
         surf.setColorAt(n, col);
       });
       surf.instanceMatrix.needsUpdate = true;
@@ -553,7 +599,7 @@ function buildPerson({ shirt, pants, skin, hat, coat = null, stripes = null }) {
     body.set(x, y, z, c);
   }
   for (let y = 9; y < 12; y++) for (let x = -1; x <= 1; x++) for (let z = 0; z <= 1; z++) body.set(x, y, z, skin);
-  body.set(0, 10, 2, C('#2a1d16')); // face hint
+  body.set(-1, 10, 1, C('#1f1712')); body.set(1, 10, 1, C('#1f1712')); // eyes (recoloured face voxels, nothing sticks out)
   if (hat === 'tricorn') { for (let x = -2; x <= 2; x++) for (let z = -1; z <= 2; z++) body.set(x, 12, z, C('#1d1a18')); for (let x = -1; x <= 1; x++) body.set(x, 13, 0, C('#1d1a18')); }
   else if (hat) { for (let x = -1; x <= 1; x++) for (let z = 0; z <= 1; z++) body.set(x, 12, z, hat); }
   const mat = new THREE.MeshStandardMaterial({ roughness: 0.8 });
@@ -578,18 +624,19 @@ function buildCrew(style, shipVox) {
   const s = shipVox; // ship voxel size
   const skins = [C('#e9b98f'), C('#c68a62'), C('#8d5a3b'), C('#f1c9a5'), C('#a86d48')];
   const crew = new THREE.Group();
+  // walkers get their own lane (z) so they pass the standing crew instead of clipping through them
   const people = [
     // x, deckY (voxel rows), z, outfit, action
     { x: -22, y: 17, z: 0, o: { shirt: C('#f1ece0'), coat: C('#1f3a6b'), pants: C('#e8e0cc'), hat: 'tricorn' }, act: 'helm' },
     { x: -9, y: 12, z: 5, o: { shirt: C('#f2f2f0'), stripes: C('#2c4f8a'), pants: C('#3b3a40'), hat: C('#b8322a') }, act: 'haul' },
     { x: -3, y: 12, z: 5, o: { shirt: C('#e8dcc0'), pants: C('#5a4632'), hat: null }, act: 'wave' },
     { x: 4, y: 12, z: 5, o: { shirt: C('#b8432f'), pants: C('#2c2c34'), hat: C('#2c4f8a') }, act: 'haul' },
-    { x: 9, y: 12, z: 4, o: { shirt: C('#f2f2f0'), stripes: C('#b8322a'), pants: C('#3b3a40'), hat: null }, act: 'walk' },
+    { x: 9, y: 12, z: 3.7, o: { shirt: C('#f2f2f0'), stripes: C('#b8322a'), pants: C('#3b3a40'), hat: null }, act: 'walk' },
     { x: 21, y: 14, z: 0, o: { shirt: C('#dfe6ea'), pants: C('#4a3a2a'), hat: C('#f0e6cf') }, act: 'lookout' },
     { x: -15, y: 17, z: 4, o: { shirt: C('#7a8c5a'), pants: C('#3b3a40'), hat: C('#3a2a1c') }, act: 'wave' },
     { x: 13, y: 12, z: 5, o: { shirt: C('#e9c46a'), pants: C('#2c2c34'), hat: C('#b8322a') }, act: 'haul' },
     { x: 0, y: 12, z: -4, o: { shirt: C('#f2f2f0'), stripes: C('#2c4f8a'), pants: C('#3b3a40'), hat: null }, act: 'wave' },
-    { x: -1, y: 12, z: 5, o: { shirt: C('#4f6d8a'), pants: C('#e8e0cc'), hat: C('#f0e6cf') }, act: 'walk' },
+    { x: -1, y: 12, z: 6.2, o: { shirt: C('#4f6d8a'), pants: C('#e8e0cc'), hat: C('#f0e6cf') }, act: 'walk' },
   ];
   people.forEach((p, i) => {
     const person = buildPerson({ ...p.o, skin: skins[i % skins.length] });
@@ -696,28 +743,30 @@ function buildSmoke(origins) {
   return mesh;
 }
 
-function buildFoam(shipLen) {
-  // dashed white ring of foam where the hull meets the water + a short wake
-  const g = new THREE.Group();
-  const mat = new THREE.MeshStandardMaterial({ color: 0xf2fff6, transparent: true, opacity: 0.85, roughness: 0.6 });
+function buildFoam(style, shipLen, cx, cz) {
+  // soft foam patches hugging the hull plus a short wake; world space, riding the shared wave height
+  const mat = new THREE.MeshStandardMaterial({ color: 0xf2fff6, transparent: true, opacity: 0.7, roughness: 0.7, depthWrite: false });
   const pts = [];
-  for (let i = 0; i < 70; i++) {
-    const a = (i / 70) * Math.PI * 2;
-    pts.push([Math.cos(a) * shipLen * 0.5, Math.sin(a) * 0.36]);
+  for (let i = 0; i < 56; i++) {
+    const a = (i / 56) * Math.PI * 2;
+    const rx = shipLen * 0.5 * (1 + 0.05 * Math.sin(a * 5)), rz = 0.3 + 0.03 * Math.sin(a * 3);
+    pts.push([cx + Math.cos(a) * rx, cz + Math.sin(a) * rz, 1]);
   }
-  for (let i = 0; i < 30; i++) pts.push([-shipLen * 0.55 - i * 0.07, (hash2(i, 9, 1) - 0.5) * (0.2 + i * 0.03)]);
-  const inst = new THREE.InstancedMesh(new THREE.BoxGeometry(0.045, 0.025, 0.045), mat, pts.length);
+  for (let i = 0; i < 24; i++) pts.push([cx - shipLen * 0.52 - i * 0.06, cz + (hash2(i, 9, 1) - 0.5) * (0.12 + i * 0.025), 1 - i / 30]);
+  const inst = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.035, 0.035, 0.012, 8), mat, pts.length);
+  inst.renderOrder = 4;
   const m = new THREE.Matrix4();
-  g.add(inst);
-  g.userData.animate = (t) => {
-    pts.forEach(([x, z], i) => {
-      const k = 0.5 + 0.7 * Math.abs(Math.sin(t * 2 + i * 1.7));
-      m.makeScale(k, 1, k); m.setPosition(x, 0.01 * Math.sin(t * 3 + i), z);
+  inst.userData.animate = (t, amp) => {
+    pts.forEach(([x, z, f], i) => {
+      const k = (0.6 + 0.6 * Math.abs(Math.sin(t * 2 + i * 1.7))) * f;
+      let y = waveHeight(style, x, z, t, amp);
+      if (style === 'B') y = Math.round(y / 0.11) * 0.11; // voxel water is stepped
+      m.makeScale(k, 1, k); m.setPosition(x, WATER_Y + y + 0.012, z);
       inst.setMatrixAt(i, m);
     });
     inst.instanceMatrix.needsUpdate = true;
   };
-  return g;
+  return inst;
 }
 
 function buildBeam() {
@@ -782,13 +831,13 @@ function samplePath(keys, t) {
 // ---------- main ----------
 export function createScene(canvas, style, width, height) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true });
-  renderer.setPixelRatio(1);
-  renderer.setSize(width, height, false);
+  renderer.setPixelRatio(Number(new URLSearchParams(location.search).get('ss') || 1)); // supersample, browser downsamples to CSS size
+  renderer.setSize(width, height, true);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = style === 'A' ? 0.92 : 0.88;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.localClippingEnabled = true;
   renderer.setClearColor(0x000000, 1);
 
@@ -815,9 +864,10 @@ export function createScene(canvas, style, width, height) {
 
   scene.add(new THREE.HemisphereLight(style === 'A' ? 0xcfeff0 : 0xbfe6e8, style === 'A' ? 0x2a4a48 : 0x14282b, style === 'A' ? 1.1 : 0.9));
   const sun = new THREE.DirectionalLight(style === 'A' ? 0xfff0d8 : 0xffe9cc, style === 'A' ? 2.6 : 2.4);
-  sun.position.set(-2.5, 14, 5);
+  sun.position.set(-1.5, 15, 3);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(1536, 1536);
+  sun.shadow.radius = 5;
   Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8, near: 1, far: 40 });
   sun.shadow.bias = -0.0005;
   scene.add(sun);
@@ -851,7 +901,8 @@ export function createScene(canvas, style, width, height) {
   const SHIP_VS = 0.064;
   const crew = buildCrew(style, SHIP_VS); ship.add(crew);
   const details = buildShipDetails(style, SHIP_VS); ship.add(details);
-  const foam = buildFoam(54 * SHIP_VS); foam.position.set(0.1, 0.02, -0.1); shipHolder.add(foam);
+  // hull centre in world space = shipHolder.x + ship.x (voxel origin is mid-ship)
+  const foam = buildFoam(style, 54 * SHIP_VS, shipHolder.position.x + ship.position.x, shipHolder.position.z + ship.position.z); world.add(foam);
   const lhIsland = buildIsland({ style, seed: 3, cx: -3.25, cz: -0.45, radius: 1.05, height: 0.5, base: -1.3, kind: 'lighthouse' });
   const rIsland = buildIsland({ style, seed: 8, cx: 2.45, cz: -0.35, radius: 0.85, height: style === 'A' ? 0.5 : 0.75, base: -1.3, kind: style === 'A' ? 'village' : 'arch' });
   world.add(lhIsland, rIsland);
@@ -891,7 +942,7 @@ export function createScene(canvas, style, width, height) {
     shipHolder.position.y = WATER_Y + 0.025 * Math.sin(t * 1.4);
     shipHolder.rotation.x = 0.035 * Math.sin(t * 1.1);
     shipHolder.rotation.z = 0.02 * Math.sin(t * 0.9 + 1);
-    clouds.children.forEach((c) => { c.position.x += 0; c.position.y = 1.25 + 0.04 * Math.sin(t * 0.6 + c.userData.phase) + (c.userData.phase % 2) * 0.2; });
+    clouds.children.forEach((c) => { c.userData.y0 ??= c.position.y; c.position.y = c.userData.y0 + 0.035 * Math.sin(t * 0.6 + c.userData.phase); c.position.x += 0; });
     gulls.children.forEach((gl, n) => {
       const p = gl.userData.phase;
       gl.position.set(0.8 + 1.4 * Math.cos(t * 0.5 + p), 0.95 + 0.25 * Math.sin(t * 0.8 + p) + n * 0.06, -0.4 + 0.5 * Math.sin(t * 0.5 + p));
@@ -902,7 +953,7 @@ export function createScene(canvas, style, width, height) {
     fish.userData.animate(t);
     bubbles.userData.animate(t);
     smoke.userData.animate(t);
-    foam.userData.animate(t);
+    foam.userData.animate(t, style === 'A' ? 1.7 : 1.2);
     details.userData.wheel.rotation.x = 0.4 * Math.sin(t * 0.8);
     beam.rotation.y = t * 1.6;
     renderer.render(scene, camera);
