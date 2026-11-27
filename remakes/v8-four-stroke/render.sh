@@ -9,10 +9,16 @@ cd "$WORK/teardown"
 OUT=teardown-out/full
 mkdir -p "$OUT"
 
+# Upstream waits 60 s for the page to be ready. Four browsers compiling shaders at once on
+# software WebGL can take longer, so make that wait configurable and stagger the starts.
+sed -i 's/{timeout: 60000}/{timeout: Number(process.env.READY_TIMEOUT || 60000)}/' sims/capture.mjs
+export READY_TIMEOUT=600000
+
 pids=()
 for c in "0 6.5" "6.5 13" "13 19.5" "19.5 26"; do
   set -- $c
   part="$OUT/part_$1.mp4"
+  [ ${#pids[@]} -gt 0 ] && sleep 45
   (
     for try in 1 2 3; do
       node sims/capture.mjs v8-post --size 1600x900 --dpr 1.2 --fps 60 --from "$1" --to "$2" --out "$part" \
