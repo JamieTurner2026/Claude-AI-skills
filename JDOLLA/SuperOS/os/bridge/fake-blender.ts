@@ -2,7 +2,8 @@
 // Like the real one, `--version` prints "Blender X.Y.Z"; `--python <file>` runs a script: assert_false.py exits 1 (as
 // Blender does with --python-exit-code 1), check.py prints one BLENDERCHECK line and writes a real render.png and
 // cube.glb into the folder after "--". Modes: ok, noexit (a failing script exits 0), cube3 (a 3 × 3 × 3 cube), flat (a
-// one-colour render), hang (the check never ends), old (3.6.5), mismatch (--version 4.0.2, bpy 4.1.0).
+// one-colour render), hang (the check never ends), old (3.6.5), mismatch (--version 4.0.2, bpy 4.1.0), crash (prints its
+// result, then exits 139 the way a segfault does).
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { deflateSync } from "node:zlib";
@@ -63,7 +64,7 @@ if (path.basename(script) === "check.py") {
     writeFileSync(path.join(out, "render.png"), png(mode === "flat"));
     writeFileSync(path.join(out, "cube.glb"), glb(side / 2));
     process.stdout.write(`Blender ${said}\nBLENDERCHECK:${JSON.stringify({ version: bpyVersion, dims: [side, side, side], meshVertices: 8, eevee: "BLENDER_EEVEE" })}\n`);
-    process.exit(0);
+    process.exitCode = mode === "crash" ? 139 : 0;
   }
 } else {
   process.stderr.write(`fake-blender: unexpected arguments ${JSON.stringify(args)}\n`);

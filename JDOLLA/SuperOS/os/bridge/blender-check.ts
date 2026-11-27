@@ -148,7 +148,7 @@ print("BLENDERCHECK:" + json.dumps(res))
 // ---------- running it ----------
 
 export type Spawn = typeof nodeSpawn;
-type RunResult = { code: number | null; out: string; timedOut: boolean; error?: string };
+type RunResult = { code: number | null; signal?: string | null; out: string; timedOut: boolean; error?: string };
 
 /** One Blender start, by argv with shell: false, killed when the time left runs out. */
 function runOnce(spawn: Spawn, bin: BlenderBin, args: string[], timeoutMs: number): Promise<RunResult> {
@@ -160,7 +160,7 @@ function runOnce(spawn: Spawn, bin: BlenderBin, args: string[], timeoutMs: numbe
     child.stdout?.on("data", (d: Buffer) => { if (out.length < 1_000_000) out += d.toString(); });
     child.stderr?.on("data", (d: Buffer) => { if (out.length < 1_000_000) out += d.toString(); });
     child.on("error", (e) => finish({ code: null, out, timedOut, error: e.message }));
-    child.on("close", (code) => finish({ code, out, timedOut }));
+    child.on("close", (code, signal) => finish({ code, signal, out, timedOut }));
   });
 }
 
@@ -193,7 +193,7 @@ export async function runBlenderCheck(found: Found, opts: { spawn?: Spawn; timeo
     try { if (line) res = JSON.parse(line.slice("BLENDERCHECK:".length)) as typeof res; } catch { /* reported below */ }
     const skip = !ctlOk ? "not run: the exit-code control failed, so no result can be trusted" : null;
     const ran = main && !main.timedOut && main.code === 0 && line;
-    if (!skip && !ran) row("run", "Check script", false, main?.timedOut ? `timed out after ${Math.round(budget / 1000)} s` : main?.error ? `could not start: ${main.error.slice(0, 80)}` : `exited ${main?.code ?? "?"} without a result`);
+    if (!skip && !ran) row("run", "Check script", false, main?.timedOut ? `timed out after ${Math.round(budget / 1000)} s` : main?.error ? `could not start: ${main.error.slice(0, 80)}` : `${main?.code === null ? `crashed (${main?.signal ?? "no exit code"})` : `exited ${main?.code ?? "?"}`} ${line ? "after printing its result: a Blender that crashes does not pass" : "without a result"}`);
 
     const bpyV = res.version ?? [];
     version = said.length ? said.join(".") : bpyV.length ? bpyV.join(".") : null;
