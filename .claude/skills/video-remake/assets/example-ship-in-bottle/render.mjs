@@ -75,13 +75,34 @@ if (stills) {
   console.log('stills ->', OUT);
 } else {
   const audio = path.join(OUT, 'ambience.wav');
-  // soft sea ambience: filtered noise with slow swell + low pad
-  execFileSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', `anoisesrc=d=${DUR}:c=pink:r=44100:a=0.35:seed=7`,
-    '-f', 'lavfi', '-i', `sine=f=110:d=${DUR}:r=44100`, '-f', 'lavfi', '-i', `sine=f=164.8:d=${DUR}:r=44100`,
-    '-filter_complex', `[0]lowpass=f=900,volume='0.55+0.45*sin(2*PI*t/5.5)':eval=frame[n];[1]volume=0.05[s1];[2]volume=0.035[s2];[n][s1][s2]amix=inputs=3:normalize=0,afade=t=in:d=1,afade=t=out:st=${DUR - 1.2}:d=1.2,volume=0.5,pan=stereo|c0=c0|c1=c0[a]`,
-    '-map', '[a]', audio]);
+  makeAmbience(audio, DUR);
   const mp4 = path.join(OUT, 'ship-in-bottle.mp4');
   execFileSync('ffmpeg', ['-v', 'error', '-y', '-framerate', String(FPS), '-i', path.join(dirs.A, '%05d.png'), '-framerate', String(FPS), '-i', path.join(dirs.B, '%05d.png'), '-i', audio,
     '-filter_complex', fg, '-map', '[v]', '-map', '2:a', '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-r', String(args.outfps || 60), '-c:a', 'aac', '-b:a', '160k', '-shortest', '-movflags', '+faststart', mp4]);
   console.log('video ->', mp4);
+}
+
+// Layered sea ambience, all synthesized by ffmpeg (no samples, so no licensing):
+// two pink-noise wave beds with different swell periods (stereo width), a quiet A-minor pad,
+// and a few gull calls (decaying frequency chirps). Mean level lands near -30 dB like a typical screen capture.
+function makeAmbience(out, dur) {
+  const gullAt = [3.1, 3.45, 9.7, 10.05, 14.8];
+  const gull = gullAt.map((T) => {
+    const d = `(t-${T})`;
+    return `between(t,${T},${T}+0.32)*sin(PI*${d}/0.32)*sin(2*PI*(1450*${d}+110*(1-exp(-9*${d}))))*(0.8+0.2*sin(2*PI*28*${d}))`;
+  }).join('+');
+  const pad = [110, 164.81, 220, 261.63].map((f, i) => `${[0.5, 0.35, 0.3, 0.22][i]}*sin(2*PI*${f}*t)`).join('+');
+  execFileSync('ffmpeg', ['-v', 'error', '-y',
+    '-f', 'lavfi', '-i', `anoisesrc=d=${dur}:c=pink:r=44100:a=0.4:seed=7`,
+    '-f', 'lavfi', '-i', `anoisesrc=d=${dur}:c=pink:r=44100:a=0.4:seed=11`,
+    '-f', 'lavfi', '-i', `aevalsrc='(${pad})*(0.75+0.25*sin(2*PI*t/7))':d=${dur}:s=44100`,
+    '-f', 'lavfi', '-i', `aevalsrc='${gull}':d=${dur}:s=44100`,
+    '-filter_complex',
+    `[0]lowpass=f=750,volume='0.25+0.75*pow(max(0,sin(2*PI*t/5.5)),2)':eval=frame[wl];` +
+    `[1]lowpass=f=650,volume='0.25+0.75*pow(max(0,sin(2*PI*t/6.3+1.3)),2)':eval=frame[wr];` +
+    `[wl][wr]join=inputs=2:channel_layout=stereo[waves];` +
+    `[2]lowpass=f=900,volume=0.035,afade=t=in:d=2.5,pan=stereo|c0=c0|c1=c0[pad];` +
+    `[3]highpass=f=900,volume=0.05,aecho=0.8:0.5:120:0.25,pan=stereo|c0=0.7*c0|c1=0.45*c0[gulls];` +
+    `[waves][pad][gulls]amix=inputs=3:normalize=0,afade=t=in:d=1,afade=t=out:st=${dur - 1.2}:d=1.2,volume=0.95[a]`,
+    '-map', '[a]', out]);
 }
