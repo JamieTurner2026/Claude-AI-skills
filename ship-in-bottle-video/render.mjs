@@ -31,12 +31,15 @@ const server = http.createServer((req, res) => {
 await new Promise((r) => server.listen(0, r));
 const port = server.address().port;
 
-const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+// one browser per panel so the two software-rendered panels run in parallel
+const browsers = [];
 async function openPanel(style) {
+  const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+  browsers.push(browser);
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   page.on('pageerror', (e) => console.error(`[${style}]`, e.message));
   page.on('console', (m) => m.type() === 'error' && console.error(`[${style}]`, m.text()));
-  await page.goto(`http://localhost:${port}/index.html?style=${style}`);
+  await page.goto(`http://localhost:${port}/index.html?style=${style}${args.query ? '&' + args.query : ''}`);
   await page.waitForFunction(() => window.__ready === true, null, { timeout: 120000 });
   return page;
 }
@@ -46,15 +49,16 @@ const times = stills ?? Array.from({ length: Math.round(DUR * FPS) }, (_, i) => 
 const dirs = { A: path.join(OUT, 'A'), B: path.join(OUT, 'B') };
 Object.values(dirs).forEach((d) => fs.mkdirSync(d, { recursive: true }));
 const t0 = Date.now();
-for (let i = 0; i < times.length; i++) {
-  await Promise.all(['A', 'B'].map(async (s) => {
-    if (!stills && fs.existsSync(path.join(dirs[s], `${String(i).padStart(5, '0')}.png`))) return; // resume
+await Promise.all(['A', 'B'].map(async (s) => {
+  for (let i = 0; i < times.length; i++) {
+    const file = path.join(dirs[s], `${String(i).padStart(5, '0')}.png`);
+    if (!stills && fs.existsSync(file)) continue; // resume
     await pages[s].evaluate((t) => window.renderAt(t), times[i]);
-    await pages[s].screenshot({ path: path.join(dirs[s], `${String(i).padStart(5, '0')}.png`) });
-  }));
-  if (i % 30 === 0) console.log(`frame ${i}/${times.length}  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
-}
-await browser.close();
+    await pages[s].screenshot({ path: file });
+    if (i % 30 === 0) console.log(`[${s}] frame ${i}/${times.length}  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+  }
+}));
+await Promise.all(browsers.map((b) => b.close()));
 server.close();
 
 // ---- compose: 96px label bar + 720 panel, twice -> 1280x1632 ----
