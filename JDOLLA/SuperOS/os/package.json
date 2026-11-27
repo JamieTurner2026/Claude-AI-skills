@@ -24,7 +24,8 @@
     "smoke": "node bridge/smoke-cli.ts",
     "update": "node bridge/update-cli.ts",
     "redteam:ui": "node bridge/redteam-ui.ts",
-    "a11y": "node bridge/a11y.ts"
+    "a11y": "node bridge/a11y.ts",
+    "blender:check": "node bridge/blender-check.ts"
   },
   "dependencies": {
     "zod": "^4.6.7"

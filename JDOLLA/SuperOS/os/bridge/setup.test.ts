@@ -21,16 +21,16 @@ import type { SetupRow, SetupView } from "../shared/types.ts";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fake = path.join(here, "fake-claude.ts");
 const chk = (id: string, status: Check["status"]): Check => ({ id, label: id, status, detail: "d", ...(status === "pass" ? {} : { fix: "f" }) });
-const ALL = ["node", "claude", "env", "vault", "logs", "port", "brain", "embeddings", "sandbox", "scheduler", "backup"];
+const ALL = ["node", "claude", "env", "vault", "logs", "port", "brain", "embeddings", "sandbox", "scheduler", "backup", "blender"];
 const doctor = (over: Record<string, Check["status"]> = {}): Check[] => ALL.map((id) => chk(id, over[id] ?? "pass"));
 const facts = (over: Partial<SetupFacts> = {}): SetupFacts => ({ doctor: doctor(), embeddings: true, sessions: 4, autostart: "installed", feeds: { mail: true, calendar: true }, ...over });
 const rowOf = (v: SetupView, id: string): SetupRow => v.rows.find((r) => r.id === id)!;
 
-test("buildSetup: the seven rows in order, each with a PC-SETUP section; everything in place is done except the manual row", () => {
+test("buildSetup: the eight rows in order, each with a PC-SETUP section; everything in place is done except the manual row", () => {
   const v = buildSetup(facts());
-  assert.deepEqual(v.rows.map((r) => [r.id, r.section]), [["doctor", "§3.2"], ["tests", "§3.3"], ["embeddings", "§5.2"], ["sessions", "§5.3"], ["autostart", "§6b"], ["backup", "§10.1"], ["feeds", "§13.2"]]);
-  assert.deepEqual(v.rows.map((r) => r.state), ["done", "manual", "done", "done", "done", "done", "done"]);
-  assert.deepEqual([v.done, v.total], [6, 7]);
+  assert.deepEqual(v.rows.map((r) => [r.id, r.section]), [["doctor", "§3.2"], ["tests", "§3.3"], ["embeddings", "§5.2"], ["sessions", "§5.3"], ["autostart", "§6b"], ["backup", "§10.1"], ["blender", "§3.4"], ["feeds", "§13.2"]]);
+  assert.deepEqual(v.rows.map((r) => r.state), ["done", "manual", "done", "done", "done", "done", "done", "done"]);
+  assert.deepEqual([v.done, v.total], [7, 8]);
   assert.ok(v.rows.every((r) => r.hint.length > 0 && r.label.length > 0));
 });
 
@@ -154,7 +154,7 @@ test("GET /api/setup: no session is refused (control: a session is served); a fo
   const ok = await e.get({ authorization: `Bearer ${e.token}`, origin: e.base });
   assert.equal(ok.status, 200, "control");
   const v = (await ok.json()) as SetupView;
-  assert.deepEqual(v.rows.map((r) => r.id), ["doctor", "tests", "embeddings", "sessions", "autostart", "backup", "feeds"]);
+  assert.deepEqual(v.rows.map((r) => r.id), ["doctor", "tests", "embeddings", "sessions", "autostart", "backup", "blender", "feeds"]);
   assert.deepEqual([rowOf(v, "sessions").state, rowOf(v, "feeds").state, rowOf(v, "autostart").state, rowOf(v, "embeddings").state, rowOf(v, "doctor").state], ["done", "done", "done", "todo", "done"]);
 });
 
@@ -189,7 +189,7 @@ test("the route reflects real state: embeddings in the brain index, no sessions,
   d.close();
   rmAll(path.join(e.vault, "raw/sessions"), path.join(e.vault, "inbox/_feeds"));
   const v = (await (await e.get()).json()) as SetupView;
-  assert.deepEqual(v.rows.map((r) => r.state), ["todo", "manual", "done", "todo", "manual", "done", "todo"], "doctor todo (one failing check), embeddings done, sessions and feeds gone, backup follows the doctor's backup row (pass here)");
+  assert.deepEqual(v.rows.map((r) => r.state), ["todo", "manual", "done", "todo", "manual", "done", "done", "todo"], "doctor todo (one failing check), embeddings done, sessions and feeds gone, backup and Blender follow their doctor rows (pass here)");
 });
 function rmAll(...dirs: string[]): void { for (const d of dirs) rmSync(d, { recursive: true, force: true }); }
 

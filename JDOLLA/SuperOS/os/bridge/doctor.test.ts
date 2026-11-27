@@ -21,6 +21,7 @@ function fake(over: Partial<DoctorDeps> & { files?: Record<string, string>; dirs
     "/v/CLAUDE.md": "#", "/v/routines/routines.json": "[]", "/v/os/.env": `SUPEROS_PORT=4317\nAPI_KEY=${SECRET}\n`,
     "/usr/bin/claude": "", "/home/jay/.superos/brain/index.sqlite": "",
     "/v/.git/config": "[core]\n\trepositoryformatversion = 0\n[remote \"origin\"]\n\turl = https://github.com/jay/brain.git\n",
+    "/v/logs/blender-check.json": JSON.stringify({ ok: true, version: "4.0.2", at: "2026-11-20T12:00:00Z", checks: [] }),
   };
   const dirs = new Set(over.dirs ?? ["/v/depts", "/v/wiki", "/v/logs", "/v/.git"]);
   return {
@@ -49,8 +50,8 @@ describe("doctor checks", () => {
     const code = await main([], fake(), (s) => lines.push(s));
     assert.equal(code, 0);
     const checks = await runDoctor(fake());
-    assert.deepEqual(checks.map((c) => c.status), Array(11).fill("pass"), JSON.stringify(checks.filter((c) => c.status !== "pass")));
-    assert.match(lines.join("\n"), /11 pass, 0 warn, 0 fail/);
+    assert.deepEqual(checks.map((c) => c.status), Array(12).fill("pass"), JSON.stringify(checks.filter((c) => c.status !== "pass")));
+    assert.match(lines.join("\n"), /12 pass, 0 warn, 0 fail/);
   });
 
   it("every non-pass row names the PC-SETUP section that fixes it", async () => {
@@ -256,7 +257,7 @@ describe("npm run doctor", () => {
     const r = spawnSync(process.execPath, [launcher, "--json"], { encoding: "utf8" });
     assert.ok(r.status === 0 || r.status === 1, r.stderr);
     const j = JSON.parse(r.stdout);
-    assert.equal(j.checks.length, 11);
+    assert.equal(j.checks.length, 12);
     assert.equal(j.fails, j.checks.filter((c: { status: string }) => c.status === "fail").length);
     assert.equal(spawnSync(process.execPath, [launcher, "--fix"], { encoding: "utf8" }).status, 2);
   });
