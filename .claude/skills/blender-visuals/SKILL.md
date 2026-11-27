@@ -9,6 +9,15 @@ For quick visuals: diagrams, title cards, turntables, simple models. For real ga
 
 Claude writes a small Python scene script; `scripts/render.py` runs it in headless Blender and writes PNG / MP4 / model files. You then **look at the result** (Read the PNG) and iterate.
 
+## Verify first (every time, before any Blender work)
+Never assume the Blender version: Jay's PC has **4.0.2**, while some public workflows (and the `blender-*` skills) target 5.x.
+1. **Run the check.** On Jay's PC, in `JDOLLA\SuperOS\os`: `npm run blender:check`, then read its report, `blender-check.json` in the log folder. Elsewhere, print `bpy.app.version_string` with the Blender you will use.
+2. **Read the version** from that output and say it before you start. If the check says FAIL, stop and show Jay the FAIL lines.
+3. **Use only what that version has.** Guard anything newer with `hasattr` or `bpy.app.version >= (x, y, 0)`. Never hard-code 5.x-only API, such as slotted actions and channelbags or the 5.0 compositor, without a guard and a 4.x path.
+4. **Test renders with Workbench** (`BLENDER_WORKBENCH`): it is fast, and the check proves it works on this PC. Move to Cycles or Eevee only for the final image.
+5. **Look up the Eevee id at run time.** Take the check's `eevee` value, or try `BLENDER_EEVEE_NEXT`, then `BLENDER_EEVEE`; `render.py` does the same. Measured: 4.2 uses `BLENDER_EEVEE_NEXT`, 5.0 uses `BLENDER_EEVEE`. 4.0 and 4.1, Jay's PC included, use `BLENDER_EEVEE`.
+6. **Prove the result with numbers**, the way the check does: dimensions, vertex and face counts, image size. glTF writes a flat-shaded cube with 24 vertices, not 8.
+
 ## Setup (once per session)
 ```
 bash scripts/setup_blender.sh      # uses `blender` if installed, else `pip install bpy` (big download, a few minutes)

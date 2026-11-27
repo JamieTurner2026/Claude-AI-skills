@@ -3,7 +3,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -184,5 +184,16 @@ describe("the doctor's Blender row reads the report only", () => {
     mkdirSync(dir, { recursive: true });
     writeFileSync(path.join(dir, "blender-check.json"), JSON.stringify(ok("2026-11-27T08:00:00Z")));
     assert.ok(existsSync(path.join(dir, "blender-check.json")));
+  });
+});
+
+describe("the blender-visuals skill verifies first", () => {
+  it("runs the check, reads the version, guards newer API, tests with Workbench and looks up the Eevee id", () => {
+    const skill = readFileSync(path.resolve(HERE, "..", "..", "..", "..", ".claude", "skills", "blender-visuals", "SKILL.md"), "utf8").replace(/\r\n/g, "\n");
+    const verify = skill.indexOf("## Verify first"), setup = skill.indexOf("## Setup");
+    assert.ok(verify > 0 && verify < setup, "Verify first comes before Setup");
+    const part = skill.slice(verify, setup);
+    for (const must of ["npm run blender:check", "blender-check.json", "4.0.2", "bpy.app.version", "hasattr", "BLENDER_WORKBENCH", "BLENDER_EEVEE_NEXT", "`BLENDER_EEVEE`", "24 vertices"]) assert.ok(part.includes(must), must);
+    assert.match(part, /Never hard-code 5\.x-only API/);
   });
 });

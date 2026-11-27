@@ -6,11 +6,13 @@ on:
   pull_request:
     paths:
       - "JDOLLA/SuperOS/**"
+      - ".claude/skills/blender-visuals/SKILL.md" # bridge/blender-check.test.ts pins its Verify first step
       - ".github/workflows/superos.yml"
   push:
     branches: [main]
     paths:
       - "JDOLLA/SuperOS/**"
+      - ".claude/skills/blender-visuals/SKILL.md" # bridge/blender-check.test.ts pins its Verify first step
       - ".github/workflows/superos.yml"
 
 permissions:

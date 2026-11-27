@@ -63,3 +63,7 @@ One hostile fixture (`os/shared/hostile.ts`: a fake closing fence, `&lt;/untrust
 - A skill's text can drift from what the bridge does. Pin it with a test that reads the real SKILL.md: the sections it promises (backticked `## Heading`s, in order), the tools it names against its policy, and its `NOTHING_NEW` wording against the bridge's token. Evidence: three skills said "write the report file" although T2 skills only reply; vault-cleanup's step 8 mentioned `## Backups` before its list, so the order was ambiguous.
 - Text a tool copies out of a proposal is attacker-influenced (the diagnosis read a failed run). `proposals_summary` returned approved rule text unfenced; it is now fenced like mail and calendar text.
 - A 6000-character hostile line in the run log is skipped as unreadable by the month report, not counted: the month-costs test pins "unreadable lines skipped: 1".
+
+## Blender check, 2026-11-27
+- **Measure the claim, then write the expectation.** Evidence: 2026-11-27, the brief for `npm run blender:check` said the default cube's `.glb` has 8 vertices. Real Blender (bpy 4.2.0 and 5.0.1) writes 24: glTF keeps one vertex per flat face corner. The check now expects 24 in the file and 8 in Blender's own mesh, and says why.
+- **A result printed before a crash is not a pass.** Evidence: 2026-11-27, the bpy 4.2.0 module printed a complete, correct BLENDERCHECK line and then segfaulted on exit (software EGL). The check fails a crashed run, says it crashed after printing, and does not use its numbers.
