@@ -11,3 +11,4 @@ What fits the build is decided in [[wiki/gamedev/unreal-skills]]. Skills Jay swi
 
 ## Repos filed
 - `awesome-gamedev-agent-skills/`: 76 game-dev skills plus a router (Apache-2.0), 6 of them Unreal. Read 2026-11-26. 18 switched on; the rest are filed, off.
+- `codex-handoff/`: Codex's copy of the six Unreal skills (identical to the filed ones, nothing imported) and its workflow note. Read 2026-11-26.

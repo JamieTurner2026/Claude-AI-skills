@@ -50,6 +50,8 @@ Presets: `roblox`, `roblox_gltf`, `unity`, `unity_skeletal`, `unreal`, `unreal_s
 - For FBX/USD: re-import into an empty scene (`import_scene.fbx` / `wm.usd_import`) and check `dimensions`, the armature scale (must be 1, not 100) and the action count.
 - In the engine: scale against a reference (UE mannequin 180 cm, Unity capsule 2 m, Roblox character 5 studs), normals/smoothing, the normal map's green channel, and animation root motion.
 
+**Next in Unreal (local addition):** once the asset is in the engine and checked, build the interaction with `unreal-blueprints`, the controls with `unreal-enhanced-input`, effects with `unreal-niagara`, and test a standalone build with `unreal-packaging`.
+
 ## Collection exporters (re-export in one click, 4.2+)
 See `blender-scene-setup`: `collection.exporters` stores the format + settings per collection, and `bpy.ops.wm.collection_export_all()` re-exports everything.
 
