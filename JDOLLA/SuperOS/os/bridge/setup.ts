@@ -19,7 +19,7 @@ export type SetupFacts = {
   feeds: { mail: boolean; calendar: boolean };
 };
 
-const SKIP_DOCTOR = new Set(["port", "embeddings", "backup"]); // the bridge itself holds the port; the other two have their own rows
+const SKIP_DOCTOR = new Set(["port", "embeddings", "backup", "blender"]); // the bridge itself holds the port; the others have their own rows
 
 export function buildSetup(f: SetupFacts): SetupView {
   const rows: SetupRow[] = [];
@@ -41,6 +41,9 @@ export function buildSetup(f: SetupFacts): SetupView {
   const backup = f.doctor?.find((c) => c.id === "backup");
   row("backup", "Backup set up", backup?.status === "pass" ? "done" : "todo", "§10.1",
     backup?.status === "pass" ? "The vault has its own repo and a private remote that passes the check." : backup?.status === "fail" ? "The vault's git points at the public repo. Fix this first." : "Give the vault its own git repo and name a private remote (optional).");
+  const blender = f.doctor?.find((c) => c.id === "blender");
+  row("blender", "Blender checked (optional)", blender?.status === "pass" ? "done" : "todo", "§3.4",
+    blender?.status === "pass" ? "npm run blender:check passed within 30 days." : blender?.status === "fail" ? "The last Blender check failed. Run npm run blender:check and fix each FAIL row." : "Optional, for the Blender skills: npm run blender:check.");
   const both = f.feeds.mail && f.feeds.calendar;
   row("feeds", "Mail and calendar feeds present", both ? "done" : "todo", "§13.2", both ? "Both feed files are in inbox/_feeds." : f.feeds.mail || f.feeds.calendar ? "One of the two feed files is missing." : "Optional: put mail.json and calendar.json in inbox/_feeds.");
   return { rows, done: rows.filter((r) => r.state === "done").length, total: rows.length };

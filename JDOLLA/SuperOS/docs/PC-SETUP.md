@@ -84,6 +84,36 @@ npm test
 
 You should see `npm run check` finish with no errors, and `npm test` end with `ℹ fail 0` (or `# fail 0` if you send the output to a file). The tests use a fake Claude, so they cost nothing. If any test fails, stop here and send Claude the failing lines.
 
+**3.4 Check Blender (optional, only for the Blender skills).** The Blender skills must use what *your* Blender can do, so they check it first instead of assuming. In `os\`:
+
+```powershell
+npm run blender:check
+```
+
+- **Where it looks for Blender:**
+  1. `blenderBin` in `os\config\os.local.json`, for example `{ "blenderBin": "C:\\Program Files\\Blender Foundation\\Blender 4.0\\blender.exe" }`;
+  2. the `BLENDER` variable;
+  3. `PATH`;
+  4. the newest `C:\Program Files\Blender Foundation\Blender X.Y\blender.exe`.
+
+  If you set `blenderBin` and it is wrong, the check says so rather than using another Blender.
+- **How it runs:** in the background with factory settings (your own preferences and add-ons are not loaded), in a temp folder it deletes afterwards. It uses no network and gives up after 120 s.
+- **What it checks.** You see one PASS or FAIL line for each, with the value it measured:
+  - **Exit-code control:** a script that fails must make Blender report an error, otherwise nothing else could be trusted.
+  - **Version:** `blender --version` and the version inside Blender agree, and are 4.0 or newer.
+  - **Default cube:** it is 2 × 2 × 2 and has 8 vertices.
+  - **Render:** a 64 × 64 Workbench render is a real image, not one flat colour.
+  - **glTF export:** a `.glb` export holds 1 mesh with 24 vertices. glTF stores a corner once per flat face, so 8 × 3.
+  - **Eevee engine id:** which id this version uses. `BLENDER_EEVEE` on 4.0, 4.1 and 5.x; `BLENDER_EEVEE_NEXT` on 4.2 to 4.5.
+  - **Total time.**
+- **Report:** `blender-check.json` in the log folder, holding the version, path, results, time and date (nothing from a scene). The doctor's **Blender (optional)** row reads it and never starts Blender itself:
+  - PASS when the check passed in the last 30 days;
+  - WARN when there is no report, or it is older;
+  - FAIL when the last check failed.
+- **Exit codes:** 0 when every check passed, 1 when one failed, 2 when Blender was not found.
+
+Your PC has Blender 4.0.2. Some public Blender workflows target 5.x. Run this after installing or updating Blender, and send Claude the lines if any say FAIL.
+
 ## 4. Settings file
 
 ```powershell

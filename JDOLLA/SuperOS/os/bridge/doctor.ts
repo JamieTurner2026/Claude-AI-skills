@@ -227,6 +227,32 @@ export function checkBackup(d: DoctorDeps): Check {
   return pass("backup", label, `${facts("set, passes the check")}; run: npm run backup -- --dry-run`);
 }
 
+export const BLENDER_FRESH_DAYS = 30;
+
+/**
+ * Blender (optional): reads the last `npm run blender:check` report and never starts Blender. PASS when it passed within
+ * BLENDER_FRESH_DAYS, WARN when there is none or it is older, FAIL when the last check failed.
+ */
+export function checkBlender(d: DoctorDeps): Check {
+  const L = "Blender (optional)";
+  const run = "PC-SETUP §3.4: npm run blender:check";
+  const file = pathFor(d.platform).join(logDirFor(d), "blender-check.json");
+  if (!d.exists(file)) return warn("blender", L, "not checked yet (only the Blender skills need it)", run);
+  let r: { ok?: unknown; at?: unknown; version?: unknown; checks?: unknown };
+  try { r = JSON.parse(d.readText(file)) as typeof r; } catch { return warn("blender", L, "the last report could not be read", run); }
+  const at = typeof r.at === "string" ? Date.parse(r.at) : NaN;
+  if (typeof r.ok !== "boolean" || Number.isNaN(at) || !Array.isArray(r.checks)) return warn("blender", L, "the last report is not one this version understands", run);
+  const version = typeof r.version === "string" && /^[\d.]{1,20}$/.test(r.version) ? r.version : "?";
+  const days = Math.max(0, Math.floor((d.now.getTime() - at) / 86_400_000));
+  const ago = days === 0 ? "today" : `${days} day${days === 1 ? "" : "s"} ago`;
+  if (!r.ok) {
+    const failed = (r.checks as Array<{ id?: unknown; status?: unknown }>).filter((c) => c.status === "fail").map((c) => String(c.id).replace(/[^a-z-]/g, "").slice(0, 20));
+    return fail("blender", L, `Blender ${version}: the last check failed (${failed.join(", ") || "see the report"}), ${ago}`, "PC-SETUP §3.4: run npm run blender:check and fix each FAIL row before using the Blender skills");
+  }
+  if (days > BLENDER_FRESH_DAYS) return warn("blender", L, `Blender ${version} last passed ${ago} (older than ${BLENDER_FRESH_DAYS} days)`, run);
+  return pass("blender", L, `Blender ${version} passed ${ago}`);
+}
+
 export async function runDoctor(d: DoctorDeps): Promise<Check[]> {
   const safe = (id: string, label: string, f: () => Check): Check => {
     try { return f(); } catch (e) { return fail(id, label, `check crashed: ${(e instanceof Error ? e.message : String(e)).slice(0, 100)}`, "PC-SETUP Troubleshooting: send Claude this line"); }
@@ -243,6 +269,7 @@ export async function runDoctor(d: DoctorDeps): Promise<Check[]> {
     safe("sandbox", "Bash sandbox", () => checkSandbox(d)),
     safe("scheduler", "Scheduler", () => checkScheduler(d)),
     safe("backup", "Vault backup", () => checkBackup(d)),
+    safe("blender", "Blender (optional)", () => checkBlender(d)),
   ];
 }
 

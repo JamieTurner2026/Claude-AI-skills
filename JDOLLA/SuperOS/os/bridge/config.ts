@@ -60,6 +60,8 @@ export function loadConfig(p: Paths): OsConfig {
 export const LocalConfigSchema = z.strictObject({
   /** Path to the Claude Code CLI on this PC (its cli.js, for an npm install). Wins over engine.claudeBin in os.config.json. */
   claudeBin: z.string().min(1).max(260).optional(),
+  /** Path to blender.exe on this PC, for `npm run blender:check` and the Blender skills. Wins over BLENDER and PATH. */
+  blenderBin: z.string().min(1).max(260).optional(),
 });
 export type LocalConfig = z.infer<typeof LocalConfigSchema>;
 export const localConfigPath = (p: Paths): string => path.join(p.os, "config", "os.local.json");

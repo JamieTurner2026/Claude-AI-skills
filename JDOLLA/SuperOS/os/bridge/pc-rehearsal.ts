@@ -281,6 +281,9 @@ export async function rehearse(source: string, work: string, out: string): Promi
     return [[exit === 0, `exit 0 (got ${exit})`], [c !== null && c.fail === 0, `it ends with a fail 0 line (${c ? `pass ${c.pass}, fail ${c.fail}` : "no count line"})`], [c !== null && c.pass > 0, "tests ran"]];
   });
 
+  // START-HERE 3b: Blender, skipped: the runner has none.
+  skip(ctx, "3c", "npm run blender:check", "START-HERE 3b, PC-SETUP §3.4", "STUB: skipped on purpose, the runner has no Blender. Covered by bridge/blender-check.test.ts with a fake Blender; the check's Python was run on bpy 4.2 and 5.0 when it was written.");
+
   // Step 4: meaning search, skipped: the one command that downloads (~520 MB).
   skip(ctx, "4", "npm run brain -- index --embeddings", "START-HERE 4, PC-SETUP §5.2", "STUB: skipped on purpose, it downloads a ~500 MB runtime and a 23 MB model. The runtime's pin and the outdated-runtime path are covered by brain/embed-runtime.test.ts.");
 
