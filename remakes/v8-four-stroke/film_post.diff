@@ -1,0 +1,87 @@
+--- sims/v8-shared/film.js	2026-11-27 20:54:45.165553885 +0000
++++ sims/v8-shared/film_post.js	2026-11-27 21:12:07.225039734 +0000
+@@ -10,14 +10,14 @@
+ // the film opens on the whole engine, a slow orbit and a gentle push in for 3.5 s, then a beat every 2.5-3 s
+ export const SCRIPT = [
+   {t: 0, cam: 'open'},
+-  {t: 3.5, cam: 'cyl'},
+-  {t: 6.9, track: 6},
+-  {t: 9.7, cam: 'valley'},
+-  {t: 12.1, rpm: [700, 2400, 1.4]},
+-  {t: 14.7, cam: 'side'},
+-  {t: 17.3, cam: 'front'},
+-  {t: 19.9, cam: 'hero'},
+-  {t: 22.5, track: 1},
++  {t: 2.4, rpm: [700, 2400, 1.4]},
++  {t: 5.4, cam: 'valley'},
++  {t: 7.9, track: 4},
++  {t: 9.7, cam: 'cyl'},
++  {t: 12.9, track: 2},
++  {t: 15.9, cam: 'front'},
++  {t: 18.6, cam: 'hero'},
++  {t: 22.1, rpm: [2400, 700, 1.4]},
+ ];
+ export const DURATION = 26;
+ export const DEFAULTS = {duration: DURATION, fps: 60, theme: 'light', hud: {enabled: false, title: 'v8d', subtitle: ''}, director: {enabled: false}, watermark: ''};
+@@ -31,12 +31,16 @@
+ const PLAY = 20; // playback divider: 1/20 speed
+ 
+ // ------------------------------------------------------------ engine speed and the crank angle
+-const RPM_EV = SCRIPT.find((e) => e.rpm);
+-export const rpmAt = (t) => RPM_EV.rpm[0] + (RPM_EV.rpm[1] - RPM_EV.rpm[0]) * ss(RPM_EV.t, RPM_EV.t + RPM_EV.rpm[2], t);
++const RPM_EVS = SCRIPT.filter((e) => e.rpm);
++export const rpmAt = (t) => {
++  let r = RPM_EVS[0].rpm[0];
++  for (const e of RPM_EVS) if (t >= e.t) r = e.rpm[0] + (e.rpm[1] - e.rpm[0]) * ss(e.t, e.t + e.rpm[2], t);
++  return r;
++};
+ const DT = 1 / 240;
+ const TH = [];
+ {
+-  let th = 12;
++  let th = 552; // cylinder 7 at 12° after TDC when the posted film opens
+   for (let t = 0; t <= DURATION + 1; t += DT) {
+     TH.push(th);
+     th += ((rpmAt(t + DT / 2) / 60) * 360 * DT) / PLAY;
+@@ -47,7 +51,7 @@
+   const i = Math.floor(u);
+   return TH[i] + (TH[i + 1] - TH[i]) * (u - i);
+ };
+-export const trackAt = (t) => SCRIPT.filter((e) => e.track && e.t <= t).pop()?.track ?? 1;
++export const trackAt = (t) => SCRIPT.filter((e) => e.track && e.t <= t).pop()?.track ?? 7;
+ 
+ // ------------------------------------------------------------ views, each a function of u (seconds since it came on)
+ const cylCentre = (c) => {
+@@ -55,13 +59,20 @@
+   const [x, y] = bankXY(cy.bank, 0, 170);
+   return [mm(x), mm(y), mm(cy.z)];
+ };
++export const OPEN_T = 1.5;
++export const OPEN_A = {az: 132, el: 25, d: 1.85, tz: -0.04};
+ export const VIEW_FN = {
+   // the opening: a quarter turn round the whole engine, easing in and out, pushing in a little
++  // the posted film opens behind the flywheel quarter and settles on the side view
+   open: (u) => {
+-    const k = smoother(u / 4.1);
+-    return {tx: 0, ty: 0.11, tz: -0.02, az: 4 + 54 * k, el: 18 + 9 * k, d: 2.2 - 0.25 * k, sx: -50, sy: 10};
++    const k = smoother(u / OPEN_T);
++    const s = VIEW_FN.side(u);
++    const a = OPEN_A;
++    const o = {};
++    for (const key in s) o[key] = (a[key] ?? s[key]) + (s[key] - (a[key] ?? s[key])) * k;
++    return o;
+   },
+-  hero: (u) => ({tx: 0, ty: 0.11, tz: -0.02, az: 46 + 5 * u, el: 26, d: 1.95, sx: -50, sy: 10}),
++  hero: (u) => ({tx: 0, ty: 0.11, tz: -0.02, az: 54 + 1.6 * u, el: 26, d: 1.92, sx: -50, sy: 10}),
+   cyl: (u, c) => {
+     const [x, y, z] = cylCentre(c);
+     const L = CYL[c - 1].bank === 'L';
+@@ -100,7 +111,7 @@
+ }
+ export const camName = (t) => {
+   const v = VIEWS.filter(([t0]) => t0 <= t).pop()[1];
+-  return v === 'open' ? 'hero' : v;
++  return v === 'open' ? 'side' : v;
+ };
+ export const firingNow = (th) => {
+   let best = 1;
