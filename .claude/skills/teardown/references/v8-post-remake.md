@@ -45,15 +45,15 @@ Claude Code running Opus 5.5.
 
 The public repo has a newer film script than the one in the post: it opens on HERO, tracks cylinder 1 and uses different beat times. I kept the engine, stage and console unchanged and rewrote only the operator script to match the post:
 
-- `src/v8-shared/film_post.js` is a copy of `film.js` with these changes (see `film_post.diff`):
+- `sims/v8-shared/film_post.js` is a copy of `film.js` with these changes (see `references/v8-post-film.diff`):
   - the measured beat sheet above;
   - two throttle ramps;
   - a crank start of 552°, so cylinder 7 reads 12° at t = 0;
   - a new opening camera move;
   - a slower HERO drift (54° + 1.6°/s).
-- `src/v8-shared/score_post.py` moves the score's clicks, air swells and throttle ramps onto the new beats. It produces 187 sounds; the article says the post had 189.
+- `sims/v8-shared/score_post.py` moves the score's clicks, air swells and throttle ramps onto the new beats. It produces 187 sounds; the article says the post had 189.
 
-Loop used (`compare.sh`): render stills, pair them with the reference at the same time, read the pairs, fix, repeat. Seven passes:
+Loop used (`scripts/compare.sh`): render stills, pair them with the reference at the same time, read the pairs, fix, repeat. Seven passes:
 
 | Pass | Fix |
 |---|---|
@@ -81,10 +81,14 @@ It is a close rebuild, not a pixel copy.
 
 ## Run it
 
+From any folder (outputs land in `./teardown-out`):
+
 ```bash
-bash setup.sh            # clones teardown @a91262a, adds the remake files, builds the page
-bash render.sh           # → work/teardown/teardown-out/full/v8-remake.mp4
-bash compare.sh path/to/reference.mp4 out/cmp 0.5,6,13,21
+cd "$SKILL_DIR" && npm install                                                   # once
+node "$SKILL_DIR/sims/build.mjs" v8-post                                         # → teardown-out/dist/v8-post.html
+bash "$SKILL_DIR/scripts/compare.sh" stills v8-post REF.mp4 out/cmp 0.5,6,13,21  # check stills
+bash "$SKILL_DIR/scripts/render_film.sh" v8-post "$SKILL_DIR/sims/v8-shared/score_post.py"   # → teardown-out/v8-post.mp4
+bash "$SKILL_DIR/scripts/compare.sh" video REF.mp4 teardown-out/v8-post.mp4 out/final        # scores + side-by-side
 ```
 
 Needs Node 20+, ffmpeg and Python 3. Set `CHROMIUM=/path/to/chrome` to use an installed browser.
