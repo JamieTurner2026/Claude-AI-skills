@@ -242,9 +242,9 @@ export function makeFilm() {
       const cam = camName(t);
       const cyl = trackAt(t);
       const t0 = VIEWS.filter(([a]) => a <= t).pop()[0];
-      // isolate once the camera has closed in, and keep it until the next move has pulled back a little
+      // isolate once the camera has closed in (1.15 s: measured from the post, first isolated frame 10.867), and keep it until the next move has pulled back a little
       const vi = VIEWS.findIndex(([a]) => a === t0);
-      const soloOn = (cam === 'cyl' && t - t0 > 1.25) || (vi > 0 && VIEWS[vi - 1][1] === 'cyl' && t - t0 < 0.6);
+      const soloOn = (cam === 'cyl' && t - t0 > 1.15) || (vi > 0 && VIEWS[vi - 1][1] === 'cyl' && t - t0 < 0.6);
       st.frame(th, {...c, az: c.az * D2R, el: c.el * D2R}, {solo: soloOn ? cyl - 1 : -1});
       return {th, cam, cyl, t0};
     }
