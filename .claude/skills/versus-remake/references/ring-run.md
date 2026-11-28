@@ -37,7 +37,9 @@ Full videos, all frames:
 | Version | Whole frame | Panel A | Panel B |
 |---|---|---|---|
 | v1 (pass 13) | 0.835 | 0.801 | 0.695 |
-| v2 (final) | see below | | |
+| v2 (final: thicker ring A; funnel, wider wings and larger ship A tried and reverted) | 0.835 | 0.801 | 0.695 |
+
+Per second (v2), whole frame: 0.842 0.831 0.830 0.818 0.804 0.836 0.840 0.850 0.863 0.866. Panel A: 0.811 0.792 0.792 0.765 0.768 0.794 0.808 0.822 0.829 0.858. Panel B: 0.707 0.700 0.695 0.674 0.635 0.686 0.690 0.707 0.753 0.756. The weakest seconds (3–4) are the close approach, where the reference's fine station detail fills the frame.
 
 ## What did not help (measured, then reverted)
 
