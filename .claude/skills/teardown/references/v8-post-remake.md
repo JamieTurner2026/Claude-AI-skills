@@ -61,21 +61,24 @@ Loop used (`scripts/compare.sh`): render stills, pair them with the reference at
 | 2 | Crank phase: every gauge, chart and crank angle now reads the same as the post |
 | 3–7 | Opening move, throttle-down time, HERO drift and distance |
 
-**Result.** The full render matches the post's container exactly: 1920×1080, 60 fps, 1,560 frames, 26.0 s, with audio at a mean of −16.1 dB. Blurred SSIM (960×540, `gblur=4`) against the post averages **0.92 over all 1,560 frames**. Per second:
+**Result.** The full render matches the post's container exactly: 1920×1080, 60 fps, 1,560 frames, 26.0 s, with audio at a mean of −16.1 dB. Blurred SSIM (960×540, `gblur=4`) against the post:
 
-| Shot | Seconds | SSIM |
-|---|---|---|
-| Open, then side | 0–5 | 0.89–0.92 |
-| Valley | 6–9 | 0.99–1.00 |
-| Cylinder 4, then cylinder 2 | 10–15 | 0.90–0.96 |
-| Front | 16–18 | 0.91–0.97 |
-| Hero, throttle back | 19–25 | 0.88–0.92 |
+| Shot | Seconds | Pass 1 (camera by eye) | Pass 2 (fitted camera) |
+|---|---|---|---|
+| Open, then side | 0–5 | 0.89–0.92 | 0.996–0.998 |
+| Valley | 6–9 | 0.99–1.00 | 0.998 |
+| Cylinder 4, then cylinder 2 | 10–15 | 0.90–0.96 | 0.993–0.999 |
+| Front | 16–18 | 0.91–0.97 | 0.998 |
+| Hero, throttle back | 19–25 | 0.88–0.92 | 0.995–0.997 |
+| **All 1,560 frames** | | **0.92** | **0.997** |
 
-The on-screen numbers track the post. During the throttle-down the remake leads by a few degrees of crank (at 23 s: 1,119 rpm vs 1,168 rpm). What still differs:
+Pass 2 added three things: the camera fitted every 0.25 s with `scripts/fit_camera.mjs` (`cam_fix_post.json`), the throttle-down measured from the rpm readout (starts at 22.0 s, lasts 1.6 s), and the isolate switch measured from the flywheel brightness (`t - t0 > 1.15`). The lowest second, 10 s, is the isolate switch.
 
-- **Lighting:** frames rendered here use software WebGL (SwiftShader), so the ambient occlusion and shadow softness differ slightly from the GPU original.
-- **Opening:** the first 1.5 s camera swing is fitted by eye, not measured.
+What still differs:
+
+- **Lighting:** frames rendered here use software WebGL (SwiftShader), so the ambient occlusion and anti-aliasing differ slightly from the GPU original.
 - **Cursor:** its path between clicks follows the kit's own rest points, not the original's.
+- **Encoder noise:** both files are H.264, so 1.0 is out of reach even for a perfect scene.
 
 It is a close rebuild, not a pixel copy.
 

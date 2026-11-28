@@ -152,13 +152,13 @@ Checklist:
 5. **Score every pass.** `bash scripts/compare.sh stills SIM REF.mp4 OUTDIR 0.5,6,13,21` (pairs: left reference, right remake, blurred SSIM per pair; read `pairs.png`). Final: `bash scripts/compare.sh video REF.mp4 REMAKE.mp4 OUTDIR` (per-second and all-frame SSIM, plus a labelled side-by-side MP4 to send).
 6. **Diagnose with a difference map** when a score stalls: `ffmpeg -i ref.png -i mine.png -filter_complex "blend=all_mode=difference,format=gray,eq=gamma=0.5:contrast=4"`. Black UI with white outlines round the machine means camera pose (fit it); a uniform grey haze means lighting or AO; a bright block means a widget value or the cursor.
 
-Honest limits: a rebuild is never pixel-identical. SSIM 1.0 needs the same renderer and encoder; software WebGL differs from the original GPU in AO noise and anti-aliasing, and both videos carry H.264 noise. The valley shots of the V8 reached 0.99+, which is about the ceiling. Report the real numbers; never call a rebuild identical.
+Honest limits: a rebuild is never pixel-identical. SSIM 1.0 needs the same renderer and encoder; software WebGL differs from the original GPU in AO noise and anti-aliasing, and both videos carry H.264 noise. The V8 went from 0.92 (camera by eye) to 0.997 over all frames (fitted camera, measured beats), which is about the ceiling. Report the real numbers; never call a rebuild identical.
 
 ## Rendering without a GPU
 
 Capture prints the GPU it got. `SwiftShader` means software WebGL: about 7 s per 1080p frame for the V8 (26 s at 60 fps took about 3 h on 4 CPUs).
 
-- `bash scripts/render_film.sh SIM SCORE.py [CHUNK_S]` renders chunks **one after another**, resumes after a crash (keeps chunks that decode with the right frame count), joins, scores, muxes and verifies. Run it in the background and wait for the notification.
+- `bash scripts/render_film.sh SIM SCORE.py [CHUNK_S]` renders chunks **one after another**, resumes after a crash (keeps chunks that decode with the right frame count), joins, scores, muxes and verifies. Run it in the background and wait for the notification. A background job stops after 2 h; just run the same command again. If a chunk was cut off part way (it decodes but is short of frames), save rendering it again: render only the missing tail with `capture.mjs --from <start + frames/fps> --to <end>`, join the two with `ffmpeg -f concat -c copy` into the chunk's name, and re-run the script, which then keeps it.
 - Never render chunks in parallel on software WebGL: browsers starve each other (about 23 s per frame each on 4 CPUs) and shader warm-up passes the 60 s ready timeout. `capture.mjs` here reads `READY_TIMEOUT` (ms); the script sets 600000.
 - Check stills at full quality before paying for the full render. Keep MP4s out of git; send them to the user.
 
