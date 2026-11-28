@@ -8,5 +8,7 @@ Skills for starting projects fast with Claude: **repo-builder**, repo-scaffold, 
 - **Windows:** in the repo root, `powershell -ExecutionPolicy Bypass -File .\install.ps1` does the same into `%USERPROFILE%\.claude\skills` (`-Check` lists them). Re-run it after every update so new skills appear as `/` commands.
 - **Claude.ai:** upload the packaged `.skill` files in Settings > Skills (skills do not sync from GitHub automatically).
 
+**Your own virtual machine:** `vm/` creates an Ubuntu server VM on Windows with Multipass (Docker, Node.js and Python are preinstalled). See [vm/README.md](vm/README.md).
+
 Then just ask: "use repo-builder to start a new Next.js project called X".
 Never commit `.env*` except `.env.example`.
