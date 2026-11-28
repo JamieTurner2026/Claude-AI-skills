@@ -138,7 +138,7 @@ function stationA() {
     }
   }
   // tunnel: short cylinder of plates round the hole
-  for (let zz = 0; zz < 5; zz++)
+  for (let zz = 0; zz < 1; zz++)
     for (let i = 0; i < 24; i++) {
       const a = (i / 24) * Math.PI * 2;
       add(Math.cos(a) * 41, Math.sin(a) * 41, -10 - zz * 22, 6, 11.5, 21, a, zz % 2);
@@ -183,51 +183,64 @@ function stationA() {
   return {group: g, cargo, holeR: 41};
 }
 
-// ---------- station B: detailed rings ----------
+// ---------- station B: concentric banded rings ----------
+// Radii measured from the reference at t = 5 s (distance 1,050 m): bands of segmented arcs round a dark core.
 function stationB() {
   const g = new THREE.Group();
   const r = rand(11);
-  const metal = std(0x7c8088, {metalness: 0.45, roughness: 0.5});
-  const dark = std(0x2a2d33, {metalness: 0.3, roughness: 0.7});
-  const mid = std(0x50545c, {metalness: 0.35, roughness: 0.6});
+  const band = std(0x34373d, {metalness: 0.45, roughness: 0.55});
+  const band2 = std(0x26292e, {metalness: 0.4, roughness: 0.6});
+  const edge = std(0x8a8e95, {metalness: 0.5, roughness: 0.45});
+  const dark = std(0x15181c, {metalness: 0.3, roughness: 0.8});
+  const lamp = new THREE.MeshBasicMaterial({color: 0xdfe8ee, toneMapped: false});
   const box = new THREE.BoxGeometry(1, 1, 1);
-  // outer heavy ring
-  const outer = new THREE.Mesh(new THREE.TorusGeometry(530, 40, 16, 180), dark);
-  g.add(outer);
   const parts = [];
   const add = (x, y, z, sx, sy, sz, rz, m) => parts.push({x, y, z, sx, sy, sz, rz, m});
-  for (let i = 0; i < 200; i++) {
-    const a = (i / 200) * Math.PI * 2;
-    add(Math.cos(a) * 530, Math.sin(a) * 530, 36 + r() * 8, 10 + r() * 8, 50 + r() * 20, 6 + r() * 6, a, r() < 0.5 ? 0 : 2);
-    if (r() < 0.5) add(Math.cos(a) * 572, Math.sin(a) * 572, 0, 10, 8 + r() * 14, 30, a, 1);
-  }
-  // segmented rings
-  for (const [R, n, w] of [[385, 16, 24], [290, 14, 18]]) {
-    for (let i = 0; i < n; i++) {
-      const a0 = (i / n) * Math.PI * 2;
-      const arc = new THREE.Mesh(new THREE.TorusGeometry(R, w / 2, 8, 24, ((Math.PI * 2) / n) * 0.78), i % 2 ? metal : mid);
-      arc.rotation.z = a0;
-      g.add(arc);
-    }
-  }
-  // inner disc with hole
-  const disc = new THREE.Mesh(new THREE.RingGeometry(41, 175, 96, 4), new THREE.MeshStandardMaterial({color: 0x23262b, roughness: 0.8, side: THREE.DoubleSide}));
-  g.add(disc);
-  for (let i = 0; i < 120; i++) {
+  // core disc with the hole
+  const core = new THREE.Mesh(new THREE.RingGeometry(40, 152, 96, 2), new THREE.MeshStandardMaterial({color: 0x0f1317, roughness: 0.9, side: THREE.DoubleSide}));
+  g.add(core);
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(41, 2.5, 8, 64), edge);
+  g.add(lip);
+  for (let i = 0; i < 90; i++) {
     const a = r() * Math.PI * 2;
-    const R = 52 + r() * 118;
-    add(Math.cos(a) * R, Math.sin(a) * R, 3, 8 + r() * 18, 4 + r() * 10, 4, a, 2);
+    const R = 50 + r() * 98;
+    add(Math.cos(a) * R, Math.sin(a) * R, 3, 5 + r() * 14, 3 + r() * 6, 3, a, 1);
   }
-  const tunnel = new THREE.Mesh(new THREE.CylinderGeometry(41, 41, 90, 48, 1, true), new THREE.MeshStandardMaterial({color: 0x1e2126, side: THREE.DoubleSide}));
-  tunnel.rotation.x = Math.PI / 2;
-  tunnel.position.z = -45;
-  g.add(tunnel);
-  // spokes
-  for (let k = 0; k < 4; k++) {
-    const a = (k / 4) * Math.PI * 2;
-    add(Math.cos(a) * 352, Math.sin(a) * 352, 0, 355, 10, 10, a, 1);
+  // segmented bands [inner, outer, z, segments]
+  const BANDS = [[160, 190, -6, 10], [210, 250, -12, 12], [270, 300, -4, 14], [330, 410, -16, 16], [425, 470, -8, 18], [490, 565, 0, 1]];
+  BANDS.forEach(([ri, ro, z, n], k) => {
+    const gap = n > 1 ? 0.06 : 0;
+    for (let i = 0; i < n; i++) {
+      const a0 = (i / n) * Math.PI * 2 + gap + r() * 0.2;
+      const len = (Math.PI * 2) / n - gap * 2;
+      const depth = k === 5 ? 70 : 14 + r() * 10;
+      const shape = new THREE.Shape();
+      shape.absarc(0, 0, ro, a0, a0 + len, false);
+      shape.absarc(0, 0, ri, a0 + len, a0, true);
+      const geo = new THREE.ExtrudeGeometry(shape, {depth, bevelEnabled: false, curveSegments: Math.max(6, Math.round(len * 20))});
+      const m = new THREE.Mesh(geo, k % 2 ? band2 : band);
+      m.position.z = z - depth;
+      g.add(m);
+      // a lit edge strip and a few lamps on each arc
+      const steps = Math.max(3, Math.round(len * 10));
+      for (let j = 0; j < steps; j++) {
+        const a = a0 + (j + 0.5) * (len / steps);
+        add(Math.cos(a) * (ro - 2), Math.sin(a) * (ro - 2), z + 1, 3, (len / steps) * ro * 0.8, 2, a, 0);
+        if (r() < 0.5) {
+          const L = new THREE.Mesh(new THREE.SphereGeometry(1.8, 6, 4), lamp);
+          const rr = ri + r() * (ro - ri);
+          L.position.set(Math.cos(a) * rr, Math.sin(a) * rr, z + 2);
+          g.add(L);
+        }
+      }
+    }
+  });
+  // spokes tie the bands together
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * Math.PI * 2 + 0.3;
+    add(Math.cos(a) * 360, Math.sin(a) * 360, -10, 420, 9, 9, a, 2);
   }
-  const mats = [metal, mid, dark];
+  const mats = [edge, band2, dark];
   for (let m = 0; m < 3; m++) {
     const list = parts.filter((p) => p.m === m);
     const im = new THREE.InstancedMesh(box, mats[m], list.length);
@@ -251,7 +264,7 @@ function stationB() {
   nose.position.x = 50;
   cargo.add(nose);
   g.add(cargo);
-  return {group: g, cargo, holeR: 41};
+  return {group: g, cargo, holeR: 40};
 }
 
 // ---------- ships (camera-attached) ----------
@@ -260,22 +273,22 @@ function glowSprite(color, size) {
   c.width = c.height = 128;
   const x = c.getContext('2d');
   const gr = x.createRadialGradient(64, 64, 0, 64, 64, 64);
-  gr.addColorStop(0, 'rgba(255,255,255,0.95)');
-  gr.addColorStop(0.12, 'rgba(220,255,250,0.9)');
+  gr.addColorStop(0, 'rgba(200,255,250,0.9)');
+  gr.addColorStop(0.12, 'rgba(120,245,235,0.8)');
   gr.addColorStop(0.3, color);
   gr.addColorStop(0.5, color.replace(/[\d.]+\)$/, '0.35)'));
   gr.addColorStop(1, 'rgba(0,0,0,0)');
   x.fillStyle = gr;
   x.fillRect(0, 0, 128, 128);
-  const s = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(c), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true}));
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(c), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false}));
   s.scale.set(size, size, 1);
   return s;
 }
 
 function shipA() {
   const g = new THREE.Group();
-  const white = std(0xd9d6cf, {roughness: 0.55});
-  const grey = std(0x8d8f93, {roughness: 0.6});
+  const white = std(0xb4b1aa, {roughness: 0.6});
+  const grey = std(0x74777b, {roughness: 0.6});
   const dark = std(0x26292e);
   // fuselage
   const fus = new THREE.Mesh(new THREE.BoxGeometry(3.0, 2.8, 13), white);
@@ -319,7 +332,7 @@ function shipA() {
     const ring = new THREE.Mesh(new THREE.TorusGeometry(1.15, 0.18, 8, 24), dark);
     ring.position.set(s * 3.6, -0.1, 6.95);
     g.add(ring);
-    const glow = new THREE.Mesh(new THREE.CircleGeometry(1.0, 24), new THREE.MeshBasicMaterial({color: 0x48e0d8}));
+    const glow = new THREE.Mesh(new THREE.CircleGeometry(1.0, 24), new THREE.MeshBasicMaterial({color: 0x9ff0e8, toneMapped: false}));
     glow.position.set(s * 3.6, -0.1, 6.97);
     g.add(glow);
     const sp = glowSprite('rgba(60,230,220,0.9)', 3.0);
@@ -345,8 +358,8 @@ function shipA() {
 function shipB() {
   // original box-wing: central hull, an upper and a lower straight wing, end plates, an engine at each wing root
   const g = new THREE.Group();
-  const hullM = std(0x6e7177, {metalness: 0.5, roughness: 0.45});
-  const panelM = std(0x9a9ca0, {metalness: 0.4, roughness: 0.5});
+  const hullM = std(0x4c4f55, {metalness: 0.5, roughness: 0.45});
+  const panelM = std(0x7c7e82, {metalness: 0.4, roughness: 0.5});
   const dark = std(0x24272c, {metalness: 0.4});
   const amber = new THREE.MeshBasicMaterial({color: 0xffa24a});
   const hull = new THREE.Mesh(new THREE.BoxGeometry(3.4, 3.0, 14), hullM);
@@ -363,17 +376,17 @@ function shipB() {
     edge.position.set(0, sy * 2.6, 4.1);
     g.add(edge);
     for (const sx of [-1, 1]) {
-      const nac = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.45, 8, 22), hullM);
+      const nac = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.25, 8, 22), hullM);
       nac.rotation.x = Math.PI / 2;
       nac.position.set(sx * 3.9, sy * 2.6, 2.2);
       g.add(nac);
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(1.45, 0.22, 8, 24), dark);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(1.15, 0.2, 8, 24), dark);
       ring.position.set(sx * 3.9, sy * 2.6, 5.95);
       g.add(ring);
-      const glow = new THREE.Mesh(new THREE.CircleGeometry(1.0, 24), new THREE.MeshBasicMaterial({color: 0x48e0d8}));
+      const glow = new THREE.Mesh(new THREE.CircleGeometry(0.8, 24), new THREE.MeshBasicMaterial({color: 0x9ff0e8, toneMapped: false}));
       glow.position.set(sx * 3.9, sy * 2.6, 5.97);
       g.add(glow);
-      const sp = glowSprite('rgba(60,230,220,0.9)', 3.2);
+      const sp = glowSprite('rgba(60,230,220,0.9)', 2.4);
       sp.position.set(sx * 3.9, sy * 2.6, 6.3);
       g.add(sp);
       const gun = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 8, 8), dark);
@@ -401,7 +414,7 @@ export const STYLES = {
     fov: 60,
   },
   B: {
-    sky: {glowDir: [0.75, 0.5, -0.45], glow: [0.62, 0.48, 0.4], skyBase: [0.07, 0.065, 0.06], stars: 0.002},
+    sky: {glowDir: [0.8, 0.45, -0.4], glow: [0.95, 0.72, 0.58], skyBase: [0.07, 0.065, 0.06], stars: 0.002},
     planet: {planetDir: [-0.156, -0.545, -0.824], planetAng: 54.55, sun: [0.6, 0.6, 0.5], deep: [0.03, 0.1, 0.14], shallow: [0.42, 0.58, 0.64], hazePow: 2.2, cloud: [0.8, 0.84, 0.86], rim: [0.5, 0.68, 0.8], cloudBlock: 0, cloudAmt: 0.04, cloudScale: 40, planetSpin: [0.1, 0.4, 0], land: [0.25, 0.32, 0.3], landAmt: 0.25},
     light: {sun: [0.6, 0.7, 0.5], sunI: 3.0, amb: 0.35, hemiSky: 0xb0c8d8, hemiGround: 0x20262e},
     ship: {pos: [0.13, -4.85, -34.05], rot: [deg(13.7), 0, 0], glow: 3.2},
@@ -436,7 +449,7 @@ export function createPanel(side, canvas, size) {
   ship.rotation.set(...S.ship.rot);
   cam.add(ship);
   // ship-local light so it reads like the reference (key from above-front)
-  const shipKey = new THREE.DirectionalLight(0xffffff, 1.2);
+  const shipKey = new THREE.DirectionalLight(0xffffff, 0.5);
   shipKey.position.set(0, 1, 0.3);
   cam.add(shipKey);
   shipKey.target = ship;

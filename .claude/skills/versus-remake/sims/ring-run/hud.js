@@ -68,7 +68,7 @@ export function createHud(root, side) {
         if (major) html += `<b style="left:${x.toFixed(1)}px">${String(((a % 360) + 360) % 360).padStart(3, '0')}</b>`;
       }
       el.tape.innerHTML = html;
-      const prox = t >= EVENTS.proximity[0] && t < EVENTS.proximity[1];
+      const prox = EVENTS.proximityOn.some(([a, b]) => t >= a && t < b);
       el.alert.style.opacity = prox ? 1 : 0;
       el.edge.style.opacity = prox ? 1 : 0;
       const done = t >= EVENTS.complete;

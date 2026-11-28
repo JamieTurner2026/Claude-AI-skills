@@ -62,10 +62,12 @@ export const distanceAt = (side, t) => {
 
 // HUD events (both panels)
 export const EVENTS = {
-  amber: [6.9, 7.9], // target brackets turn amber and open wide
-  bracketsOff: 7.9,
-  proximity: [7.75, 8.85], // red PROXIMITY ALERT banner and red panel edge
-  complete: 9.2, // OBJECTIVE COMPLETE banner + ticked box
+  amber: [7.3, 7.85], // target brackets turn amber and open wide
+  bracketsOff: 7.85,
+  proximity: [7.75, 8.85], // alert window
+  // the banner and the red panel edge blink: measured frame by frame (on ~0.17 s, off ~0.17 s)
+  proximityOn: [[7.72, 7.8], [7.97, 8.13], [8.3, 8.47], [8.64, 8.8]],
+  complete: 9.32, // OBJECTIVE COMPLETE banner + ticked box (first frame 9.333)
 };
 
 // Compass strip: heading in degrees at t (centre of the strip). Labels every 15°.
