@@ -4,7 +4,7 @@ html, body { margin: 0; padding: 0; background: #fff; overflow: hidden; }
 .head { position: absolute; top: 0; width: 900px; text-align: center; }
 .hA { left: 30px; } .hB { left: 946px; }
 .head .name { font-weight: 700; font-size: 47px; line-height: 56px; color: #1d2126; letter-spacing: -0.3px; margin-top: 2px; }
-.head .mins { font-weight: 700; font-size: 35px; line-height: 30px; color: #1f7a4c; margin-top: -4px; }
+.head .mins { font-weight: 700; font-size: 34px; line-height: 30px; color: #1f7a4c; margin-top: -4px; letter-spacing: -0.4px; }
 .panel { position: absolute; top: 100px; width: 900px; height: 900px; border-radius: 20px; overflow: hidden; background: #000; }
 .pA { left: 30px; } .pB { left: 946px; }
 .panel canvas { position: absolute; inset: 0; width: 900px; height: 900px; }

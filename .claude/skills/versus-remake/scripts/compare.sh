@@ -46,7 +46,7 @@ elif [ "$mode" = video ]; then
     local f
     if [ -n "${2:-}" ]; then IFS=: read -r _ w h x y <<< "$2"; f="crop=$w:$h:$x:$y,scale=450:450,gblur=2"; else f="scale=960:-2,gblur=4"; fi
     ffmpeg -i "$REF" -i "$M" -filter_complex "[0:v]fps=1,$f[a];[1:v]fps=1,$f[b];[a][b]ssim=stats_file=$O/ssim_$1.log" -f null - 2>/dev/null
-    echo "$1 per second: $(awk '{split($NF,a,":"); printf "%.3f ", a[2]}' "$O/ssim_$1.log")"
+    echo "$1 per second: $(grep -o 'All:[0-9.]*' "$O/ssim_$1.log" | cut -d: -f2 | awk '{printf "%.3f ", $1}')"
     echo "$1 all frames: $(ffmpeg -i "$REF" -i "$M" -filter_complex "[0:v]$f[a];[1:v]$f[b];[a][b]ssim" -f null - 2>&1 | grep -o 'All:[0-9.]*' | cut -d: -f2)"
   }
   run frame

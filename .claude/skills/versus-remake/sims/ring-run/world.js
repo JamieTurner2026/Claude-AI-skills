@@ -110,11 +110,11 @@ function stationA() {
   const parts = [];
   const add = (x, y, z, sx, sy, sz, rz, m) => parts.push({x, y, z, sx, sy, sz, rz, m});
   // outer ring: chunky segments with jitter
-  const N = 84;
+  const N = 120;
   for (let i = 0; i < N; i++) {
     const a = (i / N) * Math.PI * 2;
-    const R = 550 + (r() - 0.5) * 16;
-    add(Math.cos(a) * R, Math.sin(a) * R, (r() - 0.5) * 12, 40 + r() * 12, 56 + r() * 14, 50 + r() * 12, a, (i % 3));
+    const R = 550 + (r() - 0.5) * 12;
+    add(Math.cos(a) * R, Math.sin(a) * R, 30 + (r() - 0.5) * 14, 66 + r() * 12, 34 + r() * 8, 80 + r() * 20, a, (i % 3));
     if (r() < 0.6) add(Math.cos(a) * (R + 36), Math.sin(a) * (R + 36), (r() - 0.5) * 24, 22, 16 + r() * 12, 24 + r() * 16, a, 2);
   }
   // middle ring: plates in arcs
@@ -144,7 +144,7 @@ function stationA() {
       add(Math.cos(a) * 41, Math.sin(a) * 41, -10 - zz * 22, 6, 11.5, 21, a, zz % 2);
     }
   // debris
-  for (let i = 0; i < 140; i++) {
+  for (let i = 0; i < 60; i++) {
     const a = r() * Math.PI * 2;
     const R = 300 + r() * 330;
     const s = 6 + r() * 16;
@@ -213,23 +213,24 @@ function stationB() {
     for (let i = 0; i < n; i++) {
       const a0 = (i / n) * Math.PI * 2 + gap + r() * 0.2;
       const len = (Math.PI * 2) / n - gap * 2;
-      const depth = k === 5 ? 70 : 14 + r() * 10;
+      const depth = k === 5 ? 80 : 40 + r() * 20;
       const shape = new THREE.Shape();
       shape.absarc(0, 0, ro, a0, a0 + len, false);
       shape.absarc(0, 0, ri, a0 + len, a0, true);
       const geo = new THREE.ExtrudeGeometry(shape, {depth, bevelEnabled: false, curveSegments: Math.max(6, Math.round(len * 20))});
       const m = new THREE.Mesh(geo, k % 2 ? band2 : band);
-      m.position.z = z - depth;
+      const zf = (ro - 152) * 0.45; // funnel: outer bands sit nearer the camera
+      m.position.z = zf + z - depth;
       g.add(m);
       // a lit edge strip and a few lamps on each arc
       const steps = Math.max(3, Math.round(len * 10));
       for (let j = 0; j < steps; j++) {
         const a = a0 + (j + 0.5) * (len / steps);
-        add(Math.cos(a) * (ro - 2), Math.sin(a) * (ro - 2), z + 1, 3, (len / steps) * ro * 0.8, 2, a, 0);
+        add(Math.cos(a) * (ro - 2), Math.sin(a) * (ro - 2), (ro - 152) * 0.45 + z + 1, 3, (len / steps) * ro * 0.8, 2, a, 0);
         if (r() < 0.5) {
           const L = new THREE.Mesh(new THREE.SphereGeometry(1.8, 6, 4), lamp);
           const rr = ri + r() * (ro - ri);
-          L.position.set(Math.cos(a) * rr, Math.sin(a) * rr, z + 2);
+          L.position.set(Math.cos(a) * rr, Math.sin(a) * rr, (ro - 152) * 0.45 + z + 2);
           g.add(L);
         }
       }
@@ -238,7 +239,7 @@ function stationB() {
   // spokes tie the bands together
   for (let k = 0; k < 6; k++) {
     const a = (k / 6) * Math.PI * 2 + 0.3;
-    add(Math.cos(a) * 360, Math.sin(a) * 360, -10, 420, 9, 9, a, 2);
+    add(Math.cos(a) * 360, Math.sin(a) * 360, 90, 420, 9, 9, a, 2);
   }
   const mats = [edge, band2, dark];
   for (let m = 0; m < 3; m++) {
@@ -410,7 +411,7 @@ export const STYLES = {
     sky: {glowDir: [-0.75, 0.45, -0.5], glow: [0.22, 0.16, 0.11], skyBase: [0.085, 0.078, 0.07], stars: 0.002},
     planet: {planetDir: [-0.141, -0.530, -0.836], planetAng: 54.1, sun: [-0.6, 0.6, 0.5], deep: [0.035, 0.14, 0.19], shallow: [0.4, 0.6, 0.72], hazePow: 2.2, cloud: [0.82, 0.86, 0.9], rim: [0.5, 0.7, 0.85], cloudBlock: 90, cloudAmt: 0.02, cloudScale: 34, planetSpin: [0.3, 0.2, 0], land: [0.2, 0.3, 0.3], landAmt: 0},
     light: {sun: [-0.5, 0.8, 0.6], sunI: 2.6, amb: 0.55, hemiSky: 0x9ec6de, hemiGround: 0x1a2a38},
-    ship: {pos: [0.05, -7.28, -35.16], rot: [deg(7.46), 0, 0], glow: 3.0},
+    ship: {pos: [0.05, -7.28, -35.16], rot: [deg(7.46), 0, 0], scale: 1},
     fov: 60,
   },
   B: {
@@ -446,6 +447,7 @@ export function createPanel(side, canvas, size) {
   scene.add(st.group);
   const ship = side === 'A' ? shipA() : shipB();
   ship.position.set(...S.ship.pos);
+  ship.scale.setScalar(S.ship.scale ?? 1);
   ship.rotation.set(...S.ship.rot);
   cam.add(ship);
   // ship-local light so it reads like the reference (key from above-front)
