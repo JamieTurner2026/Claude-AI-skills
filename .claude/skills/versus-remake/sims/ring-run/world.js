@@ -185,6 +185,8 @@ function stationA() {
 
 // ---------- station B: concentric banded rings ----------
 // Radii measured from the reference at t = 5 s (distance 1,050 m): bands of segmented arcs round a dark core.
+// FUNNEL > 0 pulls outer bands toward the camera; tried 0.45 on the reference and it scored lower than flat
+const FUNNEL = 0;
 function stationB() {
   const g = new THREE.Group();
   const r = rand(11);
@@ -213,24 +215,24 @@ function stationB() {
     for (let i = 0; i < n; i++) {
       const a0 = (i / n) * Math.PI * 2 + gap + r() * 0.2;
       const len = (Math.PI * 2) / n - gap * 2;
-      const depth = k === 5 ? 80 : 40 + r() * 20;
+      const depth = k === 5 ? 70 : 14 + r() * 10;
       const shape = new THREE.Shape();
       shape.absarc(0, 0, ro, a0, a0 + len, false);
       shape.absarc(0, 0, ri, a0 + len, a0, true);
       const geo = new THREE.ExtrudeGeometry(shape, {depth, bevelEnabled: false, curveSegments: Math.max(6, Math.round(len * 20))});
       const m = new THREE.Mesh(geo, k % 2 ? band2 : band);
-      const zf = (ro - 152) * 0.45; // funnel: outer bands sit nearer the camera
+      const zf = (ro - 152) * FUNNEL;
       m.position.z = zf + z - depth;
       g.add(m);
       // a lit edge strip and a few lamps on each arc
       const steps = Math.max(3, Math.round(len * 10));
       for (let j = 0; j < steps; j++) {
         const a = a0 + (j + 0.5) * (len / steps);
-        add(Math.cos(a) * (ro - 2), Math.sin(a) * (ro - 2), (ro - 152) * 0.45 + z + 1, 3, (len / steps) * ro * 0.8, 2, a, 0);
+        add(Math.cos(a) * (ro - 2), Math.sin(a) * (ro - 2), (ro - 152) * FUNNEL + z + 1, 3, (len / steps) * ro * 0.8, 2, a, 0);
         if (r() < 0.5) {
           const L = new THREE.Mesh(new THREE.SphereGeometry(1.8, 6, 4), lamp);
           const rr = ri + r() * (ro - ri);
-          L.position.set(Math.cos(a) * rr, Math.sin(a) * rr, (ro - 152) * 0.45 + z + 2);
+          L.position.set(Math.cos(a) * rr, Math.sin(a) * rr, (ro - 152) * FUNNEL + z + 2);
           g.add(L);
         }
       }
@@ -239,7 +241,7 @@ function stationB() {
   // spokes tie the bands together
   for (let k = 0; k < 6; k++) {
     const a = (k / 6) * Math.PI * 2 + 0.3;
-    add(Math.cos(a) * 360, Math.sin(a) * 360, 90, 420, 9, 9, a, 2);
+    add(Math.cos(a) * 360, Math.sin(a) * 360, -10, 420, 9, 9, a, 2);
   }
   const mats = [edge, band2, dark];
   for (let m = 0; m < 3; m++) {

@@ -60,7 +60,12 @@ node scripts/fit.mjs camera SIM_DIR REF.mp4 A --times $(python3 -c "print(','.jo
 - Renders only the panel's 3D layer at 300 px, compares it with the reference panel (grey, blurred, HUD boxes masked) and runs Nelder-Mead. About 10 s per sample on software WebGL.
 - Fit the ship first (it is in every frame), with `--sym`: without it the fit turns the ship to hide a model mismatch.
 - Then fit the camera. Keep `--lambda` (default 25). It penalises moving away from the previous sample. Without it, a model that differs from the reference lets the camera jump between look-alike poses (one run moved it 230 m in 0.25 s).
-- Results go into `cam_fix.json` and are interpolated into the scripted camera.
+- When the game shows a distance readout, trust it and fit only the angles: `--keys az,el,yaw,pitch,roll`. A free distance hides model mismatch by sliding the camera back (120–240 m on ring-run's panel B, so the core hole never opened).
+- Results go into `cam_fix.json` and are interpolated into the scripted camera. Refit a panel after changing its model; keep the old table so you can revert.
+
+## Keep only what scores
+
+Test every model change against the stills and revert it if the panel's score drops, even when it looks closer. On ring-run these all looked plausible and scored lower: a larger ship, a funnel-shaped station and wings reaching the panel edges (`references/ring-run.md`). Change one thing per pass so each result is attributable. When three or four model changes in a row fail to help, render the full video, report and stop.
 
 ## 4. Score every pass
 
