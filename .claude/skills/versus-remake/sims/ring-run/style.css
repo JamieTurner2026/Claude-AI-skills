@@ -1,0 +1,70 @@
+html, body { margin: 0; padding: 0; background: #fff; overflow: hidden; }
+#app { position: fixed; inset: 0; }
+#film { position: relative; width: 1876px; height: 1030px; background: #fff; font-family: 'Inter', sans-serif; }
+.head { position: absolute; top: 0; width: 900px; text-align: center; }
+.hA { left: 30px; } .hB { left: 946px; }
+.head .name { font-weight: 700; font-size: 47px; line-height: 56px; color: #1d2126; letter-spacing: -0.3px; margin-top: 2px; }
+.head .mins { font-weight: 700; font-size: 35px; line-height: 30px; color: #1f7a4c; margin-top: -4px; }
+.panel { position: absolute; top: 100px; width: 900px; height: 900px; border-radius: 20px; overflow: hidden; background: #000; }
+.pA { left: 30px; } .pB { left: 946px; }
+.panel canvas { position: absolute; inset: 0; width: 900px; height: 900px; }
+.hud { position: absolute; inset: 0; color: #fff; font-family: 'Inter', sans-serif; }
+.hud .edge { position: absolute; inset: 0; border-radius: 20px; box-shadow: inset 0 0 0 3px rgba(220, 60, 70, .75), inset 0 0 40px rgba(200, 40, 50, .25); opacity: 0; }
+.hud .box { position: absolute; background: rgba(8, 18, 26, .62); border: 1.5px solid rgba(90, 200, 215, .45); border-radius: 7px; box-sizing: border-box; }
+.hud .lab { font-size: 13px; font-weight: 500; color: #63d6e4; letter-spacing: .2px; }
+.hud .obj { left: 16px; top: 14px; width: 264px; height: 64px; padding: 8px 0 0 11px; }
+.hud .obj .txt { font-size: 15px; line-height: 17px; margin-top: 4px; color: #f2f6f8; font-weight: 500; }
+.hud .chk { position: absolute; right: 12px; top: 26px; width: 14px; height: 14px; border: 2px solid #4fd0e0; border-radius: 1px; }
+.hud .chk span { display: none; position: absolute; left: 0; top: -6px; color: #3ee07a; font-size: 18px; font-weight: 800; }
+.hud .chk.ok { border-color: #3ee07a; } .hud .chk.ok span { display: block; }
+.hud .comp { left: 300px; top: 14px; width: 300px; height: 38px; overflow: visible; }
+.hud .tape { position: absolute; inset: 0; overflow: hidden; }
+.hud .tape i { position: absolute; top: 22px; width: 1.5px; height: 8px; background: rgba(160, 220, 230, .8); }
+.hud .tape i.mj { top: 16px; height: 14px; }
+.hud .tape b { position: absolute; top: 3px; transform: translateX(-50%); font: 600 11px 'JetBrains Mono', monospace; color: #e6eef2; }
+.hud .tri { position: absolute; left: 143px; top: 41px; width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 10px solid #59d8e8; }
+.hud .mt { left: 700px; top: 14px; width: 184px; height: 64px; padding: 8px 0 0 11px; }
+.hud .mt .time { font: 700 30px 'JetBrains Mono', monospace; margin-top: 1px; letter-spacing: .5px; color: #f4f6f8; }
+.hud .spd { left: 16px; top: 360px; width: 112px; height: 110px; padding: 8px 0 0 11px; }
+.hud .spd .val { font: 600 30px 'JetBrains Mono', monospace; margin: 2px 0 0 18px; color: #f4f6f8; }
+.hud .spd .unit { font: 500 10px 'JetBrains Mono', monospace; color: #b8e6ee; margin-top: -2px; }
+.hud .bar { display: flex; gap: 2.5px; margin-top: 4px; }
+.hud .bar i { display: block; height: 11px; background: rgba(70, 150, 170, .35); }
+.hud .spd .bar i { width: 6.4px; } .hud .spd .bar i.on { background: #59d8f0; }
+.hud .se { left: 16px; top: 776px; width: 274px; height: 108px; padding: 9px 12px 0 11px; }
+.hud .se .lab { font-size: 13px; color: #8be4f0; }
+.hud .se .l2 { margin-top: 13px; }
+.hud .se .pct { position: absolute; right: 12px; font: 600 11px 'JetBrains Mono', monospace; color: #e8f2f4; }
+.hud .se .p1 { top: 10px; } .hud .se .p2 { top: 56px; }
+.hud .se .bar i { width: 10px; height: 11px; }
+.hud .se .b1 i.on { background: #4fe0ee; } .hud .se .b2 i.on { background: #6cc2f4; }
+.hud .keys { position: absolute; left: 312px; top: 852px; display: flex; align-items: center; font: 600 11px 'JetBrains Mono', monospace; }
+.hud .keys b { background: #dfe6ea; color: #2b3138; border-radius: 4px; padding: 3px 5px; margin-right: 3px; font-weight: 700; }
+.hud .keys span { margin: 0 22px 0 4px; color: #e6eef2; }
+.hud .radar { position: absolute; left: 742px; top: 728px; overflow: visible; }
+.hud .rr { fill: none; stroke: rgba(70, 200, 200, .55); stroke-width: 1; }
+.hud .sweep line { stroke: #5fe0ea; stroke-width: 1.4; }
+.hud .blip.tgt { fill: #f2b24a; } .hud .blip.fr { fill: #5ee08c; }
+.hud .me { fill: #f4f6f8; }
+.hud .rlab { position: absolute; left: 742px; width: 140px; top: 872px; text-align: center; font: 600 11px 'JetBrains Mono', monospace; color: #59d8e8; }
+.hud .ret { position: absolute; left: 0; top: 0; }
+.hud .rc { stroke: #47d6e6; stroke-width: 2; fill: none; } .hud .rd { fill: #fff; }
+.hud .fbr { position: absolute; left: 0; top: 0; }
+.hud .fbr i { position: absolute; width: 34px; height: 12px; border: 0 solid rgba(150, 190, 200, .35); }
+.hud .fbr .c1 { left: -105px; top: -30px; border-width: 1px 0 0 1px; } .hud .fbr .c2 { left: 71px; top: -30px; border-width: 1px 1px 0 0; }
+.hud .fbr .c3 { left: -105px; top: 18px; border-width: 0 0 1px 1px; } .hud .fbr .c4 { left: 71px; top: 18px; border-width: 0 1px 1px 0; }
+.hud .tb { position: absolute; display: none; }
+.hud .tb i { position: absolute; width: 16px; height: 16px; border: 0 solid #47d6e6; }
+.hud .tb .c1 { left: 0; top: 0; border-width: 2px 0 0 2px; } .hud .tb .c2 { right: 0; top: 0; border-width: 2px 2px 0 0; }
+.hud .tb .c3 { left: 0; bottom: 0; border-width: 0 0 2px 2px; } .hud .tb .c4 { right: 0; bottom: 0; border-width: 0 2px 2px 0; }
+.hud .tb.amber i { border-color: #d7a64a; }
+.hud .tb .tl { white-space: nowrap; position: absolute; left: calc(100% + 4px); top: 0; font: 600 11px 'JetBrains Mono', monospace; color: #59d8e8; line-height: 17px; }
+.hud .tb .tl em { display: block; font-style: normal; color: #f4f6f8; font-size: 12px; padding-left: 8px; }
+.hud .tb.amber .tl { color: #d7a64a; }
+.hud .banner { position: absolute; left: 330px; width: 240px; top: 96px; height: 34px; line-height: 34px; text-align: center; font: 600 13px 'JetBrains Mono', monospace; border-radius: 4px; opacity: 0; box-sizing: border-box; }
+.hud .alert { color: #ff5a64; background: rgba(40, 8, 12, .55); border: 1.5px solid rgba(220, 70, 80, .6); }
+.hud .done { color: #5fe0a0; background: rgba(8, 26, 24, .6); border: 1.5px solid rgba(90, 210, 200, .5); }
+.hud .cg { position: absolute; left: 0; top: 0; display: none; font: 600 11px 'JetBrains Mono', monospace; line-height: 14px; }
+.hud .cg i { position: absolute; left: 0; top: 0; width: 26px; height: 26px; border: 1.5px solid #d7a64a; box-sizing: border-box; }
+.hud .cg span { position: absolute; left: 34px; top: 0; color: #e0b050; white-space: nowrap; }
+.hud .cg em { position: absolute; left: 34px; top: 14px; color: #6fe08a; font-style: normal; white-space: nowrap; }
