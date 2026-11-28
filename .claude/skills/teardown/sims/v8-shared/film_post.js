@@ -17,7 +17,7 @@ export const SCRIPT = [
   {t: 12.9, track: 2},
   {t: 15.9, cam: 'front'},
   {t: 18.6, cam: 'hero'},
-  {t: 22.1, rpm: [2400, 700, 1.4]},
+  {t: 22.0, rpm: [2400, 700, 1.6]}, // measured: same midpoint as a 1.4 s ramp at 22.1, but wider
 ];
 export const DURATION = 26;
 export const DEFAULTS = {duration: DURATION, fps: 60, theme: 'light', hud: {enabled: false, title: 'v8d', subtitle: ''}, director: {enabled: false}, watermark: ''};
